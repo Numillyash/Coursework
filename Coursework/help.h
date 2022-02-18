@@ -21,6 +21,12 @@ Unknown option : %s\n\
 usage: Coursework [option] ... [arg] ...\n\
 Try `Coursework - h' for more information.\n"
 
+#define WRONG_PARAMETER "\
+Your option : %s\n\
+Expected option : %s\n\
+usage: Coursework [option] ... [arg] ...\n\
+Try `Coursework - h' for more information.\n"
+
 #define ERROR_NO_PARAMETERS "\
 You had typed no options\n\
 usage: Coursework [option] ... [arg] ...\n\
