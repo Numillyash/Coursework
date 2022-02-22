@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
 	}
 	else if (argc == 8)
 	{
-		if (check_console_input_format(argv, GENKEY_CONSOLE_OPTION, SIZE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, SECRET_CONSOLE_OPTION))
+		if (     check_console_input_format(argv, GENKEY_CONSOLE_OPTION,    SIZE_CONSOLE_OPTION,   PUBKEY_CONSOLE_OPTION, SECRET_CONSOLE_OPTION))
 		{
 			//do some code
 		}
@@ -82,15 +82,15 @@ int main(int argc, char* argv[])
 		{
 			//do some code
 		}
-		else if (check_console_input_format(argv, CHECK_CONSOLE_OPTION, INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, SIGFILE_CONSOLE_OPTION))
+		else if (check_console_input_format(argv, CHECK_CONSOLE_OPTION,     INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, SIGFILE_CONSOLE_OPTION))
 		{
 			//do some code
 		}
-		else if (check_console_input_format(argv, ENCRYPT_CONSOLE_OPTION, INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
+		else if (check_console_input_format(argv, ENCRYPT_CONSOLE_OPTION,   INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
 		{
 			//do some code
 		}
-		else if (check_console_input_format(argv, DECRYPT_CONSOLE_OPTION, INFILE_CONSOLE_OPTION, SECRET_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
+		else if (check_console_input_format(argv, DECRYPT_CONSOLE_OPTION,   INFILE_CONSOLE_OPTION, SECRET_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
 		{
 			//do some code
 		}
