@@ -1,9 +1,10 @@
 ﻿#include "config.h"
 #include "help.h"
-#include <stdio.h>
-#include <stdlib.h>
+<<<<<<< Updated upstream
 #include <string.h>
+=======
 
+>>>>>>> Stashed changes
 /// <summary>
 /// Function that is checking for parameters for work mode
 /// </summary>
@@ -28,53 +29,54 @@ int check_console_input_format(char** argv, char* work_mode, char* arg_1, char* 
 				else
 				{
 					printf(WRONG_PARAMETER, argv[6], arg_3);
-					exit(EXIT_FAILURE);
+					exit(WRONG_ARGUMENT);
 				}
 			}
 			else
 			{
 				printf(WRONG_PARAMETER, argv[4], arg_2);
-				exit(EXIT_FAILURE);
+				exit(WRONG_ARGUMENT);
 			}
 		}
 		else
 		{
 			printf(WRONG_PARAMETER, argv[2], arg_1);
-			exit(EXIT_FAILURE);
+			exit(WRONG_ARGUMENT);
 		}
 	}
 	else
 		return 0;
 }
 
+
 int main(int argc, char* argv[])
-{
 
 	if (argc == 1)
 	{
 		printf(ERROR_NO_PARAMETERS);
+		exit(NO_ARGUMENTS);
 	}
 	else if (argc == 2)
 	{
 		if (!strcmp(argv[1], HELP_CONSOLE_OPTION_1) || !strcmp(argv[1], HELP_CONSOLE_OPTION_2))
 		{
 			printf(HELP_TEXT);
-			exit(EXIT_SUCCESS);
+			exit(WRONG_ARGUMENT);
 		}
 		else if (strcmp(argv[1], GENKEY_CONSOLE_OPTION) && strcmp(argv[1], CHECK_CONSOLE_OPTION) && strcmp(argv[1], SIGNATURE_CONSOLE_OPTION) && strcmp(argv[1], ENCRYPT_CONSOLE_OPTION) && strcmp(argv[1], DECRYPT_CONSOLE_OPTION))
 		{
 			printf(ERROR_PARAMETER, argv[1]);
-			exit(EXIT_FAILURE);
+			exit(WRONG_ARGUMENT);
 		}
 		else 
 		{
 			printf(ERROR_NOT_ENOUGH_PARAMETERS);
-			exit(EXIT_FAILURE);
+			exit(NOT_ENOUGH_ARGUMENTS);
 		}
 	}
 	else if (argc == 8)
 	{
-		if (     check_console_input_format(argv, GENKEY_CONSOLE_OPTION,    SIZE_CONSOLE_OPTION,   PUBKEY_CONSOLE_OPTION, SECRET_CONSOLE_OPTION))
+		if (     check_console_input_format(argv, GENKEY_CONSOLE_OPTION,    SIZE_CONSOLE_OPTION,   PUBKEY_CONSOLE_OPTION, SECRET_CONSOLE_OPTION ))
 		{
 			//do some code
 		}
@@ -97,6 +99,16 @@ int main(int argc, char* argv[])
 		else
 		{
 			printf(ERROR_PARAMETER, argv[1]);
+			exit(WRONG_ARGUMENT);
 		}
 	}
+	else
+	{
+		printf(ERROR_DEFAULT, argv[1]);
+		exit(WRONG_ARGUMENT);
+	}
+<<<<<<< Updated upstream
+	}
+=======
+>>>>>>> Stashed changes
 }

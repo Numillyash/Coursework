@@ -1,5 +1,7 @@
 #pragma once
 #define _CRT_SECURE_NO_WARNINGS
+
+//input console checking
 #define HELP_CONSOLE_OPTION_1 "-h"
 #define HELP_CONSOLE_OPTION_2 "--help"
 #define GENKEY_CONSOLE_OPTION "genkey"
@@ -13,3 +15,31 @@
 #define SIGFILE_CONSOLE_OPTION "--sigfile"
 #define INFILE_CONSOLE_OPTION "--infile"
 #define OUTFILE_CONSOLE_OPTION "--outfile"
+
+//RSA
+#define KEYSIZE_MODULE 256
+enum KEY_BIT_SIZE {
+	KEY_256 = 8,
+	KEY_512,
+	KEY_1024,
+	KEY_2048
+};
+
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <Windows.h>
+
+/// <summary>
+/// Exit codes for exit()
+/// </summary>
+enum EXIT_CODE {
+	DEFAULT_ERROR,
+	NO_ARGUMENTS,
+	WRONG_ARGUMENT,
+	NOT_ENOUGH_ARGUMENTS,
+	FILE_OPEN_ERROR,
+	SUCCESS,
+	FAILURE
+};

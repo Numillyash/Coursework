@@ -16,14 +16,8 @@ decrypt            : Decrypt file using key.                              Needs 
 --outfile filename : Setup a filename where will be saved output information.\n\
 -h                 : Print this help message and exit (also --help) \n"
 
-#define ERROR_PARAMETER "\
+#define ERROR_FIRST_PARAMETER "\
 Unknown option : %s\n\
-usage: Coursework [option] ... [arg] ...\n\
-Try `Coursework - h' for more information.\n"
-
-#define WRONG_PARAMETER "\
-Your option : %s\n\
-Expected option : %s\n\
 usage: Coursework [option] ... [arg] ...\n\
 Try `Coursework - h' for more information.\n"
 
@@ -34,5 +28,10 @@ Try `Coursework - h' for more information.\n"
 
 #define ERROR_NOT_ENOUGH_PARAMETERS "\
 You had typed not enough options\n\
+usage: Coursework [option] ... [arg] ...\n\
+Try `Coursework - h' for more information.\n"
+
+#define ERROR_DEFAULT "\
+You had typed wrong options\n\
 usage: Coursework [option] ... [arg] ...\n\
 Try `Coursework - h' for more information.\n"
