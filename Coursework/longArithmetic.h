@@ -9,7 +9,7 @@ typedef struct
     int current_count; // текущее количество элементов
     int size; // реальный размер массива
     char negative; // 1 если число положительное, -1 если отрицательное
-    unsigned char* mas; // массив данных
+    unsigned short* mas; // массив данных
 }number;
 
 /// <summary>

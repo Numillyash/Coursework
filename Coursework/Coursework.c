@@ -58,6 +58,8 @@ int main(int argc, char* argv[])
 	n1 = proizv(&n1, &n1); //192
 	n1 = proizv(&n1, &n1); //384
 	n1 = proizv(&n1, &n1); //768
+	print_number(&n1);
+
 	number n2 = int_to_number(67);
 	number n3 = init();
 

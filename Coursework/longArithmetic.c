@@ -5,7 +5,7 @@
 
 number init() {
 	number result = { 0, 1, 1 };
-	result.mas = (unsigned char*)realloc(result.mas, sizeof(unsigned char));
+	result.mas = (unsigned short*)malloc(sizeof(unsigned short));
 	return result;
 }
 
@@ -44,25 +44,45 @@ void reverse(number* value)
 	{
 		value->mas[i] = prom.mas[i];
 	}
+	free(prom.mas);
 }
 
 void print_number(number* value) {
 	if (value->negative == -1)
 		printf("-");
 	for (int i = value->current_count - 1; i >= 0; i--)
+	{
+		int x = value->mas[i];
 		printf("%d ", value->mas[i]);
+	}
 	printf("\n");
 }
 
-void add_element(number* object, unsigned char value) {
+void add_element(number* object, unsigned short value) {
+	int iter = 0;
+	unsigned short* buff;
+
 	if (object->current_count < object->size) {
 		object->mas[object->current_count] = value;
 		object->current_count += 1;
 	}
 	else {
-		object->mas = (unsigned char*)realloc(object->mas, sizeof(unsigned char) * (object->size) *
-			2);     // Увеличение размера массива в 2 раза с сохранением содержимого
-		object->mas[object->current_count] = value;
+		buff = (unsigned short*)malloc(sizeof(unsigned short) * (object->size));
+		for (iter = 0; iter < object->current_count; ++iter)
+		{
+			buff[iter] = object->mas[iter];
+		}
+		free(object->mas);
+		object->mas = (unsigned short*)malloc(sizeof(unsigned short) * (object->size) * 2);
+		for (iter = 0; iter < object->current_count; ++iter)
+		{
+			object->mas[iter] = buff[iter];
+		}
+		free(buff);
+		if (object->mas != NULL)
+		{
+			object->mas[object->current_count] = value;
+		}
 		object->current_count += 1;
 		object->size *= 2;
 	}
@@ -79,7 +99,7 @@ void remove_last_digit(number* object)
 
 number plus(number* value1, number* value2) {
 	number a, b;
-	number result = init();
+	number result = init(), buff;
 	char razr = 0;
 
 	if (value1->negative == 1 && value2->negative == -1) {
@@ -145,13 +165,20 @@ number plus(number* value1, number* value2) {
 		razr = 0;
 	}
 
-	result = normalize(&result);
+	buff = normalize(&result);
+	free(result.mas);
+	result = copy(&buff);
+	free(buff.mas);
+
+	free(a.mas); a.mas = NULL;
+	free(b.mas); b.mas = NULL;
+
 	return result;
 }
 
 number minus(number* value1, number* value2) {
 	number a, b;
-	number result = init();
+	number result = init(), buff;
 	char razr = 0;
 
 	if (value1->negative == 1 && value2->negative == -1) {
@@ -223,32 +250,66 @@ number minus(number* value1, number* value2) {
 		result = minus(&new, &result);
 		result.negative *= -1;
 		razr = 0;
+		free(new.mas);
 	}
-	result = normalize(&result);
+
+	buff = normalize(&result);
+	free(result.mas);
+	result = copy(&buff);
+	free(buff.mas);
+
+	free(a.mas); a.mas = NULL;
+	free(b.mas); b.mas = NULL;
+
 	return result;
 }
 
 number proizv_to_digit(number* value1, int value2) {
 	number sum = init();
 	int count = 0;
-	number pr, res;
+	number pr = init(), res = init(), buff;
+	int prom, i, j;
 
-	for (int i = 0; i < value1->current_count; i++)
+	for (i = 0; i < value1->current_count; i++)
 	{
-		int prom = (int)(value1->mas[i]);
+		prom = (int)(value1->mas[i]);
 		prom *= value2;
-		pr = int_to_number(prom);
-		pr = normalize(&pr);
-		res = init();
-		for (int j = 0; j < count; ++j) {
+
+		buff = int_to_number(prom);
+		free(pr.mas);
+		pr = copy(&buff);
+		free(buff.mas);
+
+		buff = normalize(&pr);
+		free(pr.mas);
+		pr = copy(&buff);
+		free(buff.mas);
+
+		buff = init();
+		free(res.mas);
+		res = copy(&buff);
+		free(buff.mas);
+
+		for (j = 0; j < count; ++j) {
 			add_element(&res, 0);
 		}
-		for (int j = 0; j < pr.current_count; ++j) {
+		for (j = 0; j < pr.current_count; ++j) {
 			add_element(&res, (int)pr.mas[j]);
 		}
-		sum = plus(&sum, &res);
+
+		buff = plus(&sum, &res);
+		free(sum.mas); 
+		sum.mas = NULL;
+		sum = copy(&buff);
+		free(buff.mas);
+		buff.mas = NULL;
+
 		++count;
 	}
+
+	free(pr.mas); pr.mas = NULL;
+	free(res.mas); res.mas = NULL;
+
 	return sum;
 }
 
@@ -269,6 +330,9 @@ number proizv(number* value1, number* value2) {
 		}
 		sum = plus(&sum, &res);
 		++count;
+
+		free(prom.mas); prom.mas = NULL;
+		free(res.mas); res.mas = NULL;
 	}
 	if (value1->negative == 1 && value2->negative == 1) {
 		return sum;
@@ -321,38 +385,55 @@ number deli_v_stolbik(number* value1, number* value2, number* ost)
 	number osn = int_to_number(256);
 	number quot = int_to_number(0), rem = copy(value1), sub = copy(value2);
 	number add = int_to_number(1);
+	number buff;
 	short shifts = 1;
 
 	long long counter = 0;
 
 	*ost = init();
 
-	//quot = 0; // частное
-	//rem = a; // остаток rem = a = 121
-	//sub = b; // sub = b = 4
-	//add = 1;
-	//shifts = 1;
-	while (minus(&sub, &rem).negative == -1) //1.(4 < 121) 2. (40 < 121)
+	while ((buff = minus(&sub, &rem)).negative == -1)
 	{
-		sub = proizv(&sub, &osn); // 1. сдвиг на 1 цифру sub = 40; 2. sub =400
-		add = proizv(&add, &osn); // 2. сдвиг на 1 цифру add =10; 2. add = 100;
-		shifts++; // 1. 2; 2. 3
+		free(buff.mas); buff.mas = NULL;
+		buff = proizv(&sub, &osn);
+		free(sub.mas); sub.mas = NULL;
+		sub = copy(&buff);
+
+		free(buff.mas); buff.mas = NULL;
+		buff = proizv(&add, &osn);
+		free(add.mas); add.mas = NULL;
+		add = copy(&buff);
+		free(buff.mas); buff.mas = NULL;
+		shifts++;
 	}
 	counter = (long long)shifts - 1;
-	while (shifts) //while (3)
+	free(buff.mas); buff.mas = NULL;
+	while (shifts)
 	{
-		while (minus(&rem, &sub).negative != -1) //121 >= 400; ? ? /
+		while ((buff = minus(&rem, &sub)).negative != -1)
 		{
-			rem = minus(&rem, &sub);
-			quot = plus(&add, &quot);
+			free(buff.mas); buff.mas = NULL;
+			buff = minus(&rem, &sub);
+			free(rem.mas); rem.mas = NULL;
+			rem = copy(&buff);
+			free(buff.mas); buff.mas = NULL;
+
+			buff = plus(&add, &quot);
+			free(quot.mas); quot.mas = NULL;
+			quot = copy(&buff);
+			free(buff.mas); buff.mas = NULL;
 			counter++;
 		}
-		remove_last_digit(&sub); // сдвиг на 1 цифру // 1. 40; 2. 4 3. 0??
-		remove_last_digit(&add); // сдвиг на 1 цифру // 2. 10 2. 1 3. 0??
+		remove_last_digit(&sub);
+		remove_last_digit(&add);
 		shifts--;
 	}
 
 	printf("Count = %lld\n", counter);
+
+	free(osn.mas); osn.mas = NULL;
+	free(sub.mas); sub.mas = NULL;
+	free(add.mas); add.mas = NULL;
 
 	*ost = rem;
 	return quot;
