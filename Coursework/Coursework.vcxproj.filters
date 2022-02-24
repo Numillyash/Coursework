@@ -18,12 +18,24 @@
     <ClCompile Include="Coursework.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="RSA.c">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="longArithmetic.c">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="help.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="config.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="RSA.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="longArithmetic.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

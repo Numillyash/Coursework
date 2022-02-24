@@ -8,7 +8,7 @@ sign               : Finds file signature and saves it.                   Needs 
 check              : Checks file signature and types result into console. Needs --infile, --pubkey, --sigfile  options.\n\
 encrypt            : Encrypt file using key.                              Needs --infile, --pubkey, --outfile  options.\n\
 decrypt            : Decrypt file using key.                              Needs --infile, --secret, --outfile  options.\n\
---size size        : Setup size for the key. Must be multiple to 256.\n\
+--size size        : Setup size for the key in bits. Must be a degree of 2 (between 256 and 2048).\n\
 --pubkey filename  : Setup a filename where will be saved public key.\n\
 --secret filename  : Setup a filename where will be saved secret key.\n\
 --sigfile filename : Setup a filename where will be saved or checked signature.\n\
@@ -23,6 +23,12 @@ Try `Coursework - h' for more information.\n"
 
 #define ERROR_NO_PARAMETERS "\
 You had typed no options\n\
+usage: Coursework [option] ... [arg] ...\n\
+Try `Coursework - h' for more information.\n"
+
+#define WRONG_PARAMETER "\
+You had typed unknown option: %s\n\
+Expected option: %s\n\
 usage: Coursework [option] ... [arg] ...\n\
 Try `Coursework - h' for more information.\n"
 

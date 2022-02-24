@@ -18,18 +18,23 @@
 
 //RSA
 #define KEYSIZE_MODULE 256
-enum KEY_BIT_SIZE {
+typedef enum {
 	KEY_256 = 8,
 	KEY_512,
 	KEY_1024,
 	KEY_2048
-};
+} KEY_BIT_SIZE;
+
+//file
+#define FILE_OPENING_ERROR "\
+Cannot open the %s file.\n"
 
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <Windows.h>
+#include <malloc.h>
 
 /// <summary>
 /// Exit codes for exit()

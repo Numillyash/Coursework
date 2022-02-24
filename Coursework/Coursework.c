@@ -1,10 +1,8 @@
 ﻿#include "config.h"
 #include "help.h"
-<<<<<<< Updated upstream
-#include <string.h>
-=======
 
->>>>>>> Stashed changes
+#include "longArithmetic.h"
+
 /// <summary>
 /// Function that is checking for parameters for work mode
 /// </summary>
@@ -50,6 +48,25 @@ int check_console_input_format(char** argv, char* work_mode, char* arg_1, char* 
 
 
 int main(int argc, char* argv[])
+{
+
+	number n1 = int_to_number(1e6);
+	n1 = proizv(&n1, &n1); //12
+	n1 = proizv(&n1, &n1); //24
+	n1 = proizv(&n1, &n1); //48
+	n1 = proizv(&n1, &n1); //96
+	n1 = proizv(&n1, &n1); //192
+	n1 = proizv(&n1, &n1); //384
+	n1 = proizv(&n1, &n1); //768
+	number n2 = int_to_number(67);
+	number n3 = init();
+
+	number rem, quot = deli_v_stolbik(&n1, &n2, &rem);
+	//231200
+
+	print_number(&quot);
+	print_number(&rem);
+	
 
 	if (argc == 1)
 	{
@@ -65,7 +82,7 @@ int main(int argc, char* argv[])
 		}
 		else if (strcmp(argv[1], GENKEY_CONSOLE_OPTION) && strcmp(argv[1], CHECK_CONSOLE_OPTION) && strcmp(argv[1], SIGNATURE_CONSOLE_OPTION) && strcmp(argv[1], ENCRYPT_CONSOLE_OPTION) && strcmp(argv[1], DECRYPT_CONSOLE_OPTION))
 		{
-			printf(ERROR_PARAMETER, argv[1]);
+			printf(ERROR_FIRST_PARAMETER, argv[1]);
 			exit(WRONG_ARGUMENT);
 		}
 		else 
@@ -98,7 +115,7 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			printf(ERROR_PARAMETER, argv[1]);
+			printf(ERROR_FIRST_PARAMETER, argv[1]);
 			exit(WRONG_ARGUMENT);
 		}
 	}
@@ -107,8 +124,4 @@ int main(int argc, char* argv[])
 		printf(ERROR_DEFAULT, argv[1]);
 		exit(WRONG_ARGUMENT);
 	}
-<<<<<<< Updated upstream
-	}
-=======
->>>>>>> Stashed changes
 }

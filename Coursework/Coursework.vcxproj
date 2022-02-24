@@ -141,10 +141,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Coursework.c" />
+    <ClCompile Include="longArithmetic.c" />
+    <ClCompile Include="RSA.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h" />
     <ClInclude Include="help.h" />
+    <ClInclude Include="longArithmetic.h" />
+    <ClInclude Include="RSA.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
