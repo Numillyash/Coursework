@@ -391,6 +391,62 @@ number degree(number* value1, number* value2)
 	return result;
 }
 
+number division(number* value1, number* value2)
+{
+	number osn = int_to_number(256);
+	number quot = int_to_number(0), rem = copy(value1), sub = copy(value2);
+	number add = int_to_number(1);
+	number buff;
+	short shifts = 1;
+
+	long long counter = 0;
+
+	while ((buff = difference(&sub, &rem)).negative == -1)
+	{
+		clear_mem(&buff);
+		buff = multiplication(&sub, &osn);
+		clear_mem(&sub);
+		sub = copy(&buff);
+
+		clear_mem(&buff);
+		buff = multiplication(&add, &osn);
+		clear_mem(&add);
+		add = copy(&buff);
+		clear_mem(&buff);
+		shifts++;
+	}
+	counter = (long long)shifts - 1;
+	clear_mem(&buff);
+	while (shifts)
+	{
+		while ((buff = difference(&rem, &sub)).negative != -1)
+		{
+			clear_mem(&buff);
+			buff = difference(&rem, &sub);
+			clear_mem(&rem);
+			rem = copy(&buff);
+			clear_mem(&buff);
+
+			buff = addition(&add, &quot);
+			clear_mem(&quot);
+			quot = copy(&buff);
+			clear_mem(&buff);
+			counter++;
+		}
+		offset_right(&sub);
+		offset_right(&add);
+		shifts--;
+	}
+
+	printf("Count = %lld\n", counter);
+
+	clear_mem(&osn);
+	clear_mem(&sub);
+	clear_mem(&add);
+
+	return quot;
+}
+
 number division_with_remainder(number* value1, number* value2, number* ost)
 {
 	number osn = int_to_number(256);
