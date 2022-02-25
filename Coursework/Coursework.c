@@ -1,6 +1,7 @@
 ﻿#include "config.h"
 #include "help.h"
 
+#include "RSA.h"
 #include "longArithmetic.h"
 
 /// <summary>

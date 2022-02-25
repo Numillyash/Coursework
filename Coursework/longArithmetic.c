@@ -72,7 +72,7 @@ void add_digit(number* object, unsigned short value) {
 		{
 			object->mas[iter] = buff[iter];
 		}
-		clear_mem(&buff);
+		free(buff);
 		if (object->mas != NULL)
 		{
 			object->mas[object->current_count] = value;
@@ -399,8 +399,6 @@ number division(number* value1, number* value2)
 	number buff;
 	short shifts = 1;
 
-	long long counter = 0;
-
 	while ((buff = difference(&sub, &rem)).negative == -1)
 	{
 		clear_mem(&buff);
@@ -415,7 +413,6 @@ number division(number* value1, number* value2)
 		clear_mem(&buff);
 		shifts++;
 	}
-	counter = (long long)shifts - 1;
 	clear_mem(&buff);
 	while (shifts)
 	{
@@ -431,14 +428,11 @@ number division(number* value1, number* value2)
 			clear_mem(&quot);
 			quot = copy(&buff);
 			clear_mem(&buff);
-			counter++;
 		}
 		offset_right(&sub);
 		offset_right(&add);
 		shifts--;
 	}
-
-	printf("Count = %lld\n", counter);
 
 	clear_mem(&osn);
 	clear_mem(&sub);
@@ -454,8 +448,6 @@ number division_with_remainder(number* value1, number* value2, number* ost)
 	number add = int_to_number(1);
 	number buff;
 	short shifts = 1;
-
-	long long counter = 0;
 
 	*ost = init();
 
@@ -473,7 +465,6 @@ number division_with_remainder(number* value1, number* value2, number* ost)
 		clear_mem(&buff);
 		shifts++;
 	}
-	counter = (long long)shifts - 1;
 	clear_mem(&buff);
 	while (shifts)
 	{
@@ -489,14 +480,11 @@ number division_with_remainder(number* value1, number* value2, number* ost)
 			clear_mem(&quot);
 			quot = copy(&buff);
 			clear_mem(&buff);
-			counter++;
 		}
 		offset_right(&sub);
 		offset_right(&add);
 		shifts--;
 	}
-
-	printf("Count = %lld\n", counter);
 
 	clear_mem(&osn);
 	clear_mem(&sub);
@@ -504,4 +492,35 @@ number division_with_remainder(number* value1, number* value2, number* ost)
 
 	*ost = rem;
 	return quot;
+}
+
+BOOL is_zero(number* object)
+{
+	int iterator = 0;
+
+	for (iterator = 0; iterator < object->current_count; iterator++)
+	{
+		if (object->mas[iterator] != 0)
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+BOOL is_equal(number* value1, number* value2) 
+{
+	short iterator = 0;
+	if (value1->negative != value2->negative)
+		return FALSE;
+	if (value1->current_count != value2->current_count)
+		return FALSE;
+	for (iterator = 0; iterator < value1->current_count; iterator++)
+	{
+		if (value1->mas[iterator] != value2->mas[iterator])
+			return FALSE;
+	}
+
+	return TRUE;
 }

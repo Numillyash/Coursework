@@ -129,3 +129,18 @@ number division(number* value1, number* value2);
 /// <param name="ost">Остаток</param>
 /// <returns>Частное</returns>
 number division_with_remainder(number* value1, number* value2, number* ost);
+
+/// <summary>
+/// Сравнение числа с 0 (Равно нулю/не равно нулю)
+/// </summary>
+/// <param name="object">Число, которое необходимо проверить</param>
+/// <returns>Результат сравнения</returns>
+BOOL is_zero(number* object);
+
+/// <summary>
+/// Сравнение числа с другим число (Равны/не равны)
+/// </summary>
+/// <param name="value1">Первое число, которое необходимо сравнить</param>
+/// <param name="value2">Второе число, которое необходимо сравнить</param>
+/// <returns>Результат сравнения</returns>
+BOOL is_equal(number* value1, number* value2);
