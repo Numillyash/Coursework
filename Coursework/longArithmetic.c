@@ -12,7 +12,7 @@ number init() {
 number copy(number* value) {
 	number result = init();
 	for (int i = 0; i < value->current_count; i++)
-		add_element(&result, value->mas[i]);
+		add_digit(&result, value->mas[i]);
 	result.negative = value->negative;
 	return result;
 }
@@ -27,38 +27,32 @@ number normalize(number* value) {
 		}
 	}
 	for (int i = 0; i <= end; i++) {
-		add_element(&result, value->mas[i]);
+		add_digit(&result, value->mas[i]);
 	}
 	result.negative = value->negative;
 	return result;
 }
 
-void reverse(number* value)
+number int_to_number(int value) {
+	number result = init();
+	int ostatok;
+	while (value > 0) {
+		ostatok = value % KEYSIZE_MODULE;
+		add_digit(&result, ostatok);
+		value /= KEYSIZE_MODULE;
+	}
+	if (result.current_count == 0)
+		add_digit(&result, 0);
+	return result;
+}
+
+void clear_mem(number* value)
 {
-	number prom = init();
-	for (int i = value->current_count - 1; i >= 0; i--)
-	{
-		add_element(&prom, value->mas[i]);
-	}
-	for (int i = 0; i < prom.current_count; i++)
-	{
-		value->mas[i] = prom.mas[i];
-	}
-	free(prom.mas);
+	free(value->mas);
+	value->mas = NULL;
 }
 
-void print_number(number* value) {
-	if (value->negative == -1)
-		printf("-");
-	for (int i = value->current_count - 1; i >= 0; i--)
-	{
-		int x = value->mas[i];
-		printf("%d ", value->mas[i]);
-	}
-	printf("\n");
-}
-
-void add_element(number* object, unsigned short value) {
+void add_digit(number* object, unsigned short value) {
 	int iter = 0;
 	unsigned short* buff;
 
@@ -72,13 +66,13 @@ void add_element(number* object, unsigned short value) {
 		{
 			buff[iter] = object->mas[iter];
 		}
-		free(object->mas);
+		clear_mem(object);
 		object->mas = (unsigned short*)malloc(sizeof(unsigned short) * (object->size) * 2);
 		for (iter = 0; iter < object->current_count; ++iter)
 		{
 			object->mas[iter] = buff[iter];
 		}
-		free(buff);
+		clear_mem(&buff);
 		if (object->mas != NULL)
 		{
 			object->mas[object->current_count] = value;
@@ -86,10 +80,9 @@ void add_element(number* object, unsigned short value) {
 		object->current_count += 1;
 		object->size *= 2;
 	}
-	//
 }
 
-void remove_last_digit(number* object)
+void offset_right(number* object)
 {
 	reverse(object);
 	object->current_count -= 1;
@@ -97,7 +90,40 @@ void remove_last_digit(number* object)
 	*object = normalize(object);
 }
 
-number plus(number* value1, number* value2) {
+void offset_left(number* object)
+{
+	reverse(object);
+	add_digit(object, 0);
+	reverse(object);
+	*object = normalize(object);
+}
+
+void reverse(number* value)
+{
+	number prom = init();
+	for (int i = value->current_count - 1; i >= 0; i--)
+	{
+		add_digit(&prom, value->mas[i]);
+	}
+	for (int i = 0; i < prom.current_count; i++)
+	{
+		value->mas[i] = prom.mas[i];
+	}
+	clear_mem(&prom);
+}
+
+void print_number(number* value) {
+	if (value->negative == -1)
+		printf("-");
+	for (int i = value->current_count - 1; i >= 0; i--)
+	{
+		int x = value->mas[i];
+		printf("%d ", value->mas[i]);
+	}
+	printf("\n");
+}
+
+number addition(number* value1, number* value2) {
 	number a, b;
 	number result = init(), buff;
 	char razr = 0;
@@ -105,13 +131,13 @@ number plus(number* value1, number* value2) {
 	if (value1->negative == 1 && value2->negative == -1) {
 		b = copy(value2);
 		b.negative = 1;
-		result = minus(value1, &b);
+		result = difference(value1, &b);
 		return result;
 	}
 	else if (value1->negative == -1 && value2->negative == 1) {
 		b = copy(value1);
 		b.negative = 1;
-		result = minus(value2, &b);
+		result = difference(value2, &b);
 		return result;
 	}
 	else if (value1->negative == -1 && value2->negative == -1) {
@@ -119,7 +145,7 @@ number plus(number* value1, number* value2) {
 		a.negative = 1;
 		b = copy(value2);
 		b.negative = 1;
-		result = plus(&a, &b);
+		result = addition(&a, &b);
 		result.negative = -1;
 		return result;
 	}
@@ -136,47 +162,47 @@ number plus(number* value1, number* value2) {
 	for (int i = 0; i < a.current_count; i++) {
 		if (i < b.current_count) {
 			if (a.mas[i] + b.mas[i] + razr > (KEYSIZE_MODULE - 1)) {
-				add_element(&result, a.mas[i] + b.mas[i] + razr - KEYSIZE_MODULE);
+				add_digit(&result, a.mas[i] + b.mas[i] + razr - KEYSIZE_MODULE);
 				razr = 1;
 			}
 			else {
-				add_element(&result, a.mas[i] + b.mas[i] + razr);
+				add_digit(&result, a.mas[i] + b.mas[i] + razr);
 				razr = 0;
 			}
 		}
 		else {
 			if (razr == 1) {
 				if (a.mas[i] + razr > (KEYSIZE_MODULE - 1)) {
-					add_element(&result, a.mas[i] + razr - KEYSIZE_MODULE);
+					add_digit(&result, a.mas[i] + razr - KEYSIZE_MODULE);
 					razr = 1;
 				}
 				else {
-					add_element(&result, a.mas[i] + razr);
+					add_digit(&result, a.mas[i] + razr);
 					razr = 0;
 				}
 			}
 			else {
-				add_element(&result, a.mas[i]);
+				add_digit(&result, a.mas[i]);
 			}
 		}
 	}
 	if (razr == 1) {
-		add_element(&result, razr);
+		add_digit(&result, razr);
 		razr = 0;
 	}
 
 	buff = normalize(&result);
-	free(result.mas);
+	clear_mem(&result);
 	result = copy(&buff);
-	free(buff.mas);
+	clear_mem(&buff);
 
-	free(a.mas); a.mas = NULL;
-	free(b.mas); b.mas = NULL;
+	clear_mem(&a);
+	clear_mem(&b);
 
 	return result;
 }
 
-number minus(number* value1, number* value2) {
+number difference(number* value1, number* value2) {
 	number a, b;
 	number result = init(), buff;
 	char razr = 0;
@@ -184,13 +210,13 @@ number minus(number* value1, number* value2) {
 	if (value1->negative == 1 && value2->negative == -1) {
 		b = copy(value2);
 		b.negative = 1;
-		result = plus(value1, &b);
+		result = addition(value1, &b);
 		return result;
 	}
 	else if (value1->negative == -1 && value2->negative == 1) {
 		b = copy(value1);
 		b.negative = 1;
-		result = plus(value2, &b);
+		result = addition(value2, &b);
 		result.negative = -1;
 		return result;
 	}
@@ -199,7 +225,7 @@ number minus(number* value1, number* value2) {
 		a.negative = 1;
 		b = copy(value2);
 		b.negative = 1;
-		result = minus(&b, &a);
+		result = difference(&b, &a);
 		result.negative = 1;
 		return result;
 	}
@@ -217,27 +243,27 @@ number minus(number* value1, number* value2) {
 	for (int i = 0; i < a.current_count; i++) {
 		if (i < b.current_count) {
 			if (a.mas[i] - b.mas[i] - razr < 0) {
-				add_element(&result, a.mas[i] - b.mas[i] - razr + KEYSIZE_MODULE);
+				add_digit(&result, a.mas[i] - b.mas[i] - razr + KEYSIZE_MODULE);
 				razr = 1;
 			}
 			else {
-				add_element(&result, a.mas[i] - b.mas[i] - razr);
+				add_digit(&result, a.mas[i] - b.mas[i] - razr);
 				razr = 0;
 			}
 		}
 		else {
 			if (razr == 1) {
 				if (a.mas[i] - razr < 0) {
-					add_element(&result, a.mas[i] - razr + KEYSIZE_MODULE);
+					add_digit(&result, a.mas[i] - razr + KEYSIZE_MODULE);
 					razr = 1;
 				}
 				else {
-					add_element(&result, a.mas[i] - razr);
+					add_digit(&result, a.mas[i] - razr);
 					razr = 0;
 				}
 			}
 			else {
-				add_element(&result, a.mas[i]);
+				add_digit(&result, a.mas[i]);
 			}
 		}
 	}
@@ -245,26 +271,26 @@ number minus(number* value1, number* value2) {
 	if (razr == 1) {
 		number new = init();
 		for (int i = 0; i < result.current_count; i++)
-			add_element(&new, 0);
-		add_element(&new, 1);
-		result = minus(&new, &result);
+			add_digit(&new, 0);
+		add_digit(&new, 1);
+		result = difference(&new, &result);
 		result.negative *= -1;
 		razr = 0;
-		free(new.mas);
+		clear_mem(&new);
 	}
 
 	buff = normalize(&result);
-	free(result.mas);
+	clear_mem(&result);
 	result = copy(&buff);
-	free(buff.mas);
+	clear_mem(&buff);
 
-	free(a.mas); a.mas = NULL;
-	free(b.mas); b.mas = NULL;
+	clear_mem(&a);
+	clear_mem(&b);
 
 	return result;
 }
 
-number proizv_to_digit(number* value1, int value2) {
+number mult_to_digit(number* value1, int value2) {
 	number sum = init();
 	int count = 0;
 	number pr = init(), res = init(), buff;
@@ -276,63 +302,61 @@ number proizv_to_digit(number* value1, int value2) {
 		prom *= value2;
 
 		buff = int_to_number(prom);
-		free(pr.mas);
+		clear_mem(&pr);
 		pr = copy(&buff);
-		free(buff.mas);
+		clear_mem(&buff);
 
 		buff = normalize(&pr);
-		free(pr.mas);
+		clear_mem(&pr);
 		pr = copy(&buff);
-		free(buff.mas);
+		clear_mem(&buff);
 
 		buff = init();
-		free(res.mas);
+		clear_mem(&res);
 		res = copy(&buff);
-		free(buff.mas);
+		clear_mem(&buff);
 
 		for (j = 0; j < count; ++j) {
-			add_element(&res, 0);
+			add_digit(&res, 0);
 		}
 		for (j = 0; j < pr.current_count; ++j) {
-			add_element(&res, (int)pr.mas[j]);
+			add_digit(&res, (int)pr.mas[j]);
 		}
 
-		buff = plus(&sum, &res);
-		free(sum.mas); 
-		sum.mas = NULL;
+		buff = addition(&sum, &res);
+		clear_mem(&sum);
 		sum = copy(&buff);
-		free(buff.mas);
-		buff.mas = NULL;
+		clear_mem(&buff);
 
 		++count;
 	}
 
-	free(pr.mas); pr.mas = NULL;
-	free(res.mas); res.mas = NULL;
+	clear_mem(&pr);
+	clear_mem(&res);
 
 	return sum;
 }
 
-number proizv(number* value1, number* value2) {
+number multiplication(number* value1, number* value2) {
 	number sum = init();
 	int count = 0;
 	for (int i = 0; i < value2->current_count; i++)
 	{
 		int pr = (int)(value2->mas[i]);
-		number prom = proizv_to_digit(value1, pr);
+		number prom = mult_to_digit(value1, pr);
 
 		number res = init();
 		for (int j = 0; j < count; ++j) {
-			add_element(&res, 0);
+			add_digit(&res, 0);
 		}
 		for (int j = 0; j < prom.current_count; ++j) {
-			add_element(&res, (int)prom.mas[j]);
+			add_digit(&res, (int)prom.mas[j]);
 		}
-		sum = plus(&sum, &res);
+		sum = addition(&sum, &res);
 		++count;
 
-		free(prom.mas); prom.mas = NULL;
-		free(res.mas); res.mas = NULL;
+		clear_mem(&prom);
+		clear_mem(&res);
 	}
 	if (value1->negative == 1 && value2->negative == 1) {
 		return sum;
@@ -350,37 +374,24 @@ number proizv(number* value1, number* value2) {
 	}
 }
 
-number int_to_number(int value) {
-	number result = init();
-	int ostatok;
-	while (value > 0) {
-		ostatok = value % KEYSIZE_MODULE;
-		add_element(&result, ostatok);
-		value /= KEYSIZE_MODULE;
-	}
-	if (result.current_count == 0)
-		add_element(&result, 0);
-	return result;
-}
-
 number degree(number* value1, number* value2)
 {
 	number result = init();
-	add_element(&result, 1);
+	add_digit(&result, 1);
 	number prom = init();
-	add_element(&prom, 1);
+	add_digit(&prom, 1);
 	number iter = copy(value2);
 
 	while (!(iter.current_count == 1 && iter.mas[0] == 0))
 	{
-		iter = minus(&iter, &prom);
+		iter = difference(&iter, &prom);
 		normalize(&iter);
-		result = proizv(&result, value1);
+		result = multiplication(&result, value1);
 	}
 	return result;
 }
 
-number deli_v_stolbik(number* value1, number* value2, number* ost)
+number division_with_remainder(number* value1, number* value2, number* ost)
 {
 	number osn = int_to_number(256);
 	number quot = int_to_number(0), rem = copy(value1), sub = copy(value2);
@@ -392,48 +403,48 @@ number deli_v_stolbik(number* value1, number* value2, number* ost)
 
 	*ost = init();
 
-	while ((buff = minus(&sub, &rem)).negative == -1)
+	while ((buff = difference(&sub, &rem)).negative == -1)
 	{
-		free(buff.mas); buff.mas = NULL;
-		buff = proizv(&sub, &osn);
-		free(sub.mas); sub.mas = NULL;
+		clear_mem(&buff);
+		buff = multiplication(&sub, &osn);
+		clear_mem(&sub);
 		sub = copy(&buff);
 
-		free(buff.mas); buff.mas = NULL;
-		buff = proizv(&add, &osn);
-		free(add.mas); add.mas = NULL;
+		clear_mem(&buff);
+		buff = multiplication(&add, &osn);
+		clear_mem(&add);
 		add = copy(&buff);
-		free(buff.mas); buff.mas = NULL;
+		clear_mem(&buff);
 		shifts++;
 	}
 	counter = (long long)shifts - 1;
-	free(buff.mas); buff.mas = NULL;
+	clear_mem(&buff);
 	while (shifts)
 	{
-		while ((buff = minus(&rem, &sub)).negative != -1)
+		while ((buff = difference(&rem, &sub)).negative != -1)
 		{
-			free(buff.mas); buff.mas = NULL;
-			buff = minus(&rem, &sub);
-			free(rem.mas); rem.mas = NULL;
+			clear_mem(&buff);
+			buff = difference(&rem, &sub);
+			clear_mem(&rem);
 			rem = copy(&buff);
-			free(buff.mas); buff.mas = NULL;
+			clear_mem(&buff);
 
-			buff = plus(&add, &quot);
-			free(quot.mas); quot.mas = NULL;
+			buff = addition(&add, &quot);
+			clear_mem(&quot);
 			quot = copy(&buff);
-			free(buff.mas); buff.mas = NULL;
+			clear_mem(&buff);
 			counter++;
 		}
-		remove_last_digit(&sub);
-		remove_last_digit(&add);
+		offset_right(&sub);
+		offset_right(&add);
 		shifts--;
 	}
 
 	printf("Count = %lld\n", counter);
 
-	free(osn.mas); osn.mas = NULL;
-	free(sub.mas); sub.mas = NULL;
-	free(add.mas); add.mas = NULL;
+	clear_mem(&osn);
+	clear_mem(&sub);
+	clear_mem(&add);
 
 	*ost = rem;
 	return quot;

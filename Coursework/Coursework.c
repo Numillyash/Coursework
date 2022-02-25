@@ -49,27 +49,6 @@ int check_console_input_format(char** argv, char* work_mode, char* arg_1, char* 
 
 int main(int argc, char* argv[])
 {
-
-	number n1 = int_to_number(1e6);
-	n1 = proizv(&n1, &n1); //12
-	n1 = proizv(&n1, &n1); //24
-	n1 = proizv(&n1, &n1); //48
-	n1 = proizv(&n1, &n1); //96
-	n1 = proizv(&n1, &n1); //192
-	n1 = proizv(&n1, &n1); //384
-	n1 = proizv(&n1, &n1); //768
-	print_number(&n1);
-
-	number n2 = int_to_number(67);
-	number n3 = init();
-
-	number rem, quot = deli_v_stolbik(&n1, &n2, &rem);
-	//231200
-
-	print_number(&quot);
-	print_number(&rem);
-	
-
 	if (argc == 1)
 	{
 		printf(ERROR_NO_PARAMETERS);

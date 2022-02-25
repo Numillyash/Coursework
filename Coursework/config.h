@@ -35,6 +35,7 @@ Cannot open the %s file.\n"
 #include <string.h>
 #include <Windows.h>
 #include <malloc.h>
+#include <time.h>
 
 /// <summary>
 /// Exit codes for exit()

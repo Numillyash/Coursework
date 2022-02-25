@@ -1,24 +1,29 @@
 #include "RSA.h"
 
+/*
+
 /// <summary>
-/// Функция для нахождения остатка от деления большого числа на малое
+/// Функция для нахождения остатка от деления большого числа (число a в степени t) на малое
 /// </summary>
 /// <param name="a">Делимое</param>
+/// <param name="t">Делимое</param>
 /// <param name="b">Делитель</param>
 /// <returns>Остаток</returns>
-int module_op(double a, int b)
+number module_pow(number a, number t, number b)
 {
-    double c = a / b;
 
-    modf(c, &c);
-    a -= (double)b * c;
-    if (a == 0)
+    number d = division_with_remainder(&a, &b);
+    double ost = d;
+
+    if (d == 0)
         return 0;
     else
-        return ((int)a < 0) ? (int)a + b : (int)a;
-}
-
-
+        for (int i = 1; i < t; i++)
+        {
+            ost = del_ost(ost * d, b);
+        }
+    return ost;
+}*/
 
 void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filename)
 {
@@ -66,6 +71,7 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
             break;
         }
 
+    number p, q;
 
 
 
