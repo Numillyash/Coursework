@@ -35,6 +35,11 @@ number normalize(number* value) {
 
 number int_to_number(int value) {
 	number result = init();
+	if (value < 0)
+	{
+		result.negative = -1;
+		value *= -1;
+	}
 	int ostatok;
 	while (value > 0) {
 		ostatok = value % KEYSIZE_MODULE;
@@ -448,6 +453,37 @@ number division_with_remainder(number* value1, number* value2, number* ost)
 	number add = int_to_number(1);
 	number buff;
 	short shifts = 1;
+
+	if (value1->negative == -1)
+	{
+		// b - ( |a| % b )
+		buff = copy(value1);
+		buff.negative = 1;
+		number _ost;
+		number result = division_with_remainder(&buff, value2, &_ost); // ost = ( |a| % b )
+		clear_mem(&buff);
+
+		buff = difference(value2, &_ost);
+		clear_mem(&_ost);
+		_ost = copy(&buff);
+		clear_mem(&buff);
+
+		buff = addition(&result, &add);
+		clear_mem(&result);
+		result = copy(&buff);
+		clear_mem(&buff);
+
+		*ost = _ost;
+		result.negative = -1;
+		clear_mem(&osn);
+		clear_mem(&sub);
+		clear_mem(&add);
+		clear_mem(&rem);
+		clear_mem(&quot);
+		return result;
+	}
+
+	
 
 	*ost = init();
 
