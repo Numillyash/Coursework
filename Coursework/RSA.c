@@ -2,6 +2,7 @@
 
 number module_pow(number* a, number* t, number* b)
 {
+	int counter = 0;
 	number d, ost, iterator = init(), buff, buff2;
 	number step = init(), st_2 = init();;
 
@@ -30,6 +31,9 @@ number module_pow(number* a, number* t, number* b)
 		buff2 = copy(a);
 		while (!is_zero(&iterator))
 		{
+			counter++;
+			printf("%d count ", counter);
+			print_number(&iterator);
 			if (iterator.mas[0] % 2 == 1)
 			{
 				buff = multiplication(&ost, &buff2);
@@ -55,6 +59,7 @@ number module_pow(number* a, number* t, number* b)
 	clear_mem(&d);
 	clear_mem(&step);
 	clear_mem(&iterator);
+	
 	return ost;
 }
 
