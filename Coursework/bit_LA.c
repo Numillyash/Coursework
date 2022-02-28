@@ -278,15 +278,24 @@ number addition(number* value1, number* value2) {
 
 		for (iter = max_symb - summand.current_count; iter > 0; iter--)
 		{
-			add_digit(&summand, 0);
+			if(summand.mas[summand.current_count-1])
+				add_digit(&summand, 1);
+			else
+				add_digit(&summand, 0);
 		}
 		for (iter = max_symb - addend.current_count; iter > 0; iter--)
 		{
-			add_digit(&addend, 0);
+			if (addend.mas[addend.current_count - 1])
+				add_digit(&addend, 1);
+			else
+				add_digit(&addend, 0);
 		}
 		for (iter = max_symb - carry.current_count; iter > 0; iter--)
 		{
-			add_digit(&carry, 0);
+			if (carry.mas[carry.current_count - 1])
+				add_digit(&carry, 1);
+			else
+				add_digit(&carry, 0);
 		}
 
 		//carry = (summand & addend);

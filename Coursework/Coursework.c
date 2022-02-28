@@ -49,15 +49,19 @@ int check_console_input_format(char** argv, char* work_mode, char* arg_1, char* 
 
 int main(int argc, char* argv[])
 {
-	number a = int_to_number(15); // 01111
-	number b = int_to_number(-1); // 11111
-	print_number(&a); print_number(&b);
-	add_digit(&b, 1);
-	add_digit(&b, 1);
-	add_digit(&b, 1);
-	print_number(&a); print_number(&b);
-	normalize(&b);
-	print_number(&a); print_number(&b);
+	int k = 4;
+	for (int i = 0; i < k; i++)
+	{
+		for (int j = -k; j < k; j++)
+		{
+			number a = int_to_number(i); // 01111
+			number b = int_to_number(j); // 11101
+			number c = addition(&a, &b);
+			print_number(&a); print_number(&b); print_number(&c);
+			printf("a = %d, b = %d, a+b = %d\n", i, j, i + j);
+		}
+	}
+
 	//number c = addition(&a, &b);  // 1100
 	//print_number(&c);
 	//c = addition(&c, &c);
