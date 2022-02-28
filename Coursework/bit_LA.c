@@ -8,9 +8,14 @@ uint8_t XOR(uint8_t a, uint8_t b)
 	return a ^ b;
 }
 
-uint8_t NOT(uint8_t a) 
+uint8_t NOT(uint8_t a)
 {
 	return (a) ? 0 : 1;
+}
+
+uint8_t AND(uint8_t a, uint8_t b)
+{
+	return a & b;
 }
 
 void additional_code(number* value)
@@ -53,11 +58,6 @@ void nonadditional_code(number* value)
 	}
 }
 
-uint8_t AND(uint8_t a, uint8_t b)
-{
-	return a & b;
-}
-
 number init() {
 	number result = { 1, 1 };
 	result.mas = (uint8_t*)malloc(sizeof(uint8_t));
@@ -71,7 +71,7 @@ number init() {
 
 number copy(number* value) {
 	number result = init();
-	for (int i = 0; i < value->current_count-1; i++)
+	for (int i = 0; i < value->current_count - 1; i++)
 		add_digit(&result, value->mas[i]);
 	result.mas[result.current_count - 1] = value->mas[value->current_count - 1];
 	return result;
@@ -103,7 +103,7 @@ number int_to_number(int value) {
 		if (result.current_count == 0)
 			add_digit(&result, 0);
 	}
-	
+
 	return result;
 }
 
@@ -114,7 +114,7 @@ void normalize(number* value) {
 	{
 		for (int i = value->current_count - 2; i > 0; i--) {
 			end = i;
-			if (value->mas[i] == 0 || value->mas[i-1] == 0) {
+			if (value->mas[i] == 0 || value->mas[i - 1] == 0) {
 				break;
 			}
 		}
@@ -131,7 +131,7 @@ void normalize(number* value) {
 	for (int i = 0; i <= end; i++) {
 		add_digit(&result, value->mas[i]);
 	}
-	result.mas[result.current_count-1] = value->mas[value->current_count - 1];
+	result.mas[result.current_count - 1] = value->mas[value->current_count - 1];
 	value->current_count = 1;
 	value->size = 1;
 	free(value->mas);
@@ -198,7 +198,7 @@ void offset_left(number* object)
 {
 	reverse(object);
 	add_digit(object, 0);
-	swap(object->mas[object->current_count-2], object->mas[object->current_count - 1]);
+	swap(object->mas[object->current_count - 2], object->mas[object->current_count - 1]);
 	reverse(object);
 	normalize(object);
 }
@@ -210,7 +210,7 @@ void reverse(number* value)
 	{
 		add_digit(&prom, value->mas[i]);
 	}
-	for (int i = 0; i < prom.current_count-1; i++)
+	for (int i = 0; i < prom.current_count - 1; i++)
 	{
 		value->mas[i] = prom.mas[i];
 	}
@@ -285,7 +285,7 @@ number addition(number* value1, number* value2) {
 
 		for (iter = max_symb - summand.current_count; iter > 0; iter--)
 		{
-			if(summand.mas[summand.current_count-1])
+			if (summand.mas[summand.current_count - 1])
 				add_digit(&summand, 1);
 			else
 				add_digit(&summand, 0);
@@ -336,96 +336,19 @@ number addition(number* value1, number* value2) {
 
 	return summand;
 }
-/*
+
 number difference(number* value1, number* value2) {
-	number a, b;
-	number result = init(), buff;
-	char razr = 0;
-
-	if (value1->negative == 1 && value2->negative == -1) {
-		b = copy(value2);
-		b.negative = 1;
-		result = addition(value1, &b);
-		return result;
+	number b = copy(value2);
+	if (value2->mas[value2->current_count - 1])
+	{
+		nonadditional_code(&b);
 	}
-	else if (value1->negative == -1 && value2->negative == 1) {
-		b = copy(value1);
-		b.negative = 1;
-		result = addition(value2, &b);
-		result.negative = -1;
-		return result;
-	}
-	else if (value1->negative == -1 && value2->negative == -1) {
-		a = copy(value1);
-		a.negative = 1;
-		b = copy(value2);
-		b.negative = 1;
-		result = difference(&b, &a);
-		result.negative = 1;
-		return result;
-	}
-
-	if ((value1->current_count) >= (value2->current_count)) {
-		a = copy(value1);
-		b = copy(value2);
-	}
-	else {
-		result.negative *= -1;
-		a = copy(value2);
-		b = copy(value1);
-	}
-
-	for (int i = 0; i < a.current_count; i++) {
-		if (i < b.current_count) {
-			if (a.mas[i] - b.mas[i] - razr < 0) {
-				add_digit(&result, a.mas[i] - b.mas[i] - razr + NUMBER_SYSTEM_BASE);
-				razr = 1;
-			}
-			else {
-				add_digit(&result, a.mas[i] - b.mas[i] - razr);
-				razr = 0;
-			}
-		}
-		else {
-			if (razr == 1) {
-				if (a.mas[i] - razr < 0) {
-					add_digit(&result, a.mas[i] - razr + NUMBER_SYSTEM_BASE);
-					razr = 1;
-				}
-				else {
-					add_digit(&result, a.mas[i] - razr);
-					razr = 0;
-				}
-			}
-			else {
-				add_digit(&result, a.mas[i]);
-			}
-		}
-	}
-
-	if (razr == 1) {
-		number new = init();
-		for (int i = 0; i < result.current_count; i++)
-			add_digit(&new, 0);
-		add_digit(&new, 1);
-		result = difference(&new, &result);
-		result.negative *= -1;
-		razr = 0;
-		clear_mem(&new);
-	}
-
-	normalize(&result);
-	buff = copy(&result);
-	clear_mem(&result);
-	result = copy(&buff);
-	clear_mem(&buff);
-
-	clear_mem(&a);
-	clear_mem(&b);
-
-	return result;
+	else
+		additional_code(&b);
+	return addition(value1, &b);
 }
 
+/*
 number mult_to_digit(number* value1, int value2) {
 	number sum = init();
 	int count = 0;

@@ -21,11 +21,12 @@ typedef struct
 /// <returns>Результат операции</returns>
 uint8_t XOR(uint8_t a, uint8_t b);
 
+/// <summary>
+/// Побитовое НЕ
+/// </summary>
+/// <param name="a">Бит числа</param>
+/// <returns>Результат операции</returns>
 uint8_t NOT(uint8_t a);
-
-void additional_code(number* value);
-
-void nonadditional_code(number* value);
 
 /// <summary>
 /// Побитовое И
@@ -34,6 +35,18 @@ void nonadditional_code(number* value);
 /// <param name="b">Второй бит</param>
 /// <returns>Результат операции</returns>
 uint8_t AND(uint8_t a, uint8_t b);
+
+/// <summary>
+/// Перевод числа в дополнительный код
+/// </summary>
+/// <param name="value"></param>
+void additional_code(number* value);
+
+/// <summary>
+/// Перевод числа из дополнительного в прямой код
+/// </summary>
+/// <param name="value"></param>
+void nonadditional_code(number* value);
 
 /// <summary>
 /// Инициализирует обьект структуры с пустым массивом и положительным negative
@@ -111,20 +124,20 @@ BOOL is_zero(number* object);
 BOOL is_equal(number* value1, number* value2);
 
 /// <summary>
-/// Вычитает одно число из другого, с учетом внутреннего знака данных на вход чисел, и возвращает результат типа number
-/// </summary>
-/// <param name="value1">Первое число</param>
-/// <param name="value2">Второе число</param>
-/// <returns>Результат вычитания</returns>
-number difference(number* value1, number* value2);
-
-/// <summary>
 /// Прибавляет одно число к другому, с учетом внутреннего знака данных на вход чисел, и возвращает результат типа number
 /// </summary>
 /// <param name="value1">Первое число</param>
 /// <param name="value2">Второе число</param>
 /// <returns>Результат сложения</returns>
 number addition(number* value1, number* value2);
+
+/// <summary>
+/// Вычитает одно число из другого, с учетом внутреннего знака данных на вход чисел, и возвращает результат типа number
+/// </summary>
+/// <param name="value1">Первое число</param>
+/// <param name="value2">Второе число</param>
+/// <returns>Результат вычитания</returns>
+number difference(number* value1, number* value2);
 
 /// <summary>
 /// Умножает одно число на другое и возвращает результат типа number
