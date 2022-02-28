@@ -3,68 +3,6 @@
 //
 #include "bit_LA.h"
 
-// 110010 //50
-// 001001 //9
-//
-//  m = 110010
-// ~m = 001101
-//  s = 001001
-// 
-//  b = 001001
-//  m = 111011
-// ~m = 000100
-//  s = 010010
-// 
-//  b = 000000
-//  m = 101001 // 41
-//  s = 0
-// 
-// 01101 //13
-// 11001 //25
-// 
-//  m = 01101
-// ~m = 10010
-//  s = 11001
-// 
-//  b = 010000
-//  m = 010100
-// ~m = 001011
-//  s = 100000
-// 
-//  b = 000000
-//  m = 110100 // -12
-//  s = ...
-// 
-//  01101 //  13
-//  10110 // -10
-//  
-//  s = 01101
-//  a = 10110
-//  
-//  c = 00100
-//  s = 11011
-//  a = 01000
-// 
-//  c = 01000
-//  s = 10011
-//  a = 10000
-// 
-//  c = 10000
-//  s = 00011
-//  a = 00000
-// 
-//  01101 //  13
-//  10000 // -16
-// 
-//  s = 01101
-//  a = 10000
-// 
-//  c = 00000
-//  s = 11101
-// 
-//
-
-
 uint8_t XOR(uint8_t a, uint8_t b)
 {
 	return a ^ b;
@@ -174,9 +112,9 @@ void normalize(number* value) {
 	int end = value->current_count - 2;
 	if (value->mas[value->current_count - 1])
 	{
-		for (int i = value->current_count - 2; i >= 0; i--) {
+		for (int i = value->current_count - 2; i > 0; i--) {
 			end = i;
-			if (value->mas[i] == 0) {
+			if (value->mas[i] == 0 || value->mas[i-1] == 0) {
 				break;
 			}
 		}
@@ -383,9 +321,9 @@ number addition(number* value1, number* value2) {
 		clear_mem(&addend);
 		addend = copy(&carry);
 		offset_left(&addend);
-		if (oper_sign != 0)
+		if (oper_sign == 1)
 		{
-			if (summand.current_count > real_symb)// && addend.mas[addend.current_count-1])
+			if (summand.current_count > real_symb)
 			{
 				summand.mas[real_symb] = 0;
 			}
