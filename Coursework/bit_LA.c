@@ -3,12 +3,74 @@
 //
 #include "bit_LA.h"
 
-unsigned char XOR(unsigned char a, unsigned char b)
+// 110010 //50
+// 001001 //9
+//
+//  m = 110010
+// ~m = 001101
+//  s = 001001
+// 
+//  b = 001001
+//  m = 111011
+// ~m = 000100
+//  s = 010010
+// 
+//  b = 000000
+//  m = 101001 // 41
+//  s = 0
+// 
+// 01101 //13
+// 11001 //25
+// 
+//  m = 01101
+// ~m = 10010
+//  s = 11001
+// 
+//  b = 010000
+//  m = 010100
+// ~m = 001011
+//  s = 100000
+// 
+//  b = 000000
+//  m = 110100 // -12
+//  s = ...
+// 
+//  01101 //  13
+//  10110 // -10
+//  
+//  s = 01101
+//  a = 10110
+//  
+//  c = 00100
+//  s = 11011
+//  a = 01000
+// 
+//  c = 01000
+//  s = 10011
+//  a = 10000
+// 
+//  c = 10000
+//  s = 00011
+//  a = 00000
+// 
+//  01101 //  13
+//  10000 // -16
+// 
+//  s = 01101
+//  a = 10000
+// 
+//  c = 00000
+//  s = 11101
+// 
+//
+
+
+uint8_t XOR(uint8_t a, uint8_t b)
 {
 	return a ^ b;
 }
 
-unsigned char NOT(unsigned char a) 
+uint8_t NOT(uint8_t a) 
 {
 	return (a) ? 0 : 1;
 }
@@ -16,7 +78,7 @@ unsigned char NOT(unsigned char a)
 void additional_code(number* value)
 {
 	if (!is_zero(value)) {
-		unsigned char addit_digit = 1;
+		uint8_t addit_digit = 1;
 		int iter;
 
 		for (iter = 0; iter < value->current_count; iter++)
@@ -33,14 +95,34 @@ void additional_code(number* value)
 	}
 }
 
-unsigned char AND(unsigned char a, unsigned char b)
+void nonadditional_code(number* value)
+{
+	if (!is_zero(value)) {
+		uint8_t addit_digit = 1;
+		int iter;
+
+		for (iter = 0; iter < value->current_count; iter++)
+		{
+			value->mas[iter] = NOT(value->mas[iter]);
+		}
+
+		for (iter = 0; iter < value->current_count; iter++)
+		{
+			value->mas[iter] = XOR(value->mas[iter], addit_digit);
+			if (value->mas[iter])
+				addit_digit = 0;
+		}
+	}
+}
+
+uint8_t AND(uint8_t a, uint8_t b)
 {
 	return a & b;
 }
 
 number init() {
 	number result = { 1, 1 };
-	result.mas = (unsigned char*)malloc(sizeof(unsigned char));
+	result.mas = (uint8_t*)malloc(sizeof(uint8_t));
 	if (result.mas == NULL)
 	{
 		exit(MEMORY_ALLOCATION_FAILURE);
@@ -51,8 +133,9 @@ number init() {
 
 number copy(number* value) {
 	number result = init();
-	for (int i = 0; i < value->current_count; i++)
+	for (int i = 0; i < value->current_count-1; i++)
 		add_digit(&result, value->mas[i]);
+	result.mas[result.current_count - 1] = value->mas[value->current_count - 1];
 	return result;
 }
 
@@ -114,7 +197,7 @@ void normalize(number* value) {
 	value->current_count = 1;
 	value->size = 1;
 	free(value->mas);
-	value->mas = (unsigned char*)malloc(sizeof(unsigned char));
+	value->mas = (uint8_t*)malloc(sizeof(uint8_t));
 	if (value->mas == NULL)
 	{
 		exit(MEMORY_ALLOCATION_FAILURE);
@@ -132,9 +215,9 @@ void clear_mem(number* value)
 	value->mas = NULL;
 }
 
-void add_digit(number* object, unsigned char value) {
+void add_digit(number* object, uint8_t value) {
 	int iter = 0;
-	unsigned char* buff;
+	uint8_t* buff;
 
 	if (object->current_count < object->size) {
 		object->mas[object->current_count] = object->mas[object->current_count - 1];
@@ -142,7 +225,7 @@ void add_digit(number* object, unsigned char value) {
 		object->current_count += 1;
 	}
 	else {
-		buff = (unsigned char*)malloc(sizeof(unsigned char) * (object->size));
+		buff = (uint8_t*)malloc(sizeof(uint8_t) * (object->size));
 		if (buff == NULL)
 			exit(MEMORY_ALLOCATION_FAILURE);
 		for (iter = 0; iter < object->current_count; ++iter)
@@ -150,7 +233,7 @@ void add_digit(number* object, unsigned char value) {
 			buff[iter] = object->mas[iter];
 		}
 		clear_mem(object);
-		object->mas = (unsigned char*)malloc(sizeof(unsigned char) * (object->size) * 2);
+		object->mas = (uint8_t*)malloc(sizeof(uint8_t) * (object->size) * 2);
 		if (object->mas == NULL)
 			exit(MEMORY_ALLOCATION_FAILURE);
 		for (iter = 0; iter < object->current_count; ++iter)
@@ -177,6 +260,7 @@ void offset_left(number* object)
 {
 	reverse(object);
 	add_digit(object, 0);
+	swap(object->mas[object->current_count-2], object->mas[object->current_count - 1]);
 	reverse(object);
 	normalize(object);
 }
@@ -188,7 +272,7 @@ void reverse(number* value)
 	{
 		add_digit(&prom, value->mas[i]);
 	}
-	for (int i = 0; i < prom.current_count; i++)
+	for (int i = 0; i < prom.current_count-1; i++)
 	{
 		value->mas[i] = prom.mas[i];
 	}
@@ -236,8 +320,9 @@ BOOL is_equal(number* value1, number* value2)
 
 number addition(number* value1, number* value2) {
 	number summand, addend;
-	number result = init(), buff, carry = init();
-	char razr = 0;
+	number carry = init();
+	int real_symb = 0;
+	int oper_sign = 0;
 	int iter = 0;
 	int max_symb = 0;
 
@@ -251,30 +336,14 @@ number addition(number* value1, number* value2) {
 		summand = copy(value2);
 		addend = copy(value1);
 	}
-
-	// summand = 1111
-	// addend  =   11
-	// 
-	// carry   = 0011
-	// summand = 1100
-	// addend  = 0110
-	// 
-	// carry   = 0100
-	// summand = 1010
-	// addend  = 1000
-	// 
-	// carry   = 01000
-	// summand = 00010
-	// addend  = 10000
-	//
-	// carry   = 000000
-	// summand = 010010
-	// addend  = 000000
+	oper_sign = summand.mas[summand.current_count - 1] + addend.mas[addend.current_count - 1];
+	real_symb = max(summand.current_count, addend.current_count);
 
 	while (!is_zero(&addend))
 	{
 		max_symb = max(summand.current_count, addend.current_count);
 		max_symb = max(max_symb, carry.current_count);
+		if (max_symb == 2) { max_symb++; real_symb++; }
 
 		for (iter = max_symb - summand.current_count; iter > 0; iter--)
 		{
@@ -314,6 +383,13 @@ number addition(number* value1, number* value2) {
 		clear_mem(&addend);
 		addend = copy(&carry);
 		offset_left(&addend);
+		if (oper_sign != 0)
+		{
+			if (summand.current_count > real_symb)// && addend.mas[addend.current_count-1])
+			{
+				summand.mas[real_symb] = 0;
+			}
+		}
 	}
 
 	clear_mem(&addend);

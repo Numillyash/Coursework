@@ -10,7 +10,7 @@ typedef struct
 {
     int current_count; // текущее количество элементов
     int size; // реальный размер массива
-    unsigned char* mas; // массив данных
+    uint8_t* mas; // массив данных
 }number;
 
 /// <summary>
@@ -19,7 +19,13 @@ typedef struct
 /// <param name="a">Первый бит</param>
 /// <param name="b">Второй бит</param>
 /// <returns>Результат операции</returns>
-unsigned char XOR(unsigned char a, unsigned char b);
+uint8_t XOR(uint8_t a, uint8_t b);
+
+uint8_t NOT(uint8_t a);
+
+void additional_code(number* value);
+
+void nonadditional_code(number* value);
 
 /// <summary>
 /// Побитовое И
@@ -27,7 +33,7 @@ unsigned char XOR(unsigned char a, unsigned char b);
 /// <param name="a">Первый бит</param>
 /// <param name="b">Второй бит</param>
 /// <returns>Результат операции</returns>
-unsigned char AND(unsigned char a, unsigned char b);
+uint8_t AND(uint8_t a, uint8_t b);
 
 /// <summary>
 /// Инициализирует обьект структуры с пустым массивом и положительным negative
@@ -65,7 +71,7 @@ void clear_mem(number* value);
 /// </summary>
 /// <param name="object">Ссылка на структуру</param>
 /// <param name="value">Значение</param>
-void add_digit(number* object, unsigned char value);
+void add_digit(number* object, uint8_t value);
 
 /// <summary>
 /// Удаление последней цифры (смещение на один разряд вправо)
