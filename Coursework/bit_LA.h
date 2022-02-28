@@ -148,22 +148,6 @@ number difference(number* value1, number* value2);
 number multiplication(number* value1, number* value2);
 
 /// <summary>
-/// Умножает одно число на одну цифру и возвращает результат типа number
-/// </summary>
-/// <param name="value1">Первое число</param>
-/// <param name="value2">Цифра</param>
-/// <returns>Результат умножения</returns>
-number mult_to_digit(number* value1, int value2);
-
-/// <summary>
-/// Возводит число в степень
-/// </summary>
-/// <param name="value1">Первое число</param>
-/// <param name="value2">Степень числа</param>
-/// <returns>Результат возведения</returns>
-number degree(number* value1, number* value2);
-
-/// <summary>
 /// Деление без остатка
 /// </summary>
 /// <param name="value1">Делимое</param>

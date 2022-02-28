@@ -49,11 +49,11 @@ int check_console_input_format(char** argv, char* work_mode, char* arg_1, char* 
 
 int main(int argc, char* argv[])
 {
-	/* {
-		number a = int_to_number(1); // 01111
-		number b = int_to_number(4); // 11101
-		number c = difference(&a, &b);
-		printf("a = %d, b = %d, a-b = ", 1, 4);
+	
+		number a = int_to_number(-21654); // 01111
+		number b = int_to_number(-17456); // 11101
+		number c = multiplication(&a, &b);
+		printf("a = %d, b = %d, a*b = ", 21654, -17456);
 		if (c.mas[c.current_count - 1])
 		{
 			printf("-");
@@ -78,9 +78,9 @@ int main(int argc, char* argv[])
 			}
 			printf("%d\n", s);
 		}
-	}*/
+	
 
-	int k = 2;
+	int k = -1;
 	for (int i = -k; i <= k; i++)
 	{
 		for (int j = -k; j <= k; j++)

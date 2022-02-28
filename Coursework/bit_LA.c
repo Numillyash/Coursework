@@ -218,7 +218,8 @@ void reverse(number* value)
 }
 
 void print_number(number* value) {
-	for (int i = value->current_count - 1; i >= 0; i--)
+	printf("%d ", (int)value->mas[value->current_count - 1]);
+	for (int i = value->current_count - 2; i >= 0; i--)
 	{
 		printf("%d", (int)value->mas[i]);
 		if (i % 8 == 0)
@@ -348,108 +349,188 @@ number difference(number* value1, number* value2) {
 	return addition(value1, &b);
 }
 
-/*
-number mult_to_digit(number* value1, int value2) {
-	number sum = init();
-	int count = 0;
-	number pr = init(), res = init(), buff;
-	int prom, i, j;
-
-	for (i = 0; i < value1->current_count; i++)
-	{
-		prom = (int)(value1->mas[i]);
-		prom *= value2;
-
-		buff = int_to_number(prom);
-		clear_mem(&pr);
-		pr = copy(&buff);
-		clear_mem(&buff);
-
-		normalize(&pr);
-		buff = copy(&pr);
-		clear_mem(&pr);
-		pr = copy(&buff);
-		clear_mem(&buff);
-
-		buff = init();
-		clear_mem(&res);
-		res = copy(&buff);
-		clear_mem(&buff);
-
-		for (j = 0; j < count; ++j) {
-			add_digit(&res, 0);
+number easy_mult(number* value1, number* value2)
+{
+	number result = init(), buff;
+	number a = copy(value1);
+	number b = copy(value2);
+	while (!is_zero(&b)) {
+		if (b.mas[0])
+		{
+			buff = addition(&result, &a);
+			clear_mem(&result);
+			result = copy(&buff);
+			clear_mem(&buff);
 		}
-		for (j = 0; j < pr.current_count; ++j) {
-			add_digit(&res, (int)pr.mas[j]);
-		}
-
-		buff = addition(&sum, &res);
-		clear_mem(&sum);
-		sum = copy(&buff);
-		clear_mem(&buff);
-
-		++count;
+		offset_right(&b);
+		offset_left (&a);
 	}
+	clear_mem(&a);
+	clear_mem(&b);
+	return result;
+}
 
-	clear_mem(&pr);
-	clear_mem(&res);
+number karatsuba(number* value1, number* value2)
+{
+	int n; int k; int iter;
+	number res = init(), buff1, buff2;
+	number a, b, c, d, p1, p2, t, v1, v2;
 
-	return sum;
+	// k = n/2
+	// v1 = a * (2^k) + b, v2 = c * (2^k) + d
+	// p1 = b * d
+	// p2 = a * c
+	// t = (a+b)*(c+d) - p1 - p2
+	// res = p2 * 2^n + t * 2^k + p1
+
+	n = max(value1->current_count, value2->current_count) - 1;
+	k = n / 2;
+
+	if (n <= 5)
+	{
+		clear_mem(&res);
+		return easy_mult(value1, value2);
+	}
+	else
+	{
+		v1 = copy(value1); v2 = copy(value2);
+
+		a = init(); b = init(); c = init(); d = init();
+
+		for (iter = n - v1.current_count; iter > 0; iter--)
+		{
+			add_digit(&v1, 0);
+		}
+		for (iter = n - v2.current_count; iter > 0; iter--)
+		{
+			add_digit(&v2, 0);
+		}
+
+		for (iter = 0; iter < k; iter++)
+		{
+			add_digit(&b, v1.mas[iter]);
+			add_digit(&d, v2.mas[iter]);
+		}
+
+		for (iter = k; iter < n; iter++)
+		{
+			add_digit(&a, v1.mas[iter]);
+			add_digit(&c, v2.mas[iter]);
+		}
+
+#ifdef DEBUG
+		printf("Before all\n");
+		
+		printf("n = %d\n",n);
+		printf("k = %d\n",k);
+
+		printf("v1 = ");
+		print_number(&v1);
+		printf("v2 = ");
+		print_number(&v2);
+
+		printf("a = ");
+		print_number(&a);
+		printf("b = ");
+		print_number(&b);
+		printf("c = ");
+		print_number(&c);
+		printf("d = ");
+		print_number(&d);
+#endif // DEBUG
+
+		p1 = karatsuba(&b, &d);
+		p2 = karatsuba(&a, &c);
+		buff1 = addition(&a, &b);
+		buff2 = addition(&c, &d);
+		t = karatsuba(&buff1, &buff2);
+		clear_mem(&buff1); clear_mem(&buff2); clear_mem(&a); clear_mem(&b); clear_mem(&c); clear_mem(&d); clear_mem(&v1); clear_mem(&v2);
+		
+		buff1 = copy(&t);
+		clear_mem(&t);
+		t = difference(&buff1, &p1);
+		clear_mem(&buff1);
+
+		buff1 = copy(&t);
+		clear_mem(&t);
+		t = difference(&buff1, &p2);
+		clear_mem(&buff1);
+
+#ifdef DEBUG
+		printf("Berofe offset\np2 = ");
+		print_number(&p2);
+		printf("t = ");
+		print_number(&t);
+		printf("p1 = ");
+		print_number(&p1);
+#endif // DEBUG
+
+		for (iter = 0; iter < 2*k; iter++)
+		{
+			offset_left(&p2);
+		}
+
+		for (iter = 0; iter < k; iter++)
+		{
+			offset_left(&t);
+		}
+
+#ifdef DEBUG
+		printf("After all\np2 = ");
+		print_number(&p2);
+		printf("t = ");
+		print_number(&t);
+		printf("p1 = ");
+		print_number(&p1);
+#endif // DEBUG
+
+
+		buff1 = copy(&res);
+		clear_mem(&res);
+		res = addition(&buff1, &p2);
+		clear_mem(&buff1);
+
+		buff1 = copy(&res);
+		clear_mem(&res);
+		res = addition(&buff1, &p1);
+		clear_mem(&buff1);
+
+		buff1 = copy(&res);
+		clear_mem(&res);
+		res = addition(&buff1, &t);
+		clear_mem(&buff1);
+#ifdef DEBUG
+		printf("res = ");
+		print_number(&res);
+#endif // DEBUG
+		return res;
+	} 
 }
 
 number multiplication(number* value1, number* value2) {
-	number sum = init();
-	int count = 0;
-	for (int i = 0; i < value2->current_count; i++)
+	number result = init(), a, b;
+	a = copy(value1); b = copy(value2);
+	int sign = a.mas[a.current_count - 1] + b.mas[b.current_count - 1];
+	if (a.mas[a.current_count - 1])
 	{
-		int pr = (int)(value2->mas[i]);
-		number prom = mult_to_digit(value1, pr);
-
-		number res = init();
-		for (int j = 0; j < count; ++j) {
-			add_digit(&res, 0);
-		}
-		for (int j = 0; j < prom.current_count; ++j) {
-			add_digit(&res, (int)prom.mas[j]);
-		}
-		sum = addition(&sum, &res);
-		++count;
-
-		clear_mem(&prom);
-		clear_mem(&res);
+		additional_code(&a);
 	}
-	if (value1->negative == 1 && value2->negative == 1) {
-		return sum;
-	}
-	else if (value1->negative == 1 && value2->negative == -1) {
-		sum.negative = -1;
-		return sum;
-	}
-	else if (value1->negative == -1 && value2->negative == 1) {
-		sum.negative = -1;
-		return sum;
-	}
-	else if (value1->negative == -1 && value2->negative == -1) {
-		return sum;
-	}
-}
-
-number degree(number* value1, number* value2)
-{
-	number result = init();
-	add_digit(&result, 1);
-	number prom = init();
-	add_digit(&prom, 1);
-	number iter = copy(value2);
-
-	while (!(iter.current_count == 1 && iter.mas[0] == 0))
+	if (b.mas[b.current_count - 1])
 	{
-		iter = difference(&iter, &prom);
-		normalize(&iter);
-		result = multiplication(&result, value1);
+		additional_code(&b);
 	}
+
+	result = karatsuba(&a, &b);
+	clear_mem(&a); clear_mem(&b);
+
+	if (sign == 1) {
+		additional_code(&result);
+	}
+
 	return result;
 }
+
+/*
 
 number division(number* value1, number* value2)
 {
@@ -500,7 +581,6 @@ number division(number* value1, number* value2)
 
 	return quot;
 }
-
 number division_with_remainder(number* value1, number* value2, number* ost)
 {
 	number osn = int_to_number(256);
