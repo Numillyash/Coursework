@@ -2,7 +2,7 @@
 #include "config.h"
 
 #define NUMBER_SYSTEM_BASE 2
-#define MILLERS_METHOD_ITERATIONS_NUMBER 1000
+#define MILLERS_METHOD_ITERATIONS_NUMBER 100
 
 /// <summary>
 /// Структура, описывающая целочисленный тип с изменяемым размером памяти

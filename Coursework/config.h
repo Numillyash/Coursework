@@ -10,6 +10,7 @@
 #include <malloc.h>
 #include <time.h>
 #include <stdint.h>
+#include <locale.h>
 
 //input console checking
 #define HELP_CONSOLE_OPTION_1 "-h"

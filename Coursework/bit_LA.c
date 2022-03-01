@@ -730,6 +730,7 @@ number euclide_algorithm(number* value1, number* value2)
 	}
 	if ((buff = difference(&a, &b)).mas[buff.current_count - 1])
 	{
+		clear_mem(&buff);
 		clear_mem(&a);
 		clear_mem(&b);
 		a = copy(value2);
@@ -775,7 +776,6 @@ number generate_random(int bit_count)
 {
 	int i;
 	number res = init();
-	srand(time(NULL));
 	//2 + rand() % (N - 2);
 	// провер очка
 	// 0111
@@ -787,33 +787,59 @@ number generate_random(int bit_count)
 	//
 	for (i = 0; i < bit_count - 1; i++)
 	{
-		add_digit(&init, rand() % 2);
+		add_digit(&res, rand() % 2);
 	}
 	return res;
 }
 
+// n = 5 = 101 = 2 : 2 * 1
+// a = 11, 10, 1
+
 BOOL Millers_method(number* value)
 {
-	number s, t, buff, a;
+	number t, buff, buff2, a, N_minus_1;
 	BOOL fl1, fl2;
 	number step = int_to_number(1);
+	number step2 = int_to_number(2);
+	number N_3 = int_to_number(3);
 	int n = MILLERS_METHOD_ITERATIONS_NUMBER;
+	int s = 0;
+	int i, k, j; // iterators
+
+	if (is_equal(value, &step2))
+	{
+		clear_mem(&step);
+		clear_mem(&step2);
+		clear_mem(&N_3);
+		return TRUE;
+	}
+
+	if (is_equal(value, &N_3))
+	{
+		clear_mem(&step);
+		clear_mem(&step2);
+		clear_mem(&N_3);
+		return TRUE;
+	}
+
+	if (!value->mas[0])
+	{
+		clear_mem(&step);
+		clear_mem(&step2);
+		clear_mem(&N_3);
+		return FALSE;
+	}
 
 	//N-1 = 2^s * t, t - нечетно
-	s = int_to_number(0);
 
-	buff = copy(&value);
-	t = difference(value, &step);
-	clear_mem(&buff);
+	N_minus_1 = difference(value, &step);
+	t = copy(&N_minus_1);
+
+	//print_number_decimal(&t);
 
 	while (t.mas[0] == 0)
 	{
-		clear_mem(&buff);
-
-		buff = addition(&s, &step);
-		s = copy(&buff);
-		clear_mem(&buff);
-
+		s++;
 		offset_right(&t);
 	}
 
@@ -821,48 +847,89 @@ BOOL Millers_method(number* value)
 	printf("N-1 = 2^%d * %d\n", s, t);
 #endif // DEBUG
 
-	for (int i = 0; i < n; i++)
+	srand(time(NULL));
+
+	for (i = 0; i < n; i++)
 	{
-		fl1 = TRUE; fl2 = TRUE;
+		fl1 = TRUE;
+		fl2 = TRUE;
 
 		a = generate_random(value->current_count - 1);
 		
-		buff = euclide_algorithm(value, &a);
-		if (!is_equal(&buff, &step)) //свойство 1
+		while ((buff = difference(&a, &step2)).mas[buff.current_count - 1])
 		{
-			fl1 = FALSE;
-#ifdef DEBUG
-			printf("\nУсловие 1 нарушено, a = %d, t = %d, N = %d. \nN кратно a", a, t, N);
-#endif // DEBUG
+			clear_mem(&buff);
+			clear_mem(&a);
+			a = generate_random(value->current_count - 1);
 		}
 		clear_mem(&buff);
 
-		// YOU ARE HERE
-		if (del_ost_pow(a, t, N) != 1) // свойство 2
+		//printf("\na is ");
+		//print_number_decimal(&a);
+
+		buff = euclide_algorithm(value, &a);
+		if (!is_equal(&buff, &step)) //свойство 1
 		{
-			int k = 1;
+		#ifdef DEBUG
+					printf("\nУсловие 1 нарушено, a = %d, t = %d, N = %d. \nN кратно a", a, t, N);
+		#endif // DEBUG
+			fl1 = FALSE;
+		}
+		clear_mem(&buff);
+
+		buff = module_pow(&a, &t, value);
+		if (!is_equal(&buff, &step)) // свойство 2
+		{
+			k = 1;
 			fl2 = FALSE;
 			for (k = 1; k <= s; k++)
 			{
-				if (del_ost_pow(a, t * pow(2, k - 1), N) == N - 1)
+				clear_mem(&buff);
+				buff2 = copy(&t);
+				for (j = 0; j < k - 1; j++)
 				{
+					offset_left(&buff2);
+				}
+
+				buff = module_pow(&a, &buff2, value);
+				clear_mem(&buff2);				
+
+				if (is_equal(&buff, &N_minus_1))
+				{
+					//printf("= is %d\n", is_equal(&buff, &N_minus_1));
 					fl2 = TRUE;
 				}
 			}
-#ifdef DEBUG
-			if (fl2 == false)
-				printf("\nУсловие 2 нарушено, a = %d, t = %d, k = %d, N = %d. \nМодули чисел: без k %d, с k %d", a, t, k, N, del_ost_pow(a, t, N), del_ost_pow(a, t * pow(2, k - 1), N));
-#endif // DEBUG
+			#ifdef DEBUG
+						if (fl2 == false)
+							printf("\nУсловие 2 нарушено, a = %d, t = %d, k = %d, N = %d. \nМодули чисел: без k %d, с k %d", a, t, k, N, del_ost_pow(a, t, N), del_ost_pow(a, t * pow(2, k - 1), N));
+			#endif // DEBUG
 		}
-		
+		clear_mem(&buff);
+
 		if (!fl1 || !fl2)
 		{
-#ifdef DEBUG
-			printf("\n%s", (fl1 == false) ? "Условие 1 нарушено" : "Условие 1 не нарушено");
-			printf("\n%s\n", (fl2 == false) ? "Условие 2 нарушено" : "Условие 2 не нарушено");
-#endif // DEBUG
+			#ifdef DEBUG
+						printf("\n%s", (fl1 == false) ? "Условие 1 нарушено" : "Условие 1 не нарушено");
+						printf("\n%s\n", (fl2 == false) ? "Условие 2 нарушено" : "Условие 2 не нарушено");
+			#endif // DEBUG
+
+			clear_mem(&step);
+			clear_mem(&step2);
+			clear_mem(&N_3);
+			clear_mem(&t);
+			clear_mem(&a);
+			clear_mem(&N_minus_1);
 			return FALSE;
 		}
+
+		clear_mem(&a);
 	}
+
+	clear_mem(&step);
+	clear_mem(&step2);
+	clear_mem(&N_3);
+	clear_mem(&t);
+	clear_mem(&N_minus_1);
 	return TRUE;
 }

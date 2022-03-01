@@ -48,17 +48,21 @@ int check_console_input_format(char** argv, char* work_mode, char* arg_1, char* 
 
 int main(int argc, char* argv[])
 {
+	setlocale(LC_ALL, "rus");
 	// брать p и q из базы простых чисел
 	// параллельные вычисления OpenCL, CUDA
 
-	int i = 10, j = -5, l = 239;
-	number a = int_to_number(i);
-	number b = int_to_number(j);
-	number mod = euclide_algorithm(&a, &b);
-	//print_number(&div); print_number(&mod);
-	//printf("a = %d, t = %d, b = %d, (a^t)%%b = ", i, j, l);
-	
-	print_number_decimal(&mod);
+	int i = 25, j = -5, l = 239;
+	number a = init();
+	for (i = 2; i < 100; i++) {
+		clear_mem(&a);
+		a = int_to_number(i);
+		//number mod = Millers_method(&a);
+		//print_number(&div); print_number(&mod);
+		printf((Millers_method(&a)) ? "Number %d is prime\n" : "", i);
+		clear_mem(&a);
+	}
+	//print_number_decimal(&mod);
 	
 
 	// fwrite();
