@@ -51,13 +51,12 @@ int main(int argc, char* argv[])
 	// брать p и q из базы простых чисел
 	// параллельные вычисления OpenCL, CUDA
 
-	int i = 23, j = 10, l = 239;
+	int i = 1071, j = 462, l = 239;
 	number a = int_to_number(i);
-	number t = int_to_number(j);
-	number b = int_to_number(l);
-	number mod = module_pow(&a, &t, &b);
+	number b = int_to_number(j);
+	number mod = euclide_algorithm(&a, &b);
 	//print_number(&div); print_number(&mod);
-	printf("a = %d, t = %d, b = %d, (a^t)%%b = ", i, j, l);
+	//printf("a = %d, t = %d, b = %d, (a^t)%%b = ", i, j, l);
 	
 	print_number_decimal(&mod);
 	

@@ -706,3 +706,51 @@ number module_pow(number* a, number* t, number* b)
 	clear_mem(&iterator);
 	return ost;
 }
+
+number euclide_algorithm(number* value1, number* value2)
+{
+	number buff, a, b, mod;
+
+	a = copy(value1);
+	if (a.mas[a.current_count-1])
+	{
+		nonadditional_code(&a);
+	}
+	b = copy(value2);
+	if (b.mas[b.current_count-1])
+	{
+		nonadditional_code(&b);
+	}
+
+	if ((buff = difference(&a, &b)).mas[buff.current_count-1])
+	{
+		clear_mem(&a);
+		clear_mem(&b);
+		a = copy(value2);
+		b = copy(value1);
+	}
+	else
+	{
+		clear_mem(&buff);
+		clear_mem(&a);
+		clear_mem(&b);
+		a = copy(value1);
+		b = copy(value2);
+	}
+	//a = b * q_0 + r_1
+	division_with_module(&a,&b,&mod);
+	if (!is_zero(&mod))
+	{
+		buff = euclide_algorithm(&b, &mod);
+		clear_mem(&mod);
+		clear_mem(&a);
+		clear_mem(&b);
+		return buff;
+	}
+	else
+	{
+		clear_mem(&mod);
+		clear_mem(&a);
+		return b;
+	}
+}

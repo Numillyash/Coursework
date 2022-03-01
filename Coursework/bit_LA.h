@@ -170,3 +170,11 @@ number division_with_module(number* value1, number* value2, number* ost);
 /// <param name="b">Делитель</param>
 /// <returns>Остаток</returns>
 number module_pow(number* a, number* t, number* b);
+
+/// <summary>
+/// Возвращает НОД двух чисел
+/// </summary>
+/// <param name="value1">Первое число</param>
+/// <param name="value2">Второе число</param>
+/// <returns>НОД</returns>
+number euclide_algorithm(number* value1, number* value2);
