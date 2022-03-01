@@ -46,39 +46,55 @@ int check_console_input_format(char** argv, char* work_mode, char* arg_1, char* 
 		return 0;
 }
 
-
 int main(int argc, char* argv[])
 {
-	
-		number a = int_to_number(-21654); // 01111
-		number b = int_to_number(-17456); // 11101
-		number c = multiplication(&a, &b);
-		printf("a = %d, b = %d, a*b = ", 21654, -17456);
-		if (c.mas[c.current_count - 1])
+	// брать p и q из базы простых чисел
+	// параллельные вычисления OpenCL, CUDA
+
+	// fwrite();
+	int i = -247586, j = -1812;
+	number a = int_to_number(i);
+	number b = int_to_number(j);
+	number mod;
+	number div = division_with_remainder(&a, &b, &mod);
+	//print_number(&div); print_number(&mod);
+	printf("a = %d, b = %d, a/b = ", i, j);
+	if (div.mas[div.current_count - 1])
+	{
+		printf("-");
+		nonadditional_code(&div);
+		int x = 1;
+		int s = 0;
+		for (int y = 0; y < div.current_count - 1; y++)
 		{
-			printf("-");
-			nonadditional_code(&c);
-			int x = 1;
-			int s = 0;
-			for (int y = 0; y < c.current_count - 1; y++)
-			{
-				s += c.mas[y] * x;
-				x <<= 1;
-			}
-			printf("%d\n", s);
+			s += div.mas[y] * x;
+			x <<= 1;
 		}
-		else
+		printf("%d a%%b = ", s);
+	}
+	else
+	{
+		int x = 1;
+		int s = 0;
+		for (int y = 0; y < div.current_count - 1; y++)
 		{
-			int x = 1;
-			int s = 0;
-			for (int y = 0; y < c.current_count - 1; y++)
-			{
-				s += c.mas[y] * x;
-				x <<= 1;
-			}
-			printf("%d\n", s);
+			s += div.mas[y] * x;
+			x <<= 1;
 		}
-	
+		printf("%d a%%b = ", s);
+	}
+	if (!mod.mas[mod.current_count - 1])
+	{
+		int x = 1;
+		int s = 0;
+		for (int y = 0; y < mod.current_count - 1; y++)
+		{
+			s += mod.mas[y] * x;
+			x <<= 1;
+		}
+		printf("%d\n", s);
+	}
+
 
 	int k = -1;
 	for (int i = -k; i <= k; i++)
@@ -100,7 +116,7 @@ int main(int argc, char* argv[])
 					s += c.mas[y] * x;
 					x <<= 1;
 				}
-				printf("%d\n",s);
+				printf("%d\n", s);
 			}
 			else
 			{
@@ -124,7 +140,7 @@ int main(int argc, char* argv[])
 
 	/*
 	clock_t start = clock();
-	
+
 	number n1 = int_to_number(1);
 	for (size_t i = 0; i < 16; i++)
 	{
@@ -164,7 +180,7 @@ int main(int argc, char* argv[])
 			printf(ERROR_FIRST_PARAMETER, argv[1]);
 			exit(WRONG_ARGUMENT_FAILURE);
 		}
-		else 
+		else
 		{
 			printf(ERROR_NOT_ENOUGH_PARAMETERS);
 			exit(NOT_ENOUGH_ARGUMENTS_FAILURE);
@@ -172,7 +188,7 @@ int main(int argc, char* argv[])
 	}
 	else if (argc == 8)
 	{
-		if (     check_console_input_format(argv, GENKEY_CONSOLE_OPTION,    SIZE_CONSOLE_OPTION,   PUBKEY_CONSOLE_OPTION, SECRET_CONSOLE_OPTION ))
+		if (check_console_input_format(argv, GENKEY_CONSOLE_OPTION, SIZE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, SECRET_CONSOLE_OPTION))
 		{
 			//do some code
 		}
@@ -180,15 +196,15 @@ int main(int argc, char* argv[])
 		{
 			//do some code
 		}
-		else if (check_console_input_format(argv, CHECK_CONSOLE_OPTION,     INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, SIGFILE_CONSOLE_OPTION))
+		else if (check_console_input_format(argv, CHECK_CONSOLE_OPTION, INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, SIGFILE_CONSOLE_OPTION))
 		{
 			//do some code
 		}
-		else if (check_console_input_format(argv, ENCRYPT_CONSOLE_OPTION,   INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
+		else if (check_console_input_format(argv, ENCRYPT_CONSOLE_OPTION, INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
 		{
 			//do some code
 		}
-		else if (check_console_input_format(argv, DECRYPT_CONSOLE_OPTION,   INFILE_CONSOLE_OPTION, SECRET_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
+		else if (check_console_input_format(argv, DECRYPT_CONSOLE_OPTION, INFILE_CONSOLE_OPTION, SECRET_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
 		{
 			//do some code
 		}
@@ -200,7 +216,7 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
-		printf(ERROR_DEFAULT, argv[1]);
+		printf(ERROR_DEFAULT);
 		exit(WRONG_ARGUMENT_FAILURE);
 	}
 }

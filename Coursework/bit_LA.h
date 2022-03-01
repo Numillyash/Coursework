@@ -19,14 +19,14 @@ typedef struct
 /// <param name="a">Первый бит</param>
 /// <param name="b">Второй бит</param>
 /// <returns>Результат операции</returns>
-uint8_t XOR(uint8_t a, uint8_t b);
+inline uint8_t XOR(uint8_t a, uint8_t b);
 
 /// <summary>
 /// Побитовое НЕ
 /// </summary>
 /// <param name="a">Бит числа</param>
 /// <returns>Результат операции</returns>
-uint8_t NOT(uint8_t a);
+inline uint8_t NOT(uint8_t a);
 
 /// <summary>
 /// Побитовое И
@@ -34,7 +34,7 @@ uint8_t NOT(uint8_t a);
 /// <param name="a">Первый бит</param>
 /// <param name="b">Второй бит</param>
 /// <returns>Результат операции</returns>
-uint8_t AND(uint8_t a, uint8_t b);
+inline uint8_t AND(uint8_t a, uint8_t b);
 
 /// <summary>
 /// Перевод числа в дополнительный код

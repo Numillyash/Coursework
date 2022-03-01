@@ -3,17 +3,17 @@
 //
 #include "bit_LA.h"
 
-uint8_t XOR(uint8_t a, uint8_t b)
+inline uint8_t XOR(uint8_t a, uint8_t b)
 {
 	return a ^ b;
 }
 
-uint8_t NOT(uint8_t a)
+inline uint8_t NOT(uint8_t a)
 {
 	return (a) ? 0 : 1;
 }
 
-uint8_t AND(uint8_t a, uint8_t b)
+inline uint8_t AND(uint8_t a, uint8_t b)
 {
 	return a & b;
 }
@@ -154,7 +154,7 @@ void clear_mem(number* value)
 }
 
 void add_digit(number* object, uint8_t value) {
-	int iter = 0;
+	int iter;
 	uint8_t* buff;
 
 	if (object->current_count < object->size) {
@@ -163,7 +163,7 @@ void add_digit(number* object, uint8_t value) {
 		object->current_count += 1;
 	}
 	else {
-		buff = (uint8_t*)malloc(sizeof(uint8_t) * (object->size));
+		buff = (uint8_t*)malloc(sizeof(uint8_t) * (object->current_count));
 		if (buff == NULL)
 			exit(MEMORY_ALLOCATION_FAILURE);
 		for (iter = 0; iter < object->current_count; ++iter)
@@ -246,6 +246,7 @@ BOOL is_zero(number* object)
 BOOL is_equal(number* value1, number* value2)
 {
 	short iterator = 0;
+
 	if (value1->current_count != value2->current_count)
 		return FALSE;
 	for (iterator = 0; iterator < value1->current_count; iterator++)
@@ -363,7 +364,7 @@ number easy_mult(number* value1, number* value2)
 			clear_mem(&buff);
 		}
 		offset_right(&b);
-		offset_left (&a);
+		offset_left(&a);
 	}
 	clear_mem(&a);
 	clear_mem(&b);
@@ -420,9 +421,9 @@ number karatsuba(number* value1, number* value2)
 
 #ifdef DEBUG
 		printf("Before all\n");
-		
-		printf("n = %d\n",n);
-		printf("k = %d\n",k);
+
+		printf("n = %d\n", n);
+		printf("k = %d\n", k);
 
 		printf("v1 = ");
 		print_number(&v1);
@@ -445,7 +446,7 @@ number karatsuba(number* value1, number* value2)
 		buff2 = addition(&c, &d);
 		t = karatsuba(&buff1, &buff2);
 		clear_mem(&buff1); clear_mem(&buff2); clear_mem(&a); clear_mem(&b); clear_mem(&c); clear_mem(&d); clear_mem(&v1); clear_mem(&v2);
-		
+
 		buff1 = copy(&t);
 		clear_mem(&t);
 		t = difference(&buff1, &p1);
@@ -465,7 +466,7 @@ number karatsuba(number* value1, number* value2)
 		print_number(&p1);
 #endif // DEBUG
 
-		for (iter = 0; iter < 2*k; iter++)
+		for (iter = 0; iter < 2 * k; iter++)
 		{
 			offset_left(&p2);
 		}
@@ -504,7 +505,7 @@ number karatsuba(number* value1, number* value2)
 		print_number(&res);
 #endif // DEBUG
 		return res;
-	} 
+	}
 }
 
 number multiplication(number* value1, number* value2) {
@@ -528,6 +529,107 @@ number multiplication(number* value1, number* value2) {
 	}
 
 	return result;
+}
+
+//fix
+number division_with_remainder(number* value1, number* value2, number* ost)
+{
+	number quot = int_to_number(0), rem = copy(value1), sub = copy(value2);
+	number add = int_to_number(1);
+	number buff;
+	short shifts = 1;
+
+	if (is_zero(value2))
+	{
+		exit(FAILURE);
+	}
+	if (value2->mas[value2->current_count - 1])
+	{
+		buff = copy(value2);
+		nonadditional_code(&buff);
+		number _ost;
+		number result = division_with_remainder(value1, &buff, &_ost);
+		clear_mem(&buff);
+
+		*ost = _ost;
+		additional_code(&result);
+		clear_mem(&sub);
+		clear_mem(&add);
+		clear_mem(&rem);
+		clear_mem(&quot);
+		return result;
+	}
+	if (value1->mas[value1->current_count - 1])
+	{
+		// b - ( |a| % b )
+		buff = copy(value1);
+		nonadditional_code(&buff);
+		number _ost;
+		number result = division_with_remainder(&buff, value2, &_ost); // ost = ( |a| % b )
+		clear_mem(&buff);
+
+		if (is_zero(&_ost))
+		{
+			buff = int_to_number(0);
+			clear_mem(&_ost);
+			_ost = copy(&buff);
+			clear_mem(&buff);
+		}
+		else {
+			buff = difference(value2, &_ost);
+			clear_mem(&_ost);
+			_ost = copy(&buff);
+			clear_mem(&buff);
+
+			buff = addition(&result, &add);
+			clear_mem(&result);
+			result = copy(&buff);
+			clear_mem(&buff);
+		}
+		*ost = _ost;
+		additional_code(&result);
+		clear_mem(&sub);
+		clear_mem(&add);
+		clear_mem(&rem);
+		clear_mem(&quot);
+		return result;
+	}
+
+	*ost = init();
+
+	while ((buff = difference(&sub, &rem)).mas[buff.current_count-1])
+	{
+		offset_left(&sub);
+		offset_left(&add);
+		clear_mem(&buff);
+		shifts++;
+	}
+	clear_mem(&buff);
+	while (shifts)
+	{
+		while (!(buff = difference(&rem, &sub)).mas[buff.current_count - 1])
+		{
+			clear_mem(&buff);
+			buff = difference(&rem, &sub);
+			clear_mem(&rem);
+			rem = copy(&buff);
+			clear_mem(&buff);
+
+			buff = addition(&add, &quot);
+			clear_mem(&quot);
+			quot = copy(&buff);
+			clear_mem(&buff);
+		}
+		offset_right(&sub);
+		offset_right(&add);
+		shifts--;
+	}
+
+	clear_mem(&sub);
+	clear_mem(&add);
+
+	*ost = rem;
+	return quot;
 }
 
 /*
@@ -581,89 +683,4 @@ number division(number* value1, number* value2)
 
 	return quot;
 }
-number division_with_remainder(number* value1, number* value2, number* ost)
-{
-	number osn = int_to_number(256);
-	number quot = int_to_number(0), rem = copy(value1), sub = copy(value2);
-	number add = int_to_number(1);
-	number buff;
-	short shifts = 1;
-
-	if (value1->negative == -1)
-	{
-		// b - ( |a| % b )
-		buff = copy(value1);
-		buff.negative = 1;
-		number _ost;
-		number result = division_with_remainder(&buff, value2, &_ost); // ost = ( |a| % b )
-		clear_mem(&buff);
-
-		buff = difference(value2, &_ost);
-		clear_mem(&_ost);
-		_ost = copy(&buff);
-		clear_mem(&buff);
-
-		buff = addition(&result, &add);
-		clear_mem(&result);
-		result = copy(&buff);
-		clear_mem(&buff);
-
-		*ost = _ost;
-		result.negative = -1;
-		clear_mem(&osn);
-		clear_mem(&sub);
-		clear_mem(&add);
-		clear_mem(&rem);
-		clear_mem(&quot);
-		return result;
-	}
-
-
-
-	*ost = init();
-
-	while ((buff = difference(&sub, &rem)).negative == -1)
-	{
-		clear_mem(&buff);
-		buff = multiplication(&sub, &osn);
-		clear_mem(&sub);
-		sub = copy(&buff);
-
-		clear_mem(&buff);
-		buff = multiplication(&add, &osn);
-		clear_mem(&add);
-		add = copy(&buff);
-		clear_mem(&buff);
-		shifts++;
-	}
-	clear_mem(&buff);
-	while (shifts)
-	{
-		while ((buff = difference(&rem, &sub)).negative != -1)
-		{
-			clear_mem(&buff);
-			buff = difference(&rem, &sub);
-			clear_mem(&rem);
-			rem = copy(&buff);
-			clear_mem(&buff);
-
-			buff = addition(&add, &quot);
-			clear_mem(&quot);
-			quot = copy(&buff);
-			clear_mem(&buff);
-		}
-		offset_right(&sub);
-		offset_right(&add);
-		shifts--;
-	}
-
-	clear_mem(&osn);
-	clear_mem(&sub);
-	clear_mem(&add);
-
-	*ost = rem;
-	return quot;
-}
-
-
 */
