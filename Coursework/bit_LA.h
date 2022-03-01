@@ -148,18 +148,19 @@ number difference(number* value1, number* value2);
 number multiplication(number* value1, number* value2);
 
 /// <summary>
-/// Деление без остатка
-/// </summary>
-/// <param name="value1">Делимое</param>
-/// <param name="value2">Делитель</param>
-/// <returns>Частное</returns>
-number division(number* value1, number* value2);
-
-/// <summary>
 /// Деление с остатком
 /// </summary>
 /// <param name="value1">Делимое</param>
 /// <param name="value2">Делитель</param>
 /// <param name="ost">Остаток</param>
 /// <returns>Частное</returns>
-number division_with_remainder(number* value1, number* value2, number* ost);
+number division_with_module(number* value1, number* value2, number* ost);
+
+/// <summary>
+/// Возвращает модуль от деление числа a в степени t на b
+/// </summary>
+/// <param name="a">Делимое</param>
+/// <param name="t">Степень</param>
+/// <param name="b">Делитель</param>
+/// <returns>Остаток</returns>
+number module_pow(number* a, number* t, number* b);

@@ -531,10 +531,9 @@ number multiplication(number* value1, number* value2) {
 	return result;
 }
 
-//fix
-number division_with_remainder(number* value1, number* value2, number* ost)
+number division_with_module(number* value1, number* value2, number* ost)
 {
-	number quot = int_to_number(0), rem = copy(value1), sub = copy(value2);
+	number mod = int_to_number(0), rem = copy(value1), sub = copy(value2);
 	number add = int_to_number(1);
 	number buff;
 	short shifts = 1;
@@ -545,54 +544,54 @@ number division_with_remainder(number* value1, number* value2, number* ost)
 	}
 	if (value2->mas[value2->current_count - 1])
 	{
+		clear_mem(&mod);
+		clear_mem(&rem);
+
 		buff = copy(value2);
 		nonadditional_code(&buff);
-		number _ost;
-		number result = division_with_remainder(value1, &buff, &_ost);
+		mod = division_with_module(value1, &buff, &rem);
 		clear_mem(&buff);
 
-		*ost = _ost;
-		additional_code(&result);
-		clear_mem(&sub);
+		*ost = rem;
+		additional_code(&mod);
 		clear_mem(&add);
-		clear_mem(&rem);
-		clear_mem(&quot);
-		return result;
+		clear_mem(&sub);
+		return mod;
 	}
 	if (value1->mas[value1->current_count - 1])
 	{
+		clear_mem(&mod);
+		clear_mem(&rem);
+
 		// b - ( |a| % b )
 		buff = copy(value1);
 		nonadditional_code(&buff);
-		number _ost;
-		number result = division_with_remainder(&buff, value2, &_ost); // ost = ( |a| % b )
+		mod = division_with_module(&buff, value2, &rem); // ost = ( |a| % b )
 		clear_mem(&buff);
 
-		if (is_zero(&_ost))
+		if (is_zero(&rem))
 		{
 			buff = int_to_number(0);
-			clear_mem(&_ost);
-			_ost = copy(&buff);
+			clear_mem(&rem);
+			rem = copy(&buff);
 			clear_mem(&buff);
 		}
 		else {
-			buff = difference(value2, &_ost);
-			clear_mem(&_ost);
-			_ost = copy(&buff);
+			buff = difference(value2, &rem);
+			clear_mem(&rem);
+			rem = copy(&buff);
 			clear_mem(&buff);
 
-			buff = addition(&result, &add);
-			clear_mem(&result);
-			result = copy(&buff);
+			buff = addition(&mod, &add);
+			clear_mem(&mod);
+			mod = copy(&buff);
 			clear_mem(&buff);
 		}
-		*ost = _ost;
-		additional_code(&result);
-		clear_mem(&sub);
+		*ost = rem;
+		additional_code(&mod);
 		clear_mem(&add);
-		clear_mem(&rem);
-		clear_mem(&quot);
-		return result;
+		clear_mem(&sub);
+		return mod;
 	}
 
 	*ost = init();
@@ -615,9 +614,9 @@ number division_with_remainder(number* value1, number* value2, number* ost)
 			rem = copy(&buff);
 			clear_mem(&buff);
 
-			buff = addition(&add, &quot);
-			clear_mem(&quot);
-			quot = copy(&buff);
+			buff = addition(&add, &mod);
+			clear_mem(&mod);
+			mod = copy(&buff);
 			clear_mem(&buff);
 		}
 		offset_right(&sub);
@@ -629,58 +628,64 @@ number division_with_remainder(number* value1, number* value2, number* ost)
 	clear_mem(&add);
 
 	*ost = rem;
-	return quot;
+	return mod;
 }
 
-/*
-
-number division(number* value1, number* value2)
+number module_pow(number* a, number* t, number* b)
 {
-	number osn = int_to_number(256);
-	number quot = int_to_number(0), rem = copy(value1), sub = copy(value2);
-	number add = int_to_number(1);
-	number buff;
-	short shifts = 1;
+	number d, ost, iterator = init(), buff, buff2, buff3;
+	number step = init(), st_2 = init();;
 
-	while ((buff = difference(&sub, &rem)).negative == -1)
+	add_digit(&step, 1);
+	add_digit(&st_2, 2);
+	add_digit(&iterator, 1);
+	division_with_module(a, b, &d);
+	ost = copy(&d);
+
+	if (is_zero(&d))
 	{
-		clear_mem(&buff);
-		buff = multiplication(&sub, &osn);
-		clear_mem(&sub);
-		sub = copy(&buff);
-
-		clear_mem(&buff);
-		buff = multiplication(&add, &osn);
-		clear_mem(&add);
-		add = copy(&buff);
-		clear_mem(&buff);
-		shifts++;
+		clear_mem(&step);
+		clear_mem(&st_2);
+		clear_mem(&d);
+		clear_mem(&iterator);
+		return ost;
 	}
-	clear_mem(&buff);
-	while (shifts)
+	else
 	{
-		while ((buff = difference(&rem, &sub)).negative != -1)
+		clear_mem(&iterator);
+		iterator = copy(t);
+
+		clear_mem(&ost);
+		ost = copy(&step);
+
+		buff2 = copy(a);
+		while (!is_zero(&iterator))
 		{
-			clear_mem(&buff);
-			buff = difference(&rem, &sub);
-			clear_mem(&rem);
-			rem = copy(&buff);
+			if (iterator.mas[0] % 2 == 1)
+			{
+				buff = multiplication(&ost, &buff2);
+				clear_mem(&ost);
+				division_with_module(&buff, b, &ost);
+				clear_mem(&buff);
+			}
+			buff = multiplication(&buff2, &buff2);
+			clear_mem(&buff2);
+			division_with_module(&buff, b, &buff2);
 			clear_mem(&buff);
 
-			buff = addition(&add, &quot);
-			clear_mem(&quot);
-			quot = copy(&buff);
+			buff = division_with_module(&iterator, &st_2, &buff3);
+			clear_mem(&iterator);
+			iterator = copy(&buff);
 			clear_mem(&buff);
+			clear_mem(&buff3);
 		}
-		offset_right(&sub);
-		offset_right(&add);
-		shifts--;
+		buff = copy(&ost);
+		clear_mem(&ost);
+		division_with_module(&buff, b, &ost);
+		clear_mem(&buff);
 	}
-
-	clear_mem(&osn);
-	clear_mem(&sub);
-	clear_mem(&add);
-
-	return quot;
+	clear_mem(&d);
+	clear_mem(&step);
+	clear_mem(&iterator);
+	return ost;
 }
-*/
