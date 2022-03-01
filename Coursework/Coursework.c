@@ -51,12 +51,25 @@ int main(int argc, char* argv[])
 	// брать p и q из базы простых чисел
 	// параллельные вычисления OpenCL, CUDA
 
+	int i = 23, j = 10, l = 239;
+	number a = int_to_number(i);
+	number t = int_to_number(j);
+	number b = int_to_number(l);
+	number mod = module_pow(&a, &t, &b);
+	//print_number(&div); print_number(&mod);
+	printf("a = %d, t = %d, b = %d, (a^t)%%b = ", i, j, l);
+	
+	print_number_decimal(&mod);
+	
+
 	// fwrite();
-	int i = -247586, j = -1812;
+
+
+	/*int i = 2, j = 3;
 	number a = int_to_number(i);
 	number b = int_to_number(j);
 	number mod;
-	number div = division_with_remainder(&a, &b, &mod);
+	number div = division_with_module(&a, &b, &mod);
 	//print_number(&div); print_number(&mod);
 	printf("a = %d, b = %d, a/b = ", i, j);
 	if (div.mas[div.current_count - 1])
@@ -94,7 +107,7 @@ int main(int argc, char* argv[])
 		}
 		printf("%d\n", s);
 	}
-
+	*/
 
 	int k = -1;
 	for (int i = -k; i <= k; i++)

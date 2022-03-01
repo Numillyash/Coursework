@@ -217,6 +217,33 @@ void reverse(number* value)
 	clear_mem(&prom);
 }
 
+void print_number_decimal(number* value) {
+	if (value->mas[value->current_count - 1])
+	{
+		printf("-");
+		nonadditional_code(value);
+		int x = 1;
+		int s = 0;
+		for (int y = 0; y < value->current_count - 1; y++)
+		{
+			s += value->mas[y] * x;
+			x <<= 1;
+		}
+		printf("%d\n", s);
+	}
+	else
+	{
+		int x = 1;
+		int s = 0;
+		for (int y = 0; y < value->current_count - 1; y++)
+		{
+			s += value->mas[y] * x;
+			x <<= 1;
+		}
+		printf("%d\n", s);
+	}
+}
+
 void print_number(number* value) {
 	printf("%d ", (int)value->mas[value->current_count - 1]);
 	for (int i = value->current_count - 2; i >= 0; i--)
@@ -633,19 +660,14 @@ number division_with_module(number* value1, number* value2, number* ost)
 
 number module_pow(number* a, number* t, number* b)
 {
-	number d, ost, iterator = init(), buff, buff2, buff3;
-	number step = init(), st_2 = init();;
+	number d, ost, iterator = init(), buff, buff2;
 
-	add_digit(&step, 1);
-	add_digit(&st_2, 2);
 	add_digit(&iterator, 1);
 	division_with_module(a, b, &d);
 	ost = copy(&d);
 
 	if (is_zero(&d))
 	{
-		clear_mem(&step);
-		clear_mem(&st_2);
 		clear_mem(&d);
 		clear_mem(&iterator);
 		return ost;
@@ -656,7 +678,7 @@ number module_pow(number* a, number* t, number* b)
 		iterator = copy(t);
 
 		clear_mem(&ost);
-		ost = copy(&step);
+		ost = int_to_number(1);
 
 		buff2 = copy(a);
 		while (!is_zero(&iterator))
@@ -673,11 +695,7 @@ number module_pow(number* a, number* t, number* b)
 			division_with_module(&buff, b, &buff2);
 			clear_mem(&buff);
 
-			buff = division_with_module(&iterator, &st_2, &buff3);
-			clear_mem(&iterator);
-			iterator = copy(&buff);
-			clear_mem(&buff);
-			clear_mem(&buff3);
+			offset_right(&iterator);
 		}
 		buff = copy(&ost);
 		clear_mem(&ost);
@@ -685,7 +703,6 @@ number module_pow(number* a, number* t, number* b)
 		clear_mem(&buff);
 	}
 	clear_mem(&d);
-	clear_mem(&step);
 	clear_mem(&iterator);
 	return ost;
 }

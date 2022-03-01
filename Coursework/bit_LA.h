@@ -103,6 +103,12 @@ void offset_left(number* object);
 void reverse(number* value);
 
 /// <summary>
+/// Печатает обьект с учетом знака в десятичной СС
+/// </summary>
+/// <param name="value">Ссылка на число</param>
+void print_number_decimal(number* value);
+
+/// <summary>
 /// Печатает обьект с учетом знака
 /// </summary>
 /// <param name="value">Ссылка на число</param>
