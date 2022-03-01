@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 	// брать p и q из базы простых чисел
 	// параллельные вычисления OpenCL, CUDA
 
-	int i = 1071, j = 462, l = 239;
+	int i = 10, j = -5, l = 239;
 	number a = int_to_number(i);
 	number b = int_to_number(j);
 	number mod = euclide_algorithm(&a, &b);

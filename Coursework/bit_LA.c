@@ -395,6 +395,7 @@ number easy_mult(number* value1, number* value2)
 	}
 	clear_mem(&a);
 	clear_mem(&b);
+
 	return result;
 }
 
@@ -554,7 +555,7 @@ number multiplication(number* value1, number* value2) {
 	if (sign == 1) {
 		additional_code(&result);
 	}
-
+	normalize(&result);
 	return result;
 }
 
@@ -623,7 +624,7 @@ number division_with_module(number* value1, number* value2, number* ost)
 
 	*ost = init();
 
-	while ((buff = difference(&sub, &rem)).mas[buff.current_count-1])
+	while ((buff = difference(&sub, &rem)).mas[buff.current_count - 1])
 	{
 		offset_left(&sub);
 		offset_left(&add);
@@ -654,6 +655,8 @@ number division_with_module(number* value1, number* value2, number* ost)
 	clear_mem(&sub);
 	clear_mem(&add);
 
+	normalize(&rem);
+	normalize(&mod);
 	*ost = rem;
 	return mod;
 }
@@ -704,6 +707,7 @@ number module_pow(number* a, number* t, number* b)
 	}
 	clear_mem(&d);
 	clear_mem(&iterator);
+	normalize(&ost);
 	return ost;
 }
 
@@ -712,17 +716,16 @@ number euclide_algorithm(number* value1, number* value2)
 	number buff, a, b, mod;
 
 	a = copy(value1);
-	if (a.mas[a.current_count-1])
+	if (a.mas[a.current_count - 1])
 	{
 		nonadditional_code(&a);
 	}
 	b = copy(value2);
-	if (b.mas[b.current_count-1])
+	if (b.mas[b.current_count - 1])
 	{
 		nonadditional_code(&b);
 	}
-
-	if ((buff = difference(&a, &b)).mas[buff.current_count-1])
+	if ((buff = difference(&a, &b)).mas[buff.current_count - 1])
 	{
 		clear_mem(&a);
 		clear_mem(&b);
@@ -737,20 +740,125 @@ number euclide_algorithm(number* value1, number* value2)
 		a = copy(value1);
 		b = copy(value2);
 	}
+	if (a.mas[a.current_count - 1])
+	{
+		nonadditional_code(&a);
+	}
+	if (b.mas[b.current_count - 1])
+	{
+		nonadditional_code(&b);
+	}
 	//a = b * q_0 + r_1
-	division_with_module(&a,&b,&mod);
+	division_with_module(&a, &b, &mod);
 	if (!is_zero(&mod))
 	{
 		buff = euclide_algorithm(&b, &mod);
 		clear_mem(&mod);
 		clear_mem(&a);
 		clear_mem(&b);
+		normalize(&buff);
 		return buff;
 	}
 	else
 	{
 		clear_mem(&mod);
 		clear_mem(&a);
+		normalize(&b);
 		return b;
 	}
+}
+
+number generate_random(int bit_count)
+{
+	int i;
+	number res = init();
+	srand(time(NULL));
+	//2 + rand() % (N - 2);
+	// провер очка
+	// 0111
+	// 111
+	//bitcount - число фактических битов числа (без учета бита знака)
+	// число большее 0010 1010 0101 0
+	// bc = 12
+	// нужно сгенерировать 11 = bc - 1
+	//
+	for (i = 0; i < bit_count - 1; i++)
+	{
+		add_digit(&init, rand() % 2);
+	}
+	return res;
+}
+
+BOOL millers_method(number* value)
+{
+	number s, t, buff, a;
+	BOOL fl1, fl2;
+	number step = int_to_number(1);
+	int n = MILLERS_METHOD_ITERATIONS_NUMBER;
+
+	//N-1 = 2^s * t, t - нечетно
+	s = int_to_number(0);
+
+	buff = copy(&value);
+	t = difference(value, &step);
+	clear_mem(&buff);
+
+	while (t.mas[0] == 0)
+	{
+		clear_mem(&buff);
+
+		buff = addition(&s, &step);
+		s = copy(&buff);
+		clear_mem(&buff);
+
+		offset_right(&t);
+	}
+
+#ifdef DEBUG
+	printf("N-1 = 2^%d * %d\n", s, t);
+#endif // DEBUG
+
+	// YOU ARE HERE
+
+	for (int i = 0; i < n; i++)
+	{
+		fl1 = TRUE; fl2 = TRUE;
+
+		a = generate_random(value->current_count - 1);
+		/*
+		if (euclide_algorithm(value, &a) != 1) //свойство 1
+		{
+			fl1 = FALSE;
+#ifdef DEBUG
+			printf("\nУсловие 1 нарушено, a = %d, t = %d, N = %d. \nN кратно a", a, t, N);
+#endif // DEBUG
+		}
+
+		if (del_ost_pow(a, t, N) != 1) // свойство 2
+		{
+			int k = 1;
+			fl2 = FALSE;
+			for (k = 1; k <= s; k++)
+			{
+				if (del_ost_pow(a, t * pow(2, k - 1), N) == N - 1)
+				{
+					fl2 = TRUE;
+				}
+			}
+#ifdef DEBUG
+			if (fl2 == false)
+				printf("\nУсловие 2 нарушено, a = %d, t = %d, k = %d, N = %d. \nМодули чисел: без k %d, с k %d", a, t, k, N, del_ost_pow(a, t, N), del_ost_pow(a, t * pow(2, k - 1), N));
+#endif // DEBUG
+		}
+		*/
+		if (!fl1 || !fl2)
+		{
+#ifdef DEBUG
+			printf("\n%s", (fl1 == false) ? "Условие 1 нарушено" : "Условие 1 не нарушено");
+			printf("\n%s\n", (fl2 == false) ? "Условие 2 нарушено" : "Условие 2 не нарушено");
+#endif // DEBUG
+			return FALSE;
+		}
+	}
+	return TRUE;
 }
