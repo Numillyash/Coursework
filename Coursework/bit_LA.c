@@ -274,6 +274,9 @@ BOOL is_equal(number* value1, number* value2)
 {
 	short iterator = 0;
 
+	normalize(value1);
+	normalize(value2);
+
 	if (value1->current_count != value2->current_count)
 		return FALSE;
 	for (iterator = 0; iterator < value1->current_count; iterator++)
@@ -789,7 +792,7 @@ number generate_random(int bit_count)
 	return res;
 }
 
-BOOL millers_method(number* value)
+BOOL Millers_method(number* value)
 {
 	number s, t, buff, a;
 	BOOL fl1, fl2;
@@ -818,22 +821,23 @@ BOOL millers_method(number* value)
 	printf("N-1 = 2^%d * %d\n", s, t);
 #endif // DEBUG
 
-	// YOU ARE HERE
-
 	for (int i = 0; i < n; i++)
 	{
 		fl1 = TRUE; fl2 = TRUE;
 
 		a = generate_random(value->current_count - 1);
-		/*
-		if (euclide_algorithm(value, &a) != 1) //свойство 1
+		
+		buff = euclide_algorithm(value, &a);
+		if (!is_equal(&buff, &step)) //свойство 1
 		{
 			fl1 = FALSE;
 #ifdef DEBUG
 			printf("\nУсловие 1 нарушено, a = %d, t = %d, N = %d. \nN кратно a", a, t, N);
 #endif // DEBUG
 		}
+		clear_mem(&buff);
 
+		// YOU ARE HERE
 		if (del_ost_pow(a, t, N) != 1) // свойство 2
 		{
 			int k = 1;
@@ -850,7 +854,7 @@ BOOL millers_method(number* value)
 				printf("\nУсловие 2 нарушено, a = %d, t = %d, k = %d, N = %d. \nМодули чисел: без k %d, с k %d", a, t, k, N, del_ost_pow(a, t, N), del_ost_pow(a, t * pow(2, k - 1), N));
 #endif // DEBUG
 		}
-		*/
+		
 		if (!fl1 || !fl2)
 		{
 #ifdef DEBUG

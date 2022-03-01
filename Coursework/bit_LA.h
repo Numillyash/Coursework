@@ -192,4 +192,4 @@ number generate_random(int bit_count);
 /// </summary>
 /// <param name="value">Число</param>
 /// <returns>1 - если простое, 0 - если составное</returns>
-BOOL millers_method(number* value);
+BOOL Millers_method(number* value);
