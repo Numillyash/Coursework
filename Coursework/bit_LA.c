@@ -855,19 +855,19 @@ number euclide_algorithm_modifyed(number* value1, number* value2, number* values
 		_d = copy(&values[3]);
 
 		clear_mem(&values[0]);
-		*&values[0] = copy(&_b);
+		values[0] = copy(&_b);
 
 		buff = multiplication(&_b, &div);
 		clear_mem(&values[1]);
-		*&values[1] = difference(&_a, &buff);
+		values[1] = difference(&_a, &buff);
 		clear_mem(&buff);
 
 		clear_mem(&values[2]);
-		*&values[2] = copy(&_d);
+		values[2] = copy(&_d);
 
 		buff = multiplication(&_d, &div);
 		clear_mem(&values[3]);
-		*&values[3] = difference(&_c, &buff);
+		values[3] = difference(&_c, &buff);
 		clear_mem(&buff);
 
 		clear_mem(&_a);
