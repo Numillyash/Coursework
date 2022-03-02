@@ -1,5 +1,15 @@
 #pragma once
 #define _CRT_SECURE_NO_WARNINGS
+//#define DEBUG
+
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <malloc.h>
+#include <time.h>
+#include <stdint.h>
+#include <locale.h>
 
 //input console checking
 #define HELP_CONSOLE_OPTION_1 "-h"
@@ -16,6 +26,11 @@
 #define INFILE_CONSOLE_OPTION "--infile"
 #define OUTFILE_CONSOLE_OPTION "--outfile"
 
+// boolean
+#define BOOL int
+#define TRUE 1
+#define FALSE 0
+
 //RSA
 #define KEYSIZE_MODULE 256
 typedef enum {
@@ -29,23 +44,19 @@ typedef enum {
 #define FILE_OPENING_ERROR "\
 Cannot open the %s file.\n"
 
-#include <stdio.h>
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
-#include <Windows.h>
-#include <malloc.h>
-#include <time.h>
-
 /// <summary>
 /// Exit codes for exit()
 /// </summary>
 enum EXIT_CODE {
-	DEFAULT_ERROR,
-	NO_ARGUMENTS,
-	WRONG_ARGUMENT,
-	NOT_ENOUGH_ARGUMENTS,
-	FILE_OPEN_ERROR,
 	SUCCESS,
-	FAILURE
+	FAILURE,
+	NO_ARGUMENTS_FAILURE,
+	WRONG_ARGUMENT_FAILURE,
+	NOT_ENOUGH_ARGUMENTS_FAILURE,
+	FILE_OPEN_ERROR_FAILURE,
+	MEMORY_ALLOCATION_FAILURE
 };
+
+//fast funcs
+#define swap(a,b); b = a+b; a = b-a; b = b-a;
+#define max(a,b) (a>b)? a : b
