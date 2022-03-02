@@ -6,7 +6,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <Windows.h>
 #include <malloc.h>
 #include <time.h>
 #include <stdint.h>
@@ -26,6 +25,11 @@
 #define SIGFILE_CONSOLE_OPTION "--sigfile"
 #define INFILE_CONSOLE_OPTION "--infile"
 #define OUTFILE_CONSOLE_OPTION "--outfile"
+
+// boolean
+#define BOOL int
+#define TRUE 1
+#define FALSE 0
 
 //RSA
 #define KEYSIZE_MODULE 256
@@ -54,4 +58,5 @@ enum EXIT_CODE {
 };
 
 //fast funcs
-#define swap(a,b) b = a+b; a = b-a; b = b-a;
+#define swap(a,b); b = a+b; a = b-a; b = b-a;
+#define max(a,b) (a>b)? a : b

@@ -52,18 +52,29 @@ int main(int argc, char* argv[])
 	// брать p и q из базы простых чисел
 	// параллельные вычисления OpenCL, CUDA
 
-	int i = 25, j = -5, l = 239;
+	//int i = 1100101, j = 0, l = 239;
+	int n = 1100101;
+	number a = int_to_number(n);
+	if (Millers_method(&a))
+	{
+		printf("Number %d is prime\n", n);
+	}
+	clear_mem(&a);
+	/*
 	number a = init();
-	for (i = 2; i < 100; i++) {
+	for (j = 2; j < 100; j++) {
 		clear_mem(&a);
-		a = int_to_number(i);
+		a = int_to_number(j);
 		//number mod = Millers_method(&a);
 		//print_number(&div); print_number(&mod);
-		printf((Millers_method(&a)) ? "Number %d is prime\n" : "", i);
-		clear_mem(&a);
-	}
+		BOOL s = Millers_method(&a);
+		if (s)
+		{
+			printf("Number %d is prime\n", j);
+		}
+	}*/
 	//print_number_decimal(&mod);
-	
+
 
 	// fwrite();
 
@@ -112,7 +123,7 @@ int main(int argc, char* argv[])
 	}
 	*/
 
-	int k = -1;
+	/*int k = -1;
 	for (int i = -k; i <= k; i++)
 	{
 		for (int j = -k; j <= k; j++)
@@ -147,7 +158,7 @@ int main(int argc, char* argv[])
 			}
 		}
 	}
-
+	*/
 	//number c = addition(&a, &b);  // 1100
 	//print_number(&c);
 	//c = addition(&c, &c);
@@ -235,4 +246,5 @@ int main(int argc, char* argv[])
 		printf(ERROR_DEFAULT);
 		exit(WRONG_ARGUMENT_FAILURE);
 	}
+	return 0;
 }

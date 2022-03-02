@@ -71,22 +71,23 @@ number init() {
 
 number copy(number* value) {
 	number result = init();
-	for (int i = 0; i < value->current_count - 1; i++)
+	int i; // iterator
+	for (i = 0; i < value->current_count - 1; i++)
 		add_digit(&result, value->mas[i]);
 	result.mas[result.current_count - 1] = value->mas[value->current_count - 1];
 	return result;
 }
 
 number int_to_number(int value) {
+	int ostatok;
 	number result = init();
 	if (value < 0)
 	{
 		value *= -1;
-		int ostatok;
 		while (value > 0) {
 			ostatok = value % NUMBER_SYSTEM_BASE;
 			add_digit(&result, ostatok);
-			value /= NUMBER_SYSTEM_BASE;
+			value >>= 1;
 		}
 		if (result.current_count == 0)
 			add_digit(&result, 0);
@@ -94,11 +95,10 @@ number int_to_number(int value) {
 	}
 	else
 	{
-		int ostatok;
 		while (value > 0) {
 			ostatok = value % NUMBER_SYSTEM_BASE;
 			add_digit(&result, ostatok);
-			value /= NUMBER_SYSTEM_BASE;
+			value >>= 1;
 		}
 		if (result.current_count == 0)
 			add_digit(&result, 0);
@@ -109,10 +109,11 @@ number int_to_number(int value) {
 
 void normalize(number* value) {
 	number result = init();
+	int i; //iterator
 	int end = value->current_count - 2;
 	if (value->mas[value->current_count - 1])
 	{
-		for (int i = value->current_count - 2; i > 0; i--) {
+		for (i = value->current_count - 2; i > 0; i--) {
 			end = i;
 			if (value->mas[i] == 0 || value->mas[i - 1] == 0) {
 				break;
@@ -121,14 +122,14 @@ void normalize(number* value) {
 	}
 	else
 	{
-		for (int i = value->current_count - 2; i >= 0; i--) {
+		for (i = value->current_count - 2; i >= 0; i--) {
 			end = i;
 			if (value->mas[i] != 0) {
 				break;
 			}
 		}
 	}
-	for (int i = 0; i <= end; i++) {
+	for (i = 0; i <= end; i++) {
 		add_digit(&result, value->mas[i]);
 	}
 	result.mas[result.current_count - 1] = value->mas[value->current_count - 1];
@@ -140,7 +141,7 @@ void normalize(number* value) {
 	{
 		exit(MEMORY_ALLOCATION_FAILURE);
 	}
-	for (int i = 0; i <= end; i++) {
+	for (i = 0; i <= end; i++) {
 		add_digit(value, result.mas[i]);
 	}
 	value->mas[value->current_count - 1] = result.mas[result.current_count - 1];
@@ -206,11 +207,12 @@ void offset_left(number* object)
 void reverse(number* value)
 {
 	number prom = init();
-	for (int i = value->current_count - 1; i >= 0; i--)
+	int i; // iterator
+	for (i = value->current_count - 1; i >= 0; i--)
 	{
 		add_digit(&prom, value->mas[i]);
 	}
-	for (int i = 0; i < prom.current_count - 1; i++)
+	for (i = 0; i < prom.current_count - 1; i++)
 	{
 		value->mas[i] = prom.mas[i];
 	}
@@ -218,13 +220,14 @@ void reverse(number* value)
 }
 
 void print_number_decimal(number* value) {
+	int y; //iterator
 	if (value->mas[value->current_count - 1])
 	{
 		printf("-");
 		nonadditional_code(value);
 		int x = 1;
 		int s = 0;
-		for (int y = 0; y < value->current_count - 1; y++)
+		for (y = 0; y < value->current_count - 1; y++)
 		{
 			s += value->mas[y] * x;
 			x <<= 1;
@@ -235,7 +238,7 @@ void print_number_decimal(number* value) {
 	{
 		int x = 1;
 		int s = 0;
-		for (int y = 0; y < value->current_count - 1; y++)
+		for (y = 0; y < value->current_count - 1; y++)
 		{
 			s += value->mas[y] * x;
 			x <<= 1;
@@ -245,8 +248,9 @@ void print_number_decimal(number* value) {
 }
 
 void print_number(number* value) {
+	int i; //iterator
 	printf("%d ", (int)value->mas[value->current_count - 1]);
-	for (int i = value->current_count - 2; i >= 0; i--)
+	for (i = value->current_count - 2; i >= 0; i--)
 	{
 		printf("%d", (int)value->mas[i]);
 		if (i % 8 == 0)
@@ -370,14 +374,16 @@ number addition(number* value1, number* value2) {
 }
 
 number difference(number* value1, number* value2) {
-	number b = copy(value2);
+	number b = copy(value2), buff;
 	if (value2->mas[value2->current_count - 1])
-	{
 		nonadditional_code(&b);
-	}
 	else
 		additional_code(&b);
-	return addition(value1, &b);
+
+	buff = addition(value1, &b);
+	clear_mem(&b);
+
+	return buff;
 }
 
 number easy_mult(number* value1, number* value2)
@@ -398,7 +404,6 @@ number easy_mult(number* value1, number* value2)
 	}
 	clear_mem(&a);
 	clear_mem(&b);
-
 	return result;
 }
 
@@ -469,13 +474,14 @@ number karatsuba(number* value1, number* value2)
 		print_number(&c);
 		printf("d = ");
 		print_number(&d);
-#endif // DEBUG
+#endif // DEBUG                  
 
 		p1 = karatsuba(&b, &d);
 		p2 = karatsuba(&a, &c);
 		buff1 = addition(&a, &b);
 		buff2 = addition(&c, &d);
 		t = karatsuba(&buff1, &buff2);
+
 		clear_mem(&buff1); clear_mem(&buff2); clear_mem(&a); clear_mem(&b); clear_mem(&c); clear_mem(&d); clear_mem(&v1); clear_mem(&v2);
 
 		buff1 = copy(&t);
@@ -516,7 +522,6 @@ number karatsuba(number* value1, number* value2)
 		print_number(&p1);
 #endif // DEBUG
 
-
 		buff1 = copy(&res);
 		clear_mem(&res);
 		res = addition(&buff1, &p2);
@@ -535,12 +540,16 @@ number karatsuba(number* value1, number* value2)
 		printf("res = ");
 		print_number(&res);
 #endif // DEBUG
+		clear_mem(&p1);
+		clear_mem(&p2);
+		clear_mem(&t);
+		////////////////////////////////////////////////////////////////////////////////////////////////
 		return res;
 	}
 }
 
 number multiplication(number* value1, number* value2) {
-	number result = init(), a, b;
+	number result, a, b;
 	a = copy(value1); b = copy(value2);
 	int sign = a.mas[a.current_count - 1] + b.mas[b.current_count - 1];
 	if (a.mas[a.current_count - 1])
@@ -625,19 +634,21 @@ number division_with_module(number* value1, number* value2, number* ost)
 		return mod;
 	}
 
-	*ost = init();
-
-	while ((buff = difference(&sub, &rem)).mas[buff.current_count - 1])
+	buff = difference(&sub, &rem);
+	while (buff.mas[buff.current_count - 1])
 	{
 		offset_left(&sub);
 		offset_left(&add);
 		clear_mem(&buff);
+		buff = difference(&sub, &rem);
 		shifts++;
 	}
 	clear_mem(&buff);
+
 	while (shifts)
 	{
-		while (!(buff = difference(&rem, &sub)).mas[buff.current_count - 1])
+		buff = difference(&rem, &sub);
+		while (!buff.mas[buff.current_count - 1])
 		{
 			clear_mem(&buff);
 			buff = difference(&rem, &sub);
@@ -649,7 +660,10 @@ number division_with_module(number* value1, number* value2, number* ost)
 			clear_mem(&mod);
 			mod = copy(&buff);
 			clear_mem(&buff);
+
+			buff = difference(&rem, &sub);
 		}
+		clear_mem(&buff);
 		offset_right(&sub);
 		offset_right(&add);
 		shifts--;
@@ -666,10 +680,11 @@ number division_with_module(number* value1, number* value2, number* ost)
 
 number module_pow(number* a, number* t, number* b)
 {
-	number d, ost, iterator = init(), buff, buff2;
+	number d, ost, iterator = init(), buff, buff2, buff3;
 
 	add_digit(&iterator, 1);
-	division_with_module(a, b, &d);
+	buff3 = division_with_module(a, b, &d);
+	clear_mem(&buff3);
 	ost = copy(&d);
 
 	if (is_zero(&d))
@@ -693,20 +708,27 @@ number module_pow(number* a, number* t, number* b)
 			{
 				buff = multiplication(&ost, &buff2);
 				clear_mem(&ost);
-				division_with_module(&buff, b, &ost);
+				buff3 = division_with_module(&buff, b, &ost);
+				clear_mem(&buff3);
 				clear_mem(&buff);
 			}
+			// exit(0);                  //////////////////////////////////////////////////////////////////////////////////////
 			buff = multiplication(&buff2, &buff2);
 			clear_mem(&buff2);
-			division_with_module(&buff, b, &buff2);
+			buff3 = division_with_module(&buff, b, &buff2);
+			clear_mem(&buff3);
 			clear_mem(&buff);
 
 			offset_right(&iterator);
 		}
 		buff = copy(&ost);
 		clear_mem(&ost);
-		division_with_module(&buff, b, &ost);
+		buff3 = division_with_module(&buff, b, &ost);
 		clear_mem(&buff);
+		clear_mem(&buff2);
+		clear_mem(&buff3);
+
+		//exit(0);
 	}
 	clear_mem(&d);
 	clear_mem(&iterator);
@@ -728,7 +750,8 @@ number euclide_algorithm(number* value1, number* value2)
 	{
 		nonadditional_code(&b);
 	}
-	if ((buff = difference(&a, &b)).mas[buff.current_count - 1])
+	buff = difference(&a, &b);
+	if (buff.mas[buff.current_count - 1])
 	{
 		clear_mem(&buff);
 		clear_mem(&a);
@@ -752,8 +775,10 @@ number euclide_algorithm(number* value1, number* value2)
 	{
 		nonadditional_code(&b);
 	}
-	//a = b * q_0 + r_1
-	division_with_module(&a, &b, &mod);
+	//a = b * q_0 + r_1                          
+	buff = division_with_module(&a, &b, &mod);
+	clear_mem(&buff);
+
 	if (!is_zero(&mod))
 	{
 		buff = euclide_algorithm(&b, &mod);
@@ -776,24 +801,12 @@ number generate_random(int bit_count)
 {
 	int i;
 	number res = init();
-	//2 + rand() % (N - 2);
-	// провер очка
-	// 0111
-	// 111
-	//bitcount - число фактических битов числа (без учета бита знака)
-	// число большее 0010 1010 0101 0
-	// bc = 12
-	// нужно сгенерировать 11 = bc - 1
-	//
 	for (i = 0; i < bit_count - 1; i++)
 	{
 		add_digit(&res, rand() % 2);
 	}
 	return res;
 }
-
-// n = 5 = 101 = 2 : 2 * 1
-// a = 11, 10, 1
 
 BOOL Millers_method(number* value)
 {
@@ -835,44 +848,34 @@ BOOL Millers_method(number* value)
 	N_minus_1 = difference(value, &step);
 	t = copy(&N_minus_1);
 
-	//print_number_decimal(&t);
-
 	while (t.mas[0] == 0)
 	{
 		s++;
 		offset_right(&t);
 	}
 
-#ifdef DEBUG
-	printf("N-1 = 2^%d * %d\n", s, t);
-#endif // DEBUG
-
-	srand(time(NULL));
+	srand((unsigned int)time(NULL));
 
 	for (i = 0; i < n; i++)
 	{
+		printf("i is %d\n", i);
 		fl1 = TRUE;
 		fl2 = TRUE;
 
 		a = generate_random(value->current_count - 1);
-		
-		while ((buff = difference(&a, &step2)).mas[buff.current_count - 1])
+		buff = difference(&a, &step2);
+		while (buff.mas[buff.current_count - 1])
 		{
 			clear_mem(&buff);
 			clear_mem(&a);
 			a = generate_random(value->current_count - 1);
+			buff = difference(&a, &step2);
 		}
 		clear_mem(&buff);
-
-		//printf("\na is ");
-		//print_number_decimal(&a);
 
 		buff = euclide_algorithm(value, &a);
 		if (!is_equal(&buff, &step)) //свойство 1
 		{
-		#ifdef DEBUG
-					printf("\nУсловие 1 нарушено, a = %d, t = %d, N = %d. \nN кратно a", a, t, N);
-		#endif // DEBUG
 			fl1 = FALSE;
 		}
 		clear_mem(&buff);
@@ -880,7 +883,6 @@ BOOL Millers_method(number* value)
 		buff = module_pow(&a, &t, value);
 		if (!is_equal(&buff, &step)) // свойство 2
 		{
-			k = 1;
 			fl2 = FALSE;
 			for (k = 1; k <= s; k++)
 			{
@@ -892,7 +894,7 @@ BOOL Millers_method(number* value)
 				}
 
 				buff = module_pow(&a, &buff2, value);
-				clear_mem(&buff2);				
+				clear_mem(&buff2);
 
 				if (is_equal(&buff, &N_minus_1))
 				{
@@ -900,20 +902,11 @@ BOOL Millers_method(number* value)
 					fl2 = TRUE;
 				}
 			}
-			#ifdef DEBUG
-						if (fl2 == false)
-							printf("\nУсловие 2 нарушено, a = %d, t = %d, k = %d, N = %d. \nМодули чисел: без k %d, с k %d", a, t, k, N, del_ost_pow(a, t, N), del_ost_pow(a, t * pow(2, k - 1), N));
-			#endif // DEBUG
 		}
 		clear_mem(&buff);
 
 		if (!fl1 || !fl2)
 		{
-			#ifdef DEBUG
-						printf("\n%s", (fl1 == false) ? "Условие 1 нарушено" : "Условие 1 не нарушено");
-						printf("\n%s\n", (fl2 == false) ? "Условие 2 нарушено" : "Условие 2 не нарушено");
-			#endif // DEBUG
-
 			clear_mem(&step);
 			clear_mem(&step2);
 			clear_mem(&N_3);
