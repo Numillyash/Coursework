@@ -874,6 +874,7 @@ number euclide_algorithm_modifyed(number* value1, number* value2, number* values
 		clear_mem(&_b);
 		clear_mem(&_c);
 		clear_mem(&_d);
+		clear_mem(&div);
 		clear_mem(&mod);
 		clear_mem(&a);
 		clear_mem(&b);
@@ -910,6 +911,7 @@ number euclide_algorithm_modifyed(number* value1, number* value2, number* values
 		clear_mem(&_b);
 		clear_mem(&_c);
 		clear_mem(&_d);
+		clear_mem(&div);
 		clear_mem(&mod);
 		clear_mem(&a);
 		clear_mem(&b);
