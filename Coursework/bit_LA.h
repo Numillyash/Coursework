@@ -181,6 +181,15 @@ number module_pow(number* a, number* t, number* b);
 number euclide_algorithm(number* value1, number* value2);
 
 /// <summary>
+/// Возвращает НОД двух чисел и матрицу множетелей
+/// </summary>
+/// <param name="value1">Первое число</param>
+/// <param name="value2">Второе число</param>
+/// <param name="values">Массив с матрицей</param>
+/// <returns>НОД</returns>
+number euclide_algorithm_modifyed(number* value1, number* value2, number* values);
+
+/// <summary>
 /// Генерация случайного числа с заданным количеством бит
 /// </summary>
 /// <param name="bit_count">Кол-во бит</param>

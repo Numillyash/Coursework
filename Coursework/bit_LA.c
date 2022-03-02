@@ -100,8 +100,10 @@ number int_to_number(int value) {
 			add_digit(&result, ostatok);
 			value >>= 1;
 		}
-		if (result.current_count == 0)
+		if (result.current_count == 1)
+		{
 			add_digit(&result, 0);
+		}
 	}
 
 	return result;
@@ -794,6 +796,125 @@ number euclide_algorithm(number* value1, number* value2)
 		clear_mem(&a);
 		normalize(&b);
 		return b;
+	}
+}
+
+number euclide_algorithm_modifyed(number* value1, number* value2, number* values)
+{
+	number buff, a, b, mod, div, GCD;
+	number _a, _b, _c, _d;
+
+	a = copy(value1);
+	if (a.mas[a.current_count - 1])
+	{
+		nonadditional_code(&a);
+	}
+	b = copy(value2);
+	if (b.mas[b.current_count - 1])
+	{
+		nonadditional_code(&b);
+}
+	buff = difference(&a, &b);
+	if (buff.mas[buff.current_count - 1])
+	{
+		clear_mem(&buff);
+		clear_mem(&a);
+		clear_mem(&b);
+		a = copy(value2);
+		b = copy(value1);
+	}
+	else
+	{
+		clear_mem(&buff);
+		clear_mem(&a);
+		clear_mem(&b);
+		a = copy(value1);
+		b = copy(value2);
+	}
+	if (a.mas[a.current_count - 1])
+	{
+		nonadditional_code(&a);
+	}
+	if (b.mas[b.current_count - 1])
+	{
+		nonadditional_code(&b);
+	}
+	//a = b * q_0 + r_1                          
+	div = division_with_module(&a, &b, &mod);
+	//clear_mem(&buff);
+
+	if (!is_zero(&mod))
+	{
+		buff = euclide_algorithm_modifyed(&b, &mod, values);
+		GCD = copy(&buff);
+		clear_mem(&buff);
+
+		_a = copy(&values[0]);
+		_b = copy(&values[1]);
+		_c = copy(&values[2]);
+		_d = copy(&values[3]);
+
+		clear_mem(&values[0]);
+		*&values[0] = copy(&_b);
+
+		buff = multiplication(&_b, &div);
+		clear_mem(&values[1]);
+		*&values[1] = difference(&_a, &buff);
+		clear_mem(&buff);
+
+		clear_mem(&values[2]);
+		*&values[2] = copy(&_d);
+
+		buff = multiplication(&_d, &div);
+		clear_mem(&values[3]);
+		*&values[3] = difference(&_c, &buff);
+		clear_mem(&buff);
+
+		clear_mem(&_a);
+		clear_mem(&_b);
+		clear_mem(&_c);
+		clear_mem(&_d);
+		clear_mem(&mod);
+		clear_mem(&a);
+		clear_mem(&b);
+
+		normalize(&GCD);
+		return GCD;
+	}
+	else
+	{
+		GCD = copy(&b);
+
+		_a = copy(&values[0]);
+		_b = copy(&values[1]);
+		_c = copy(&values[2]);
+		_d = copy(&values[3]);
+
+		clear_mem(&values[0]);
+		values[0] = copy(&_b);
+
+		buff = multiplication(&_b, &div);
+		clear_mem(&values[1]);
+		values[1] = difference(&_a, &buff);
+		clear_mem(&buff);
+		
+		clear_mem(&values[2]);
+		values[2] = copy(&_d);
+
+		buff = multiplication(&_d, &div);
+		clear_mem(&values[3]);
+		values[3] = difference(&_c, &buff);
+		clear_mem(&buff);
+
+		clear_mem(&_a);
+		clear_mem(&_b);
+		clear_mem(&_c);
+		clear_mem(&_d);
+		clear_mem(&mod);
+		clear_mem(&a);
+		clear_mem(&b);
+		normalize(&GCD);
+		return GCD;
 	}
 }
 

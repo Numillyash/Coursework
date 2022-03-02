@@ -53,13 +53,36 @@ int main(int argc, char* argv[])
 	// параллельные вычисления OpenCL, CUDA
 
 	//int i = 1100101, j = 0, l = 239;
-	int n = 1100101;
-	number a = int_to_number(n);
-	if (Millers_method(&a))
-	{
-		printf("Number %d is prime\n", n);
-	}
-	clear_mem(&a);
+	int p = 3557, q = 2579;
+	number _p = int_to_number(p);
+	number _q = int_to_number(q);
+	int n = p * q; // 9 173 503
+	int phi_n = (p - 1) * (q - 1); // 9 167 368
+	number _phi_n = int_to_number(phi_n);
+	int e = 67;
+	number _e = int_to_number(e);
+
+	number* a = (number*)malloc(4*sizeof(number)); // = { 1,0,0,1 };
+	number zero = int_to_number(0);
+	number one = int_to_number(1);
+
+	a[0] = copy(&one);
+	a[1] = copy(&zero);
+	a[2] = copy(&zero);
+	a[3] = copy(&one);
+
+	number buff = euclide_algorithm_modifyed(&_phi_n, &_e, a);
+	clear_mem(&buff);
+
+	number _d = copy(&a[1]); // 2 462 875
+	printf("e = %d\nd = %d\ne*d = %d\nphi_n = %d\n", e, 2462875, 165012625, phi_n);
+
+	printf("_e = "); print_number_decimal(&_e);
+	printf("_d = "); print_number_decimal(&_d);
+	buff = multiplication(&_e, &_d);
+	printf("_e*_d = "); print_number_decimal(&buff); clear_mem(&buff);
+	printf("_phi_n = "); print_number_decimal(&_phi_n);
+
 	/*
 	number a = init();
 	for (j = 2; j < 100; j++) {
