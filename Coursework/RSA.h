@@ -1,6 +1,6 @@
 #pragma once
 #include "config.h"
-#include "bit_LA.h"
+#include "_file_.h"
 
 void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filename);
 

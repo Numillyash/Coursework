@@ -143,12 +143,14 @@
     <ClCompile Include="bit_LA.c" />
     <ClCompile Include="Coursework.c" />
     <ClCompile Include="RSA.c" />
+    <ClCompile Include="_file_.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bit_LA.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="help.h" />
     <ClInclude Include="RSA.h" />
+    <ClInclude Include="_file_.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
