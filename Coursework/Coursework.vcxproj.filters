@@ -21,6 +21,12 @@
     <ClCompile Include="bit_LA.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="RSA.c">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="_file_.c">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="help.h">
@@ -30,6 +36,12 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="bit_LA.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="RSA.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="_file_.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,6 +1,6 @@
 #pragma once
 #include "config.h"
-#include "longArithmetic.h"
+#include "_file_.h"
 
 /// <summary>
 /// Функция для нахождения остатка от деления большого числа (число a в степени t) на малое

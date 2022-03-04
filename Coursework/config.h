@@ -41,8 +41,15 @@ typedef enum {
 } KEY_BIT_SIZE;
 
 //file
+#define IS_LOG_CREATED
+
 #define FILE_OPENING_ERROR "\
 Cannot open the %s file.\n"
+
+#define primes_128_bit_filename "primes_128_bit.blackleague"
+#define primes_256_bit_filename "primes_256_bit.blackleague"
+#define primes_512_bit_filename "primes_512_bit.blackleague"
+#define primes_1024_bit_filename "primes_1024_bit.blackleague"
 
 /// <summary>
 /// Exit codes for exit()
@@ -53,7 +60,9 @@ enum EXIT_CODE {
 	NO_ARGUMENTS_FAILURE,
 	WRONG_ARGUMENT_FAILURE,
 	NOT_ENOUGH_ARGUMENTS_FAILURE,
-	FILE_OPEN_ERROR_FAILURE,
+	FILE_OPEN_FAILURE,
+	FILE_FORMAT_FAILURE,
+	LOG_FAILURE,
 	MEMORY_ALLOCATION_FAILURE
 };
 

@@ -1,7 +1,7 @@
 ﻿#include "config.h"
 #include "help.h"
 
-#include "bit_LA.h"
+#include "_file_.h"
 
 /// <summary>
 /// Function that is checking for parameters for work mode
@@ -52,8 +52,11 @@ int main(int argc, char* argv[])
 	// брать p и q из базы простых чисел
 	// параллельные вычисления OpenCL, CUDA
 
+	_log("thats a log");
+	_log("thats an another log");
+
 	//int i = 1100101, j = 0, l = 239;
-	int p = 3557, q = 2579;
+	/*int p = 3557, q = 2579;
 	number _p = int_to_number(p);
 	number _q = int_to_number(q);
 	int n = p * q; // 9 173 503
@@ -81,7 +84,7 @@ int main(int argc, char* argv[])
 	printf("_d = "); print_number_decimal(&_d);
 	buff = multiplication(&_e, &_d);
 	printf("_e*_d = "); print_number_decimal(&buff); clear_mem(&buff);
-	printf("_phi_n = "); print_number_decimal(&_phi_n);
+	printf("_phi_n = "); print_number_decimal(&_phi_n);*/
 
 	/*
 	number a = init();
