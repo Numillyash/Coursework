@@ -1,7 +1,7 @@
 ﻿#include "config.h"
 #include "help.h"
 
-#include "_file_.h"
+#include "RSA.h"
 
 /// <summary>
 /// Function that is checking for parameters for work mode
@@ -51,9 +51,7 @@ int main(int argc, char* argv[])
 	setlocale(LC_ALL, "rus");
 	// брать p и q из базы простых чисел
 	// параллельные вычисления OpenCL, CUDA
-
-	_log("thats a log");
-	_log("thats an another log");
+	_log_start();
 
 	//int i = 1100101, j = 0, l = 239;
 	/*int p = 3557, q = 2579;
@@ -219,6 +217,7 @@ int main(int argc, char* argv[])
 	if (argc == 1)
 	{
 		printf(ERROR_NO_PARAMETERS);
+		_log("User typed no parameters");
 		exit(NO_ARGUMENTS_FAILURE);
 	}
 	else if (argc == 2)
@@ -226,50 +225,60 @@ int main(int argc, char* argv[])
 		if (!strcmp(argv[1], HELP_CONSOLE_OPTION_1) || !strcmp(argv[1], HELP_CONSOLE_OPTION_2))
 		{
 			printf(HELP_TEXT);
+			_log("User typed -h or --help parameter");
 			exit(WRONG_ARGUMENT_FAILURE);
 		}
 		else if (strcmp(argv[1], GENKEY_CONSOLE_OPTION) && strcmp(argv[1], CHECK_CONSOLE_OPTION) && strcmp(argv[1], SIGNATURE_CONSOLE_OPTION) && strcmp(argv[1], ENCRYPT_CONSOLE_OPTION) && strcmp(argv[1], DECRYPT_CONSOLE_OPTION))
 		{
 			printf(ERROR_FIRST_PARAMETER, argv[1]);
+			_log("User typed wrong 1 parameter");
 			exit(WRONG_ARGUMENT_FAILURE);
 		}
 		else
 		{
 			printf(ERROR_NOT_ENOUGH_PARAMETERS);
+			_log("User typed not enough parameters");
 			exit(NOT_ENOUGH_ARGUMENTS_FAILURE);
 		}
 	}
 	else if (argc == 8)
 	{
-		if (check_console_input_format(argv, GENKEY_CONSOLE_OPTION, SIZE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, SECRET_CONSOLE_OPTION))
+		if (check_console_input_format     (argv, GENKEY_CONSOLE_OPTION,    SIZE_CONSOLE_OPTION,   PUBKEY_CONSOLE_OPTION, SECRET_CONSOLE_OPTION))
 		{
+			_log("User chose generate key option");
 			//do some code
 		}
 		else if (check_console_input_format(argv, SIGNATURE_CONSOLE_OPTION, INFILE_CONSOLE_OPTION, SECRET_CONSOLE_OPTION, SIGFILE_CONSOLE_OPTION))
 		{
+			_log("User chose signify file option");
 			//do some code
 		}
-		else if (check_console_input_format(argv, CHECK_CONSOLE_OPTION, INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, SIGFILE_CONSOLE_OPTION))
+		else if (check_console_input_format(argv, CHECK_CONSOLE_OPTION,     INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, SIGFILE_CONSOLE_OPTION))
 		{
+			_log("User chose check files sign option");
 			//do some code
 		}
-		else if (check_console_input_format(argv, ENCRYPT_CONSOLE_OPTION, INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
+		else if (check_console_input_format(argv, ENCRYPT_CONSOLE_OPTION,   INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
 		{
+			_log("User chose to encrypt file option");
 			//do some code
 		}
-		else if (check_console_input_format(argv, DECRYPT_CONSOLE_OPTION, INFILE_CONSOLE_OPTION, SECRET_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
+		else if (check_console_input_format(argv, DECRYPT_CONSOLE_OPTION,   INFILE_CONSOLE_OPTION, SECRET_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
 		{
+			_log("User chose to decrypt file option");
 			//do some code
 		}
 		else
 		{
 			printf(ERROR_FIRST_PARAMETER, argv[1]);
+			_log("User typed wrong parameters");
 			exit(WRONG_ARGUMENT_FAILURE);
 		}
 	}
 	else
 	{
 		printf(ERROR_DEFAULT);
+		_log("User typed wrong number of parameters");
 		exit(WRONG_ARGUMENT_FAILURE);
 	}
 	return 0;
