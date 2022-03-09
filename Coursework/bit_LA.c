@@ -63,6 +63,7 @@ number init() {
 	result.mas = (uint8_t*)malloc(sizeof(uint8_t));
 	if (result.mas == NULL)
 	{
+		_log("Memory allocation failure in init() function");
 		exit(MEMORY_ALLOCATION_FAILURE);
 	}
 	result.mas[0] = 0;
@@ -141,6 +142,7 @@ void normalize(number* value) {
 	value->mas = (uint8_t*)malloc(sizeof(uint8_t));
 	if (value->mas == NULL)
 	{
+		_log("Memory allocation failure in normalize() function");
 		exit(MEMORY_ALLOCATION_FAILURE);
 	}
 	for (i = 0; i <= end; i++) {
@@ -168,15 +170,21 @@ void add_digit(number* object, uint8_t value) {
 	else {
 		buff = (uint8_t*)malloc(sizeof(uint8_t) * (object->current_count));
 		if (buff == NULL)
+		{
+			_log("Memory allocation failure in add_digit() function (buffer)");
 			exit(MEMORY_ALLOCATION_FAILURE);
+		}
 		for (iter = 0; iter < object->current_count; ++iter)
 		{
 			buff[iter] = object->mas[iter];
 		}
 		clear_mem(object);
 		object->mas = (uint8_t*)malloc(sizeof(uint8_t) * (object->size) * 2);
-		if (object->mas == NULL)
+		if (object->mas == NULL) 
+		{
+			_log("Memory allocation failure in add_digit() function (object)");
 			exit(MEMORY_ALLOCATION_FAILURE);
+		}
 		for (iter = 0; iter < object->current_count; ++iter)
 		{
 			object->mas[iter] = buff[iter];
@@ -582,6 +590,7 @@ number division_with_module(number* value1, number* value2, number* ost)
 
 	if (is_zero(value2))
 	{
+		_log("Divider was 0 in division_with_module() function");
 		exit(FAILURE);
 	}
 	if (value2->mas[value2->current_count - 1])
@@ -714,7 +723,6 @@ number module_pow(number* a, number* t, number* b)
 				clear_mem(&buff3);
 				clear_mem(&buff);
 			}
-			// exit(0);                  //////////////////////////////////////////////////////////////////////////////////////
 			buff = multiplication(&buff2, &buff2);
 			clear_mem(&buff2);
 			buff3 = division_with_module(&buff, b, &buff2);
@@ -729,8 +737,6 @@ number module_pow(number* a, number* t, number* b)
 		clear_mem(&buff);
 		clear_mem(&buff2);
 		clear_mem(&buff3);
-
-		//exit(0);
 	}
 	clear_mem(&d);
 	clear_mem(&iterator);
@@ -813,7 +819,7 @@ number euclide_algorithm_modifyed(number* value1, number* value2, number* values
 	if (b.mas[b.current_count - 1])
 	{
 		nonadditional_code(&b);
-}
+	}
 	buff = difference(&a, &b);
 	if (buff.mas[buff.current_count - 1])
 	{
@@ -898,7 +904,7 @@ number euclide_algorithm_modifyed(number* value1, number* value2, number* values
 		clear_mem(&values[1]);
 		values[1] = difference(&_a, &buff);
 		clear_mem(&buff);
-		
+
 		clear_mem(&values[2]);
 		values[2] = copy(&_d);
 

@@ -1,5 +1,4 @@
 #include "RSA.h"
-#include "_file_.h"
 
 void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filename)
 {
@@ -12,11 +11,13 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 	if (pubkey == NULL)
 	{
 		printf(FILE_OPENING_ERROR, pubkey_filename);
+		_log("Error when try to open \"pubkey\" file");
 		exit(FILE_OPEN_FAILURE);
 	}
 	if (seckey == NULL)
 	{
 		printf(FILE_OPENING_ERROR, seckey_filename);
+		_log("Error when try to open \"seckey\" file");
 		exit(FILE_OPEN_FAILURE);
 	}
 
@@ -24,6 +25,7 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 	if (key_s_buf == 0)
 	{
 		printf("Wrong key size: %s.\nType -h for help", key_size_str);
+		_log("Error when try to make string \"key size\" to integer");
 		exit(FAILURE);
 	}
 	else
@@ -43,6 +45,7 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 			break;
 		default:
 			printf("Wrong key size: %s.\nType -h for help", key_size_str);
+			_log("Error: key size doesnt belong to keySizes list");
 			exit(FAILURE);
 			break;
 		}
