@@ -84,6 +84,11 @@ int main(int argc, char* argv[])
 	printf("_e*_d = "); print_number_decimal(&buff); clear_mem(&buff);
 	printf("_phi_n = "); print_number_decimal(&_phi_n);*/
 
+	//_1_0110101101# 726
+	number a = get_prime_from_file("test_primes_10_bit.blackleague", 1, 10);
+	print_number(&a);
+	print_number_decimal(&a);
+
 	/*
 	number a = init();
 	for (j = 2; j < 100; j++) {

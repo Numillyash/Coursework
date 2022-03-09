@@ -43,8 +43,7 @@ typedef enum {
 
 //file
 
-#define FILE_OPENING_ERROR "\
-Cannot open the %s file.\n"
+#define FILE_OPENING_ERROR "Cannot open the %s file.\n"
 
 #define primes_128_bit_filename "primes_128_bit.blackleague"
 #define primes_256_bit_filename "primes_256_bit.blackleague"
@@ -63,7 +62,8 @@ enum EXIT_CODE {
 	FILE_OPEN_FAILURE,
 	FILE_FORMAT_FAILURE,
 	LOG_FAILURE,
-	MEMORY_ALLOCATION_FAILURE
+	MEMORY_ALLOCATION_FAILURE,
+	GET_PRIME_FAILURE
 };
 
 //fast funcs
