@@ -85,9 +85,9 @@ int main(int argc, char* argv[])
 	printf("_phi_n = "); print_number_decimal(&_phi_n);*/
 
 	//_1_0110101101# 726
-	number a = get_prime_from_file("test_primes_10_bit.blackleague", 1, 10);
-	print_number(&a);
-	print_number_decimal(&a);
+	//number a = get_prime_from_file("test_primes_10_bit.blackleague", 1, 10);
+	//print_number(&a);
+	//print_number_decimal(&a);
 
 	/*
 	number a = init();
@@ -248,10 +248,11 @@ int main(int argc, char* argv[])
 	}
 	else if (argc == 8)
 	{
+		// progname workmode arg1 -- arg2 -- arg3 --
 		if (check_console_input_format     (argv, GENKEY_CONSOLE_OPTION,    SIZE_CONSOLE_OPTION,   PUBKEY_CONSOLE_OPTION, SECRET_CONSOLE_OPTION))
 		{
 			_log("User chose generate key option");
-			//do some code
+			generate_key(argv[3], argv[5], argv[7]);
 		}
 		else if (check_console_input_format(argv, SIGNATURE_CONSOLE_OPTION, INFILE_CONSOLE_OPTION, SECRET_CONSOLE_OPTION, SIGFILE_CONSOLE_OPTION))
 		{

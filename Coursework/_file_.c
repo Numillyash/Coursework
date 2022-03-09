@@ -2,7 +2,7 @@
 
 number get_prime_from_file(char* filename, int line_number, int bit_size) 
 {
-	FILE* file; int c = 0; int line_num = 0; number res = init();
+	FILE* file; int c = 0; int line_num; number res = init();
 	file = fopen(filename, "r");
 	if (file == NULL)
 	{
@@ -14,6 +14,7 @@ number get_prime_from_file(char* filename, int line_number, int bit_size)
 		c = fgetc(file);
 		if (c == (int)'_')
 		{
+			line_num = 0;
 			c = fgetc(file);
 			while (c != (int)'_')
 			{
