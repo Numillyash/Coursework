@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 	setlocale(LC_ALL, "rus");
 	// брать p и q из базы простых чисел
 	// параллельные вычисления OpenCL, CUDA
-
+	_log_start();
 	_log("thats a log");
 	_log("thats an another log");
 

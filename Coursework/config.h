@@ -10,6 +10,7 @@
 #include <time.h>
 #include <stdint.h>
 #include <locale.h>
+#include <sys/stat.h>
 
 //input console checking
 #define HELP_CONSOLE_OPTION_1 "-h"
@@ -41,7 +42,6 @@ typedef enum {
 } KEY_BIT_SIZE;
 
 //file
-#define IS_LOG_CREATED
 
 #define FILE_OPENING_ERROR "\
 Cannot open the %s file.\n"
