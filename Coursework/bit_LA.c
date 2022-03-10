@@ -110,6 +110,33 @@ number int_to_number(int value) {
 	return result;
 }
 
+int number_to_int(number* value) 
+{
+	int res = 0, i, zn = 1;
+	int x = 1; // степень двойки
+
+	if (value->mas[value->current_count - 1])
+	{
+		zn = -1;
+		nonadditional_code(value);
+		for (i = 0; i < value->current_count - 1; i++)
+		{
+			res += value->mas[i] * x;
+			x <<= 1;
+		}
+	}
+	else
+	{
+		for (i = 0; i < value->current_count - 1; i++)
+		{
+			res += value->mas[i] * x;
+			x <<= 1;
+		}
+	}
+	res *= zn;
+	return res;
+}
+
 void normalize(number* value) {
 	number result = init();
 	int i; //iterator
@@ -243,12 +270,13 @@ void print_number_as_is(number* value) {
 
 void print_number_decimal(number* value) {
 	int y; //iterator
+	int x = 1; // stepen 2
+	int s = 0; // summa
 	if (value->mas[value->current_count - 1])
 	{
 		printf("-");
 		nonadditional_code(value);
-		int x = 1;
-		int s = 0;
+		
 		for (y = 0; y < value->current_count - 1; y++)
 		{
 			s += value->mas[y] * x;
@@ -258,8 +286,6 @@ void print_number_decimal(number* value) {
 	}
 	else
 	{
-		int x = 1;
-		int s = 0;
 		for (y = 0; y < value->current_count - 1; y++)
 		{
 			s += value->mas[y] * x;
@@ -415,22 +441,12 @@ number difference(number* value1, number* value2) {
 
 number easy_mult(number* value1, number* value2)
 {
-	number result = init(), buff;
-	number a = copy(value1);
-	number b = copy(value2);
-	while (!is_zero(&b)) {
-		if (b.mas[0])
-		{
-			buff = addition(&result, &a);
-			clear_mem(&result);
-			result = copy(&buff);
-			clear_mem(&buff);
-		}
-		offset_right(&b);
-		offset_left(&a);
-	}
-	clear_mem(&a);
-	clear_mem(&b);
+	number result = init();
+	int a = number_to_int(value1);
+	int b = number_to_int(value2);
+	
+	result = int_to_number(a*b);
+
 	return result;
 }
 
@@ -453,6 +469,17 @@ number karatsuba(number* value1, number* value2)
 	if (n <= 5)
 	{
 		clear_mem(&res);
+#ifdef DEBUG
+		printf("Start easyMult\n");
+
+		printf("n = %d\n", n);
+		printf("k = %d\n", k);
+
+		printf("v1 = ");
+		print_number(value1);
+		printf("v2 = ");
+		print_number(value2);
+#endif // DEBUG   
 		return easy_mult(value1, value2);
 	}
 	else

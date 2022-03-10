@@ -71,6 +71,13 @@ number copy(number* value);
 number int_to_number(int value);
 
 /// <summary>
+/// Возвращает int, в котором записано данное число
+/// </summary>
+/// <param name="value">Number число</param>
+/// <returns>Целое число</returns>
+int number_to_int(number* value);
+
+/// <summary>
 /// Возвращает number-обьект без незначащих нулей
 /// </summary>
 /// <param name="value">Ссылка на обьект</param>

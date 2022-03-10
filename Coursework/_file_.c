@@ -51,7 +51,35 @@ void save_open_key(char* filename, number* mod, number* pubkey)
 
 void save_secret_key(char* filename, number* seckey)
 {
+	FILE* file;
+	int i, j; // iterators 
+	int c;
+	file = fopen(filename, "w");
 
+	if (file == NULL)
+	{
+		_log("Error while saving open key file");
+		exit(FILE_OPEN_FAILURE);
+	}
+	fprintf(file, "_d_");
+
+	while (((seckey->current_count) - 1) % 4 != 0)
+	{
+		add_digit(seckey, 0);
+	}
+
+	for (i = 0; i < seckey->current_count - 1; i += 4)
+	{
+		c = 0;
+		for (j = i + 3; j >= i; j--)
+		{
+			c = c * 2 + seckey->mas[j];
+		}
+		fprintf(file, "%c", (char)(c + (int)'a'));
+	}
+	fprintf(file, "#\n&");
+
+	fclose(file);
 }
 
 number get_prime_from_file(char* filename, int line_number, int bit_size) 

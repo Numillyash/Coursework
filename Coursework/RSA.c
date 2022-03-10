@@ -8,22 +8,6 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 	number p, q, n, phi_n, e, d, buff1, buff2, numb_one, numb_zero;
 	number* arr;
 
-	pubkey = fopen(pubkey_filename, "w");
-	seckey = fopen(seckey_filename, "w");
-
-	if (pubkey == NULL)
-	{
-		printf(FILE_OPENING_ERROR, pubkey_filename);
-		_log("Error when try to open \"pubkey\" file");
-		exit(FILE_OPEN_FAILURE);
-	}
-	if (seckey == NULL)
-	{
-		printf(FILE_OPENING_ERROR, seckey_filename);
-		_log("Error when try to open \"seckey\" file");
-		exit(FILE_OPEN_FAILURE);
-	}
-
 	key_s_buf = atoi(key_size_str);
 	if (key_s_buf == 0)
 	{
@@ -81,8 +65,6 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 		break;
 	}
 
-	print_number(&p);
-	print_number(&q);
 
 	numb_zero = int_to_number(0);
 	numb_one = int_to_number(1);
@@ -126,9 +108,13 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 	//&
 	//all numbers will be saved in 4-bit form
 
+	save_open_key(pubkey_filename, &n, &e);
+	save_secret_key(seckey_filename, &d);
 
+	clear_mem(&n);
+	clear_mem(&e);
+	clear_mem(&d);
 
-	fclose(pubkey); fclose(seckey);
 	exit(DEBUG_EXIT_CODE);
 }
 
