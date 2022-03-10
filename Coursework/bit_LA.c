@@ -180,7 +180,7 @@ void add_digit(number* object, uint8_t value) {
 		}
 		clear_mem(object);
 		object->mas = (uint8_t*)malloc(sizeof(uint8_t) * (object->size) * 2);
-		if (object->mas == NULL) 
+		if (object->mas == NULL)
 		{
 			_log("Memory allocation failure in add_digit() function (object)");
 			exit(MEMORY_ALLOCATION_FAILURE);
@@ -218,15 +218,27 @@ void reverse(number* value)
 {
 	number prom = init();
 	int i; // iterator
-	for (i = value->current_count - 1; i >= 0; i--)
+	for (i = value->current_count - 2; i >= 0; i--)
 	{
 		add_digit(&prom, value->mas[i]);
 	}
-	for (i = 0; i < prom.current_count - 1; i++)
+	for (i = 0; i <= prom.current_count - 2; i++)
 	{
 		value->mas[i] = prom.mas[i];
 	}
 	clear_mem(&prom);
+}
+
+void print_number_as_is(number* value) {
+	int i; //iterator
+	for (i = 0; i <= value->current_count - 2; i++)
+	{
+		printf("%d", (int)value->mas[i]);
+		if (i % 4 == 3)
+			printf(" ");
+	}
+	printf(" %d", (int)value->mas[value->current_count - 1]);
+	printf("\n");
 }
 
 void print_number_decimal(number* value) {
@@ -260,12 +272,17 @@ void print_number_decimal(number* value) {
 void print_number(number* value) {
 	int i; //iterator
 	printf("%d ", (int)value->mas[value->current_count - 1]);
+	while (((value->current_count) - 1) % 4 != 0)
+	{
+		add_digit(value, 0);
+	}
 	for (i = value->current_count - 2; i >= 0; i--)
 	{
 		printf("%d", (int)value->mas[i]);
-		if (i % 8 == 0)
+		if (i % 4 == 0)
 			printf(" ");
 	}
+	normalize(value);
 	printf("\n");
 }
 

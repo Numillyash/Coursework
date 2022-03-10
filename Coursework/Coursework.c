@@ -53,6 +53,12 @@ int main(int argc, char* argv[])
 	// параллельные вычисления OpenCL, CUDA
 	_log_start();
 
+	//genkey --size 256 --pubkey s --secret d
+	number a = int_to_number(654);   // 0010 1000 1110           // 2 8 14      // c i o
+	number b = int_to_number(79852); // 0001 0011 0111 1110 1100 // 1 3 7 14 12 // b d h o m
+
+	save_open_key("testSaveOk.txt", &a, &b);
+	exit(DEBUG_EXIT_CODE);
 	//int i = 1100101, j = 0, l = 239;
 	/*int p = 3557, q = 2579;
 	number _p = int_to_number(p);

@@ -18,7 +18,7 @@ void _log_start()
 	strcat(filename, "./logs/");
 	strcat(filename, date);
 	strcat(filename, ".log");
-	printf(filename); printf("\n");
+	//printf(filename); printf("\n");
 	file = fopen(filename, "w");
 	if (file == NULL)
 	{

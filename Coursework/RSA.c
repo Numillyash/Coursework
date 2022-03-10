@@ -5,7 +5,8 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 	FILE* pubkey, * seckey;
 	KEY_BIT_SIZE keysize; 
 	int key_s_buf = 0, rand_num_p = -1, rand_num_q = -1;
-	number p, q;
+	number p, q, n, phi_n, e, d, buff1, buff2, numb_one, numb_zero;
+	number* arr;
 
 	pubkey = fopen(pubkey_filename, "w");
 	seckey = fopen(seckey_filename, "w");
@@ -82,6 +83,50 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 
 	print_number(&p);
 	print_number(&q);
+
+	numb_zero = int_to_number(0);
+	numb_one = int_to_number(1);
+
+	n = multiplication(&p, &q);
+
+	buff1 = difference(&p, &numb_one);
+	buff2 = difference(&q, &numb_one);
+	phi_n = multiplication(&buff1, &buff2);
+	clear_mem(&buff1);
+	clear_mem(&buff2);
+
+	e = int_to_number(65537);
+
+	arr = (number*)malloc(4 * sizeof(number)); // = { 1,0,0,1 };
+	arr[0] = copy(&numb_one);
+	arr[1] = copy(&numb_zero);
+	arr[2] = copy(&numb_zero);
+	arr[3] = copy(&numb_one);
+	buff1 = euclide_algorithm_modifyed(&phi_n, &e, arr);
+	clear_mem(&buff1);
+	d = copy(&arr[1]);
+
+	clear_mem(&p);
+	clear_mem(&q);
+	clear_mem(&phi_n);
+	clear_mem(&numb_one);
+	clear_mem(&numb_zero);
+	clear_mem(&arr[0]);
+	clear_mem(&arr[1]);
+	clear_mem(&arr[2]);
+	clear_mem(&arr[3]);
+
+	//File format
+	//pubkey
+	//_n_"smth"#
+	//_e_"smth"#
+	//&
+	//seckey
+	//_d_"smth"#
+	//&
+	//all numbers will be saved in 4-bit form
+
+
 
 	fclose(pubkey); fclose(seckey);
 	exit(DEBUG_EXIT_CODE);
