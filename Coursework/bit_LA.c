@@ -226,10 +226,18 @@ void add_digit(number* object, uint8_t value) {
 
 void offset_right(number* object)
 {
-	reverse(object);
-	object->current_count -= 1;
-	reverse(object);
-	normalize(object);
+	if (object->current_count == 2)
+	{
+		*object = int_to_number(0);
+	}
+	else
+	{
+		reverse(object);
+		object->mas[object->current_count - 2] = object->mas[object->current_count - 1];
+		object->current_count -= 1;
+		reverse(object);
+		normalize(object);
+	}
 }
 
 void offset_left(number* object)
@@ -310,6 +318,27 @@ void print_number(number* value) {
 	}
 	normalize(value);
 	printf("\n");
+}
+
+void debug_log(number* value)
+{
+	int i, n = value->current_count;
+	char buff[4000];
+	buff[0] = value->mas[n - 1]+'0';
+	buff[1] = ' ';
+
+	//    |
+	//100101 cc=6
+	//1 01001
+	//  |
+
+	for (i = n - 2; i >= 0; i--)
+	{
+		buff[n - i] = value->mas[i] + '0';
+	}
+	buff[n + 1] = '\0';
+	//printf("%s\n", buff);
+	_log(buff);
 }
 
 BOOL is_zero(number* object)
@@ -690,6 +719,8 @@ number division_with_module(number* value1, number* value2, number* ost)
 	}
 
 	buff = difference(&sub, &rem);
+
+	//TODO: исправить сдвиги. сдвигать сразу на разность кол-ва цифр -2 или что-то типо того
 	while (buff.mas[buff.current_count - 1])
 	{
 		offset_left(&sub);
@@ -759,6 +790,7 @@ number module_pow(number* a, number* t, number* b)
 		buff2 = copy(a);
 		while (!is_zero(&iterator))
 		{
+			debug_log(&iterator);///////////////////
 			if (iterator.mas[0] % 2 == 1)
 			{
 				buff = multiplication(&ost, &buff2);
@@ -889,10 +921,9 @@ number euclide_algorithm_modifyed(number* value1, number* value2, number* values
 	{
 		nonadditional_code(&b);
 	}
-	//a = b * q_0 + r_1                          
+	//a = b * q_0 + r_1     
 	div = division_with_module(&a, &b, &mod);
 	//clear_mem(&buff);
-
 	if (!is_zero(&mod))
 	{
 		buff = euclide_algorithm_modifyed(&b, &mod, values);

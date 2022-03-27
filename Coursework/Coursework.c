@@ -48,15 +48,38 @@ int check_console_input_format(char** argv, char* work_mode, char* arg_1, char* 
 
 int main(int argc, char* argv[])
 {
+	// подпись документа как подпись хэша
+
+	// нужна ли проверка на замену файла?
+
 	setlocale(LC_ALL, "rus");
-	// брать p и q из базы простых чисел
-	// параллельные вычисления OpenCL, CUDA
 	_log_start();
 
-	//genkey --size 256 --pubkey s --secret d
+	number a, b, c;
+	read_open_key("pb.txt", &a,&b);
+	read_secret_key("sk.txt", &c);
+	debug_log(&a);
+	debug_log(&b);
+	debug_log(&c);
 
-	/*number a = int_to_number(654);   // 0010 1000 1110           // 2 8 14      // c i o
-	number b = int_to_number(79852); // 0001 0011 0111 1110 1100 // 1 3 7 14 12 // b d h o m
+	//genkey --size 256 --pubkey pb.txt --secret sk.txt
+
+
+	
+	number msg = int_to_number(100);
+	number msg_ci = module_pow(&msg, &b, &a);
+	number msg_deci = module_pow(&msg_ci, &c, &a);
+	
+	print_number_decimal(&msg);
+	
+
+
+
+	//genkey --size 2048 --pubkey pb.txt --secret sk.txt
+
+	//number a = int_to_number(654);   // 0010 1000 1110           // 2 8 14      // c i o
+	//debug_log(&a);
+	/*number b = int_to_number(79852); // 0001 0011 0111 1110 1100 // 1 3 7 14 12 // b d h o m
 
 	save_open_key("testSaveOk.txt", &a, &b);
 
@@ -312,7 +335,7 @@ int main(int argc, char* argv[])
 		else if (check_console_input_format(argv, ENCRYPT_CONSOLE_OPTION,   INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
 		{
 			_log("User chose to encrypt file option");
-			//do some code
+			encrypt_file(argv[3], argv[5], argv[7]);
 		}
 		else if (check_console_input_format(argv, DECRYPT_CONSOLE_OPTION,   INFILE_CONSOLE_OPTION, SECRET_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
 		{

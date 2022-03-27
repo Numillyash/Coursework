@@ -1,5 +1,20 @@
 #include "RSA.h"
 
+void encrypt_file(char* input_filename, char* pubkey_filename, char* output_filename)
+{
+	number n, e;
+	FILE *input, *output;
+	read_open_key(pubkey_filename, &n, &e);
+	
+	input = check_file_exist_read(input_filename);
+	output = check_file_exist_write(output_filename);
+
+
+
+	fclose(input);
+	fclose(output);
+}
+
 void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filename)
 {
 	FILE* pubkey, * seckey;
@@ -65,7 +80,6 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 		break;
 	}
 
-
 	numb_zero = int_to_number(0);
 	numb_one = int_to_number(1);
 
@@ -78,15 +92,19 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 	clear_mem(&buff2);
 
 	e = int_to_number(65537);
+	_log("genkey: const done");
 
 	arr = (number*)malloc(4 * sizeof(number)); // = { 1,0,0,1 };
-	arr[0] = copy(&numb_one);
+	arr[0] = copy(&numb_one);                                             ////////////////////////////////////////// !
 	arr[1] = copy(&numb_zero);
 	arr[2] = copy(&numb_zero);
 	arr[3] = copy(&numb_one);
+	_log("genkey: arr created");
 	buff1 = euclide_algorithm_modifyed(&phi_n, &e, arr);
 	clear_mem(&buff1);
 	d = copy(&arr[1]);
+
+	_log("genkey: all counts ready");
 
 	clear_mem(&p);
 	clear_mem(&q);

@@ -12,12 +12,15 @@ void _log_start()
 #ifdef __linux__ 
 	mkdir("logs", S_IRWXU);
 #elif _WIN32
-	mkdir("logs");
+	mkdir("logs");                                           //////////////////////////////////////// !
 #endif
+	
 	strftime(date, 18, "%H.%M.%S %d.%m.%y", u);
-	strcat(filename, "./logs/");
-	strcat(filename, date);
-	strcat(filename, ".log");
+
+	snprintf(filename, 29, "./logs/%s.log", date);
+	//strcat(filename, "./logs/");
+	//strcat(filename, date);
+	//strcat(filename, ".log");
 	//printf(filename); printf("\n");
 	file = fopen(filename, "w");
 	if (file == NULL)
@@ -26,10 +29,11 @@ void _log_start()
 	}
 	else
 	{
-		fputs(date, file);
+		fprintf(file, "%s: CREATED LOG\n", date);
+		/*fputs(date, file);
 		fputs(": ", file);
 		fputs("CREATED LOG", file);
-		fputs("\n", file);
+		fputs("\n", file);*/
 	}
 	fclose(file);
 }
@@ -48,10 +52,7 @@ void _log(char* message)
 	}
 	else
 	{
-		fputs(date, file);
-		fputs(": ", file);
-		fputs(message, file);
-		fputs("\n", file);
+		fprintf(file, "%s: %s\n", date, message);
 	}
 	fclose(file);
 }

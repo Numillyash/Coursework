@@ -69,4 +69,4 @@ enum EXIT_CODE {
 
 //fast funcs
 #define swap(a,b); b = a+b; a = b-a; b = b-a;
-#define max(a,b) (a>b)? a : b
+//#define max(a,b) (a>b)? a : b

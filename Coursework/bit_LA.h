@@ -130,6 +130,12 @@ void print_number_decimal(number* value);
 void print_number(number* value);
 
 /// <summary>
+/// Печатает число в лог
+/// </summary>
+/// <param name="value">Ссылка на число</param>
+void debug_log(number* value);
+
+/// <summary>
 /// Сравнение числа с 0 (Равно нулю/не равно нулю)
 /// </summary>
 /// <param name="object">Число, которое необходимо проверить</param>
