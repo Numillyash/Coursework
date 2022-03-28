@@ -16,18 +16,34 @@ FILE* check_file_exist_write(char* filename);
 /// <returns>Указатель на файл</returns>
 FILE* check_file_exist_read(char* filename);
 
-void save_open_key(char* filename, number* mod, number* pubkey);
-
-void save_secret_key(char* filename, number* seckey);
+/// <summary>
+/// Запись number в файл
+/// </summary>
+/// <param name="file">указатель на файл</param>
+/// <param name="value">число</param>
+void save_num_to_file(FILE* file, number* value);
 
 /// <summary>
-/// Читает открытый ключ из файла
+/// Чтение number из файла
+/// </summary>
+/// <param name="file">указатель на файл</param>
+/// <param name="value">число</param>
+int read_num_from_file(FILE* file, number* value);
+
+/// <summary>
+/// Сохраняет ключ
 /// </summary>
 /// <param name="filename">имя файла</param>
-/// <param name="mod">Указатель на неинициализированное число</param>
-/// <param name="pubkey">Указатель на неинициализированное число</param>
-void read_open_key(char* filename, number* mod, number* pubkey);
+/// <param name="mod">N</param>
+/// <param name="subkey">второй параметр (e или d)</param>
+void save_key(char* filename, number* mod, number* subkey, char log);
 
-void read_secret_key(char* filename, number* seckey);
+/// <summary>
+/// Читает ключ из файла
+/// </summary>
+/// <param name="filename">имя файла</param>
+/// <param name="mod">N</param>
+/// <param name="subkey">второй параметр (e или d)</param>
+void read_key(char* filename, number* mod, number* subkey, char log);
 
 number get_prime_from_file(char* filename, int line_number, int bit_size);

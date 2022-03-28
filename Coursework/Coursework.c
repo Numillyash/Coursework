@@ -55,22 +55,31 @@ int main(int argc, char* argv[])
 	setlocale(LC_ALL, "rus");
 	_log_start();
 
-	number a, b, c;
-	read_open_key("pb.txt", &a,&b);
-	read_secret_key("sk.txt", &c);
-	debug_log(&a);
-	debug_log(&b);
-	debug_log(&c);
+	encrypt_file("test_inp.txt", "pb_test.txt", "test_out.txt");
+	decrypt_file("test_out.txt", "sk_test.txt", "test_out2.txt");
+	
+	//number a, b, c;
+
+	//number n = int_to_number(5141);
+	//number e = int_to_number(31);
+	//number d = int_to_number(4831);
+
+	//read_key("pb_test.txt", &a,&b, 'e');
+	//read_key("sk_test.txt", &a,&c, 'd');
+	//debug_log(&a);
+	//debug_log(&b);
+	//debug_log(&c);
 
 	//genkey --size 256 --pubkey pb.txt --secret sk.txt
 
+	// ПОХУЙ, ЕБАШИМ ХЭШИ
 
 	
-	number msg = int_to_number(100);
-	number msg_ci = module_pow(&msg, &b, &a);
-	number msg_deci = module_pow(&msg_ci, &c, &a);
+	//number msg = int_to_number(100);
+	//number msg_ci = module_pow(&msg, &b, &a);
+	//number msg_deci = module_pow(&msg_ci, &c, &a);
 	
-	print_number_decimal(&msg);
+	//print_number_decimal(&msg);
 	
 
 

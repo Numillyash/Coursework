@@ -790,7 +790,6 @@ number module_pow(number* a, number* t, number* b)
 		buff2 = copy(a);
 		while (!is_zero(&iterator))
 		{
-			debug_log(&iterator);///////////////////
 			if (iterator.mas[0] % 2 == 1)
 			{
 				buff = multiplication(&ost, &buff2);

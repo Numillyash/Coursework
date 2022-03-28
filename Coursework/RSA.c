@@ -1,18 +1,62 @@
 #include "RSA.h"
 
-void encrypt_file(char* input_filename, char* pubkey_filename, char* output_filename)
+void decrypt_file(char* input_filename, char* seckey_filename, char* output_filename)
 {
-	number n, e;
-	FILE *input, *output;
-	read_open_key(pubkey_filename, &n, &e);
-	
+	number n, d, msg, msg_ci;
+	int c = 0;
+	FILE* input, * output;
+	read_key(seckey_filename, &n, &d, 'd');
+
+	msg_ci = init();
+
 	input = check_file_exist_read(input_filename);
 	output = check_file_exist_write(output_filename);
 
+	while (read_num_from_file(input, &msg_ci))
+	{
+		msg = module_pow(&msg_ci, &d, &n);
+		c = number_to_int(&msg) - 100;
+		fprintf(output, "%c", (char)c);
+		clear_mem(&msg);
+		clear_mem(&msg_ci);
+		msg_ci = init();
+	}
 
+	clear_mem(&d);
+	clear_mem(&n);
+	clear_mem(&msg_ci);
 
 	fclose(input);
 	fclose(output);
+}
+
+void encrypt_file(char* input_filename, char* pubkey_filename, char* output_filename)
+{
+	number n, e, msg, msg_ci;
+	int c = 0;
+	FILE *input, *output;
+	read_key(pubkey_filename, &n, &e, 'e');
+
+	input = check_file_exist_read(input_filename);
+	output = check_file_exist_write(output_filename);
+
+	while ((c = fgetc(input)) != EOF)
+	{
+		msg = int_to_number(c+100);
+		msg_ci = module_pow(&msg, &e, &n);
+		save_num_to_file(output, &msg_ci);
+		clear_mem(&msg);
+		clear_mem(&msg_ci);
+	}
+
+	fprintf(output, "EOF");
+
+	clear_mem(&e);
+	clear_mem(&n);
+
+	fclose(input);
+	fclose(output);
+	_log("Encrypt complete");
 }
 
 void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filename)
@@ -126,8 +170,8 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 	//&
 	//all numbers will be saved in 4-bit form
 
-	save_open_key(pubkey_filename, &n, &e);
-	save_secret_key(seckey_filename, &d);
+	save_key(pubkey_filename, &n, &e, 'e');
+	save_key(seckey_filename, &n, &d, 'd');
 
 	clear_mem(&n);
 	clear_mem(&e);

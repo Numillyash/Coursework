@@ -31,9 +31,66 @@ FILE* check_file_exist_read(char* filename)
 // символ читается как число в 4 бита
 // тогда из двоичного числа можно получать сразу биты, минуя перевод в 2сс
 //
-void save_open_key(char* filename, number* mod, number* pubkey) 
+
+void save_num_to_file(FILE* file, number* value)
+{
+	int i, c, j;
+
+	fprintf(file, "_c_");
+	while (((value->current_count) - 1) % 4 != 0)
+	{
+		add_digit(value, 0);
+	}
+
+	for (i = 0; i < value->current_count - 1; i += 4)
+	{
+		c = 0;
+		for (j = i + 3; j >= i; j--)
+		{
+			c = c * 2 + value->mas[j];
+		}
+		fprintf(file, "%c", (char)(c + (int)'a'));
+	}
+
+	fprintf(file, "#\n");
+}
+
+int read_num_from_file(FILE* file, number* value)
+{
+	int i, j; // iterators 
+	int c;
+	int ms[4];
+	char buff[2048];
+
+	fgets(buff, 2048, file);
+
+	if (!strcmp("EOF", buff))
+	{
+		return 0;
+	}
+
+	i = 3;
+	while ((c = (int)buff[i]) != (int)'#')
+	{
+		c = (int)(buff[i] - 'a');
+		for (j = 0; j < 4; j++)
+		{
+			ms[j] = c % 2;
+			c >>= 1;
+		}
+		for (j = 0; j < 4; j++)
+		{
+			add_digit(value, ms[j]);
+		}
+		i++;
+	}
+	return 1;
+}
+
+void save_key(char* filename, number* mod, number* subkey, char log) 
 {
 	FILE* file;
+	char str[2];
 	int i, j; // iterators 
 	int c;
 	file = check_file_exist_write(filename);
@@ -54,18 +111,18 @@ void save_open_key(char* filename, number* mod, number* pubkey)
 		fprintf(file, "%c", (char)(c + (int)'a'));
 	}
 
-	fprintf(file, "#\n_e_");
-	while (((pubkey->current_count) - 1) % 4 != 0)
+	fprintf(file, "#\n_%c_", log);
+	while (((subkey->current_count) - 1) % 4 != 0)
 	{
-		add_digit(pubkey, 0);
+		add_digit(subkey, 0);
 	}
 
-	for (i = 0; i < pubkey->current_count - 1; i += 4)
+	for (i = 0; i < subkey->current_count - 1; i += 4)
 	{
 		c = 0;
 		for (j = i + 3; j >= i; j--)
 		{
-			c = c * 2 + pubkey->mas[j];
+			c = c * 2 + subkey->mas[j];
 		}
 		fprintf(file, "%c", (char)(c + (int)'a'));
 	}
@@ -73,46 +130,21 @@ void save_open_key(char* filename, number* mod, number* pubkey)
 
 	fclose(file);
 
-	_log("Open key saved succesfully");
+	_log("Key saved succesfully. Subkey was: ");
+	str[0] = log;
+	str[1] = '\0';
+	_log(str);
 }
 
-void save_secret_key(char* filename, number* seckey)
+void read_key(char* filename, number* mod, number* subkey, char log)
 {
 	FILE* file;
-	int i, j; // iterators 
-	int c;
-	file = check_file_exist_write(filename);
-	fprintf(file, "_d_");
-
-	while (((seckey->current_count) - 1) % 4 != 0)
-	{
-		add_digit(seckey, 0);
-	}
-
-	for (i = 0; i < seckey->current_count - 1; i += 4)
-	{
-		c = 0;
-		for (j = i + 3; j >= i; j--)
-		{
-			c = c * 2 + seckey->mas[j];
-		}
-		fprintf(file, "%c", (char)(c + (int)'a'));
-	}
-	fprintf(file, "#\n&");
-
-	fclose(file);
-
-	_log("Secret key saved succesfully");
-}
-
-void read_open_key(char* filename, number* mod, number* pubkey)
-{
-	FILE* file;
+	char str[2];
 	int i, j; // iterators 
 	int c;
 	int ms[4];
 	
-	*mod = init(); *pubkey=init();
+	*mod = init(); *subkey=init();
 	file = check_file_exist_read(filename);
 
 	char buff[2048];
@@ -148,50 +180,19 @@ void read_open_key(char* filename, number* mod, number* pubkey)
 		}
 		for (j = 0; j < 4; j++)
 		{
-			add_digit(pubkey, ms[j]);
+			add_digit(subkey, ms[j]);
 		}
 		i++;
 	}
-
+	
+	
 	normalize(mod);
-	normalize(pubkey);
+	normalize(subkey);
 	fclose(file);
-	_log("Open key parced succesfully");
-}
-
-void read_secret_key(char* filename, number* seckey)
-{
-	FILE* file;
-	int i, j; // iterators 
-	int c;
-	int ms[4];
-
-	*seckey = init();
-	file = check_file_exist_read(filename);
-
-	char buff[2048];
-
-	fgets(buff, 2048, file);
-
-	i = 3;
-	while ((c = (int)buff[i]) != (int)'#')
-	{
-		c = (int)(buff[i] - 'a');
-		for (j = 0; j < 4; j++)
-		{
-			ms[j] = c % 2;
-			c >>= 1;
-		}
-		for (j = 0; j < 4; j++)
-		{
-			add_digit(seckey, ms[j]);
-		}
-		i++;
-	}
-
-	normalize(seckey);
-	fclose(file);
-	_log("Secret key parced succesfully");
+	_log("Open key parced succesfully. We read: ");
+	str[0] = log;
+	str[1] = '\0';
+	_log(str);
 }
 
 number get_prime_from_file(char* filename, int line_number, int bit_size) 
