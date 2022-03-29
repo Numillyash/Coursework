@@ -1,5 +1,77 @@
 #include "RSA.h"
 
+BOOL check_sign_file(char* input_filename, char* pubkey_filename, char* sign_filename)
+{
+	number n, e, msg, msg_ci;
+	int c = 0;
+	int c2 = 0;
+	FILE* input, * sign;
+	read_key(pubkey_filename, &n, &e, 'e');
+
+	msg_ci = init();
+
+	input = check_file_exist_read(input_filename);
+	sign = check_file_exist_read(sign_filename);
+
+	while (read_num_from_file(sign, &msg_ci))
+	{
+		msg = module_pow(&msg_ci, &e, &n);
+		c = number_to_int(&msg) - 100;
+		c2 = fgetc(input);
+		if (c2 == NULL || c2 == EOF || c2 != c)
+		{
+			clear_mem(&msg);
+			clear_mem(&msg_ci);
+			clear_mem(&e);
+			clear_mem(&n);
+
+			fclose(input);
+			fclose(sign);
+			return 0;
+		}
+		clear_mem(&msg);
+		clear_mem(&msg_ci);
+		msg_ci = init();
+	}
+
+	clear_mem(&e);
+	clear_mem(&n);
+	clear_mem(&msg_ci);
+
+	fclose(input);
+	fclose(sign);
+	return 1;
+}
+
+void signify_file(char* input_filename, char* seckey_filename, char* sign_filename)
+{
+	number n, d, msg, msg_ci;
+	int c = 0;
+	FILE* input, * sign;
+	read_key(seckey_filename, &n, &d, 'd');
+
+	input = check_file_exist_read(input_filename);
+	sign = check_file_exist_write(sign_filename);
+
+	while ((c = fgetc(input)) != EOF)
+	{
+		msg = int_to_number(c + 100);
+		msg_ci = module_pow(&msg, &d, &n);
+		save_num_to_file(sign, &msg_ci);
+		clear_mem(&msg);
+		clear_mem(&msg_ci);
+	}
+
+	fprintf(sign, "EOF");
+
+	clear_mem(&d);
+	clear_mem(&n);
+
+	fclose(input);
+	fclose(sign);
+	_log("Signify complete");
+}
+
 void decrypt_file(char* input_filename, char* seckey_filename, char* output_filename)
 {
 	number n, d, msg, msg_ci;
@@ -179,5 +251,3 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 
 	exit(DEBUG_EXIT_CODE);
 }
-
-void signify_file(char* input_filename, char* sec_code_filename, char* output_filename) {}
