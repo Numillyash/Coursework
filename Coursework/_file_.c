@@ -1,5 +1,115 @@
 #include "_file_.h"
 
+BOOL check_filenames_2(char* fn1, char* fn2) 
+{
+	int strln;
+	int i; // iterator
+	char resol[5];
+	resol[4] = '\0';
+	if (!strcmp(fn1, fn2))
+	{
+		printf(ERROR_FILE_IDENT);
+		_log("Files had same names");
+		exit(FILE_FORMAT_FAILURE);
+	}
+	// *.txt\0: min 6 symbols
+	if (strlen(fn1) < 6 || strlen(fn2) < 6)
+	{
+		printf(ERROR_FILE_EXTENSION);
+		_log("1 or more files had less then 5 symbols in filename");
+		exit(FILE_FORMAT_FAILURE);
+	}
+
+	strln = strlen(fn1);
+	for (int i = strln - 4; i < strln; i++)
+	{
+		resol[4-(strln - i)] = fn1[i];
+	}	
+	if (strcmp(".txt", resol))
+	{
+		printf(ERROR_FILE_EXTENSION);
+		_log("File has wrong extension");
+		exit(FILE_FORMAT_FAILURE);
+	}
+
+	strln = strlen(fn2);
+	for (int i = strln - 4; i < strln; i++)
+	{
+		resol[4 - (strln - i)] = fn2[i];
+	}
+	if (strcmp(".txt", resol))
+	{
+		printf(ERROR_FILE_EXTENSION);
+		_log("File has wrong extension");
+		exit(FILE_FORMAT_FAILURE);
+	}
+	/// /////////////////////////////////////////////////////////////////
+	_log("Filenames had good format");
+	return 1;
+}
+
+BOOL check_filenames_3(char* fn1, char* fn2, char* fn3)
+{
+	/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// /////////////////////////////////////////////////////////////////////////////////////////////////////////доделать
+	int strln;
+	int i; // iterator
+	char resol[5];
+	resol[4] = '\0';
+	if (!strcmp(fn1, fn2) || !strcmp(fn2, fn3) || !strcmp(fn1, fn3))
+	{
+		printf(ERROR_FILE_IDENT);
+		_log("Files had same names");
+		exit(FILE_FORMAT_FAILURE);
+	}
+	// *.txt\0: min 6 symbols
+	if (strlen(fn1) < 6 || strlen(fn2) < 6 || strlen(fn3) < 6)
+	{
+		printf(ERROR_FILE_EXTENSION);
+		_log("1 or more files had less then 5 symbols in filename");
+		exit(FILE_FORMAT_FAILURE);
+	}
+
+	strln = strlen(fn1);
+	for (int i = strln - 4; i < strln; i++)
+	{
+		resol[4 - (strln - i)] = fn1[i];
+	}
+	if (strcmp(".txt", resol))
+	{
+		printf(ERROR_FILE_EXTENSION);
+		_log("File has wrong extension");
+		exit(FILE_FORMAT_FAILURE);
+	}
+
+	strln = strlen(fn2);
+	for (int i = strln - 4; i < strln; i++)
+	{
+		resol[4 - (strln - i)] = fn2[i];
+	}
+	if (strcmp(".txt", resol))
+	{
+		printf(ERROR_FILE_EXTENSION);
+		_log("File has wrong extension");
+		exit(FILE_FORMAT_FAILURE);
+	}
+
+	strln = strlen(fn3);
+	for (int i = strln - 4; i < strln; i++)
+	{
+		resol[4 - (strln - i)] = fn3[i];
+	}
+	if (strcmp(".txt", resol))
+	{
+		printf(ERROR_FILE_EXTENSION);
+		_log("File has wrong extension");
+		exit(FILE_FORMAT_FAILURE);
+	}
+
+	_log("Filenames had good format");
+	return 1;
+}
+
 FILE* check_file_exist_write(char* filename)
 {
 	FILE* file;
@@ -26,12 +136,6 @@ FILE* check_file_exist_read(char* filename)
 	return file;
 }
 
-//TODO: запихнуть чтение из файла ключа как юнион
-// »де€
-// символ читаетс€ как число в 4 бита
-// тогда из двоичного числа можно получать сразу биты, мину€ перевод в 2сс
-//
-
 void save_num_to_file(FILE* file, number* value)
 {
 	int i, c, j;
@@ -55,6 +159,46 @@ void save_num_to_file(FILE* file, number* value)
 	fprintf(file, "#\n");
 }
 
+void check_readed_num(char* string)
+{
+	char buff[PREFIX_SIZE+1];
+	int i; // iterator
+	int str_len;
+	char check_str_min = 'a', check_str_max = 'a' + 15;
+	BOOL result = FALSE;
+
+
+	buff[PREFIX_SIZE] = '\0';
+	for (i = 0; i < PREFIX_SIZE; i++)
+	{
+		buff[i] = string[i];
+	}
+	if (!strcmp("_n_", buff)|| !strcmp("_d_", buff)|| !strcmp("_e_", buff)|| !strcmp("_c_", buff))
+		result = TRUE;
+	if (!result)
+	{
+		_log("Wrong number prefix");
+		exit(GET_NUMBER_FAILURE);
+	}
+
+	str_len = strlen(string)-1;
+	if (string[str_len] != '#')
+	{
+		_log("End number doesnt exist");
+		exit(GET_NUMBER_FAILURE);
+	}
+
+	for (i = 3; i < str_len; i++)
+	{
+		if (string[i]<check_str_min || string[i] > check_str_max)
+		{
+			_log("There's exist some unexpected symbol");
+			exit(GET_NUMBER_FAILURE);
+		}
+	}
+
+}
+
 int read_num_from_file(FILE* file, number* value)
 {
 	int i, j; // iterators 
@@ -63,6 +207,7 @@ int read_num_from_file(FILE* file, number* value)
 	char buff[2048];
 
 	fgets(buff, 2048, file);
+	check_readed_num(buff);
 
 	if (!strcmp("EOF", buff))
 	{
@@ -194,6 +339,10 @@ void read_key(char* filename, number* mod, number* subkey, char log)
 	str[1] = '\0';
 	_log(str);
 }
+
+
+
+//переработать как read_num
 
 number get_prime_from_file(char* filename, int line_number, int bit_size) 
 {

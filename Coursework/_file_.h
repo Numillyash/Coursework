@@ -2,6 +2,25 @@
 #include "config.h"
 #include "bit_LA.h"
 
+#define PREFIX_SIZE 3
+
+/// <summary>
+/// Проверяет имена файлов на правильность формата и совпадение
+/// </summary>
+/// <param name="fn1">Имя первого файла</param>
+/// <param name="fn2">Имя второго файла</param>
+/// <returns>1, если все проверки пройдены. 0, если хотя бы одна из проверок не пройдена</returns>
+BOOL check_filenames_2(char* fn1, char* fn2);
+
+/// <summary>
+/// Проверяет имена файлов на правильность формата и совпадение
+/// </summary>
+/// <param name="fn1">Имя первого файла</param>
+/// <param name="fn2">Имя второго файла</param>
+/// <param name="fn3">Имя третьего файла</param>
+/// <returns>1, если все проверки пройдены. 0, если хотя бы одна из проверок не пройдена</returns>
+BOOL check_filenames_3(char* fn1, char* fn2, char* fn3);
+
 /// <summary>
 /// Проверка на существование файла (запись)
 /// </summary>

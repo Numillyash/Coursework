@@ -2,6 +2,7 @@
 #define HELP_TEXT "\
 Course work created by Ulanovsky George and Lyashkova Snejana\n\n\
 usage: Coursework [option] ... [arg] ...\n\
+note: all files must be in .txt format\n\
 Options and arguments (and corresponding environment variables):\n\
 genkey	           : Generates keys with const size.                      Needs --size,   --pubkey, --secret   options.\n\
 sign               : Finds file signature and saves it.                   Needs --infile, --secret, --sigfile  options.\n\
@@ -39,5 +40,15 @@ Try `Coursework - h' for more information.\n"
 
 #define ERROR_DEFAULT "\
 You had typed wrong options\n\
+usage: Coursework [option] ... [arg] ...\n\
+Try `Coursework - h' for more information.\n"
+
+#define ERROR_FILE_IDENT "\
+You entered same filenames\n\
+usage: Coursework [option] ... [arg] ...\n\
+Try `Coursework - h' for more information.\n"
+
+#define ERROR_FILE_EXTENSION "\
+You entered wrong filename (symbols count or extension)\n\
 usage: Coursework [option] ... [arg] ...\n\
 Try `Coursework - h' for more information.\n"

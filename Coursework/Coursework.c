@@ -1,7 +1,4 @@
-﻿#include "config.h"
-#include "help.h"
-
-#include "RSA.h"
+﻿#include "RSA.h"
 
 /// <summary>
 /// Function that is checking for parameters for work mode
@@ -87,30 +84,36 @@ int main(int argc, char* argv[])
 	}
 	else if (argc == 8)
 	{
-		// progname workmode arg1 -- arg2 -- arg3 --
+		// progname workmode arg1  --    arg2  --    arg3  --
+		// argv0    argv1    argv2 argv3 argv4 argv5 argv6 argv7
 		if (check_console_input_format     (argv, GENKEY_CONSOLE_OPTION,    SIZE_CONSOLE_OPTION,   PUBKEY_CONSOLE_OPTION, SECRET_CONSOLE_OPTION))
 		{
 			_log("User chose generate key option");
+			check_filenames_2(argv[5], argv[7]);
 			generate_key(argv[3], argv[5], argv[7]);
 		}
 		else if (check_console_input_format(argv, SIGNATURE_CONSOLE_OPTION, INFILE_CONSOLE_OPTION, SECRET_CONSOLE_OPTION, SIGFILE_CONSOLE_OPTION))
 		{
 			_log("User chose signify file option");
+			check_filenames_3(argv[3], argv[5], argv[7]);
 			signify_file(argv[3], argv[5], argv[7]);
 		}
 		else if (check_console_input_format(argv, CHECK_CONSOLE_OPTION,     INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, SIGFILE_CONSOLE_OPTION))
 		{
 			_log("User chose check files sign option");
+			check_filenames_3(argv[3], argv[5], argv[7]);
 			check_sign_file(argv[3], argv[5], argv[7]);
 		}
 		else if (check_console_input_format(argv, ENCRYPT_CONSOLE_OPTION,   INFILE_CONSOLE_OPTION, PUBKEY_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
 		{
 			_log("User chose to encrypt file option");
+			check_filenames_3(argv[3], argv[5], argv[7]);
 			encrypt_file(argv[3], argv[5], argv[7]);
 		}
 		else if (check_console_input_format(argv, DECRYPT_CONSOLE_OPTION,   INFILE_CONSOLE_OPTION, SECRET_CONSOLE_OPTION, OUTFILE_CONSOLE_OPTION))
 		{
 			_log("User chose to decrypt file option");
+			check_filenames_3(argv[3], argv[5], argv[7]);
 			decrypt_file(argv[3], argv[5], argv[7]);
 		}
 		else

@@ -1,5 +1,4 @@
 #pragma once
-#include "config.h"
 #include "_log_.h"
 
 #define NUMBER_SYSTEM_BASE 2
