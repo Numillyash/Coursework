@@ -485,7 +485,7 @@ number difference(number* value1, number* value2) {
 
 number easy_mult(number* value1, number* value2)
 {
-	number result = init();
+	number result;
 	int a = number_to_int(value1);
 	int b = number_to_int(value2);
 	
