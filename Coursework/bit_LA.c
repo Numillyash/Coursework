@@ -291,6 +291,7 @@ void print_number_decimal(number* value) {
 			x <<= 1;
 		}
 		printf("%d\n", s);
+		additional_code(value);
 	}
 	else
 	{
@@ -392,6 +393,21 @@ number addition(number* value1, number* value2) {
 		summand = copy(value2);
 		addend = copy(value1);
 	}
+
+	if (summand.mas[summand.current_count - 1] && addend.mas[addend.current_count - 1])
+	{
+		clear_mem(&carry);
+		nonadditional_code(&summand);
+		nonadditional_code(&addend);
+		carry = addition(&summand, &addend);
+		additional_code(&carry);
+		clear_mem(&addend);
+		clear_mem(&summand);
+
+		normalize(&carry);
+		return carry;
+	}
+
 	oper_sign = summand.mas[summand.current_count - 1] + addend.mas[addend.current_count - 1];
 	real_symb = max(summand.current_count, addend.current_count);
 
@@ -428,13 +444,11 @@ number addition(number* value1, number* value2) {
 		{
 			carry.mas[iter] = AND(summand.mas[iter], addend.mas[iter]);
 		}
-
 		//summand = summand ^ addend;
 		for (iter = 0; iter < max_symb; iter++)
 		{
 			summand.mas[iter] = XOR(summand.mas[iter], addend.mas[iter]);
 		}
-
 		//addend = (carry << 1);
 		clear_mem(&addend);
 		addend = copy(&carry);
@@ -461,7 +475,8 @@ number difference(number* value1, number* value2) {
 		nonadditional_code(&b);
 	else
 		additional_code(&b);
-
+	// _b = -b
+	// a-b = a + (-b) = a + _b
 	buff = addition(value1, &b);
 	clear_mem(&b);
 
@@ -719,8 +734,6 @@ number division_with_module(number* value1, number* value2, number* ost)
 	}
 
 	buff = difference(&sub, &rem);
-
-	//TODO: исправить сдвиги. сдвигать сразу на разность кол-ва цифр -2 или что-то типо того
 	while (buff.mas[buff.current_count - 1])
 	{
 		offset_left(&sub);
@@ -886,15 +899,7 @@ number euclide_algorithm_modifyed(number* value1, number* value2, number* values
 	number _a, _b, _c, _d;
 
 	a = copy(value1);
-	if (a.mas[a.current_count - 1])
-	{
-		nonadditional_code(&a);
-	}
 	b = copy(value2);
-	if (b.mas[b.current_count - 1])
-	{
-		nonadditional_code(&b);
-	}
 	buff = difference(&a, &b);
 	if (buff.mas[buff.current_count - 1])
 	{
@@ -912,17 +917,9 @@ number euclide_algorithm_modifyed(number* value1, number* value2, number* values
 		a = copy(value1);
 		b = copy(value2);
 	}
-	if (a.mas[a.current_count - 1])
-	{
-		nonadditional_code(&a);
-	}
-	if (b.mas[b.current_count - 1])
-	{
-		nonadditional_code(&b);
-	}
-	//a = b * q_0 + r_1     
+	//a = b * q_0 + r_1  
+
 	div = division_with_module(&a, &b, &mod);
-	//clear_mem(&buff);
 	if (!is_zero(&mod))
 	{
 		buff = euclide_algorithm_modifyed(&b, &mod, values);
@@ -960,6 +957,7 @@ number euclide_algorithm_modifyed(number* value1, number* value2, number* values
 		clear_mem(&b);
 
 		normalize(&GCD);
+
 		return GCD;
 	}
 	else

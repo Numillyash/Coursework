@@ -45,15 +45,8 @@ int check_console_input_format(char** argv, char* work_mode, char* arg_1, char* 
 
 int main(int argc, char* argv[])
 {
-	// обойтись без хэша
-	// все проверки на дурака
-
 	setlocale(LC_ALL, "rus");
 	_log_start();
-
-	//genkey --size 2048 --pubkey pb.txt --secret sk.txt
-
-	// fwrite();
 
 	if (argc == 1)
 	{

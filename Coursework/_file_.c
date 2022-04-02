@@ -1,6 +1,6 @@
 #include "_file_.h"
 
-BOOL check_filenames_2(char* fn1, char* fn2) 
+BOOL check_filenames_2(char* fn1, char* fn2)
 {
 	int strln;
 	int i; // iterator
@@ -12,7 +12,6 @@ BOOL check_filenames_2(char* fn1, char* fn2)
 		_log("Files had same names");
 		exit(FILE_FORMAT_FAILURE);
 	}
-	// *.txt\0: min 6 symbols
 	if (strlen(fn1) < 6 || strlen(fn2) < 6)
 	{
 		printf(ERROR_FILE_EXTENSION);
@@ -21,57 +20,7 @@ BOOL check_filenames_2(char* fn1, char* fn2)
 	}
 
 	strln = strlen(fn1);
-	for (int i = strln - 4; i < strln; i++)
-	{
-		resol[4-(strln - i)] = fn1[i];
-	}	
-	if (strcmp(".txt", resol))
-	{
-		printf(ERROR_FILE_EXTENSION);
-		_log("File has wrong extension");
-		exit(FILE_FORMAT_FAILURE);
-	}
-
-	strln = strlen(fn2);
-	for (int i = strln - 4; i < strln; i++)
-	{
-		resol[4 - (strln - i)] = fn2[i];
-	}
-	if (strcmp(".txt", resol))
-	{
-		printf(ERROR_FILE_EXTENSION);
-		_log("File has wrong extension");
-		exit(FILE_FORMAT_FAILURE);
-	}
-	/// /////////////////////////////////////////////////////////////////
-	_log("Filenames had good format");
-	return 1;
-}
-
-BOOL check_filenames_3(char* fn1, char* fn2, char* fn3)
-{
-	/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	/// /////////////////////////////////////////////////////////////////////////////////////////////////////////доделать
-	int strln;
-	int i; // iterator
-	char resol[5];
-	resol[4] = '\0';
-	if (!strcmp(fn1, fn2) || !strcmp(fn2, fn3) || !strcmp(fn1, fn3))
-	{
-		printf(ERROR_FILE_IDENT);
-		_log("Files had same names");
-		exit(FILE_FORMAT_FAILURE);
-	}
-	// *.txt\0: min 6 symbols
-	if (strlen(fn1) < 6 || strlen(fn2) < 6 || strlen(fn3) < 6)
-	{
-		printf(ERROR_FILE_EXTENSION);
-		_log("1 or more files had less then 5 symbols in filename");
-		exit(FILE_FORMAT_FAILURE);
-	}
-
-	strln = strlen(fn1);
-	for (int i = strln - 4; i < strln; i++)
+	for (i = strln - 4; i < strln; i++)
 	{
 		resol[4 - (strln - i)] = fn1[i];
 	}
@@ -83,7 +32,53 @@ BOOL check_filenames_3(char* fn1, char* fn2, char* fn3)
 	}
 
 	strln = strlen(fn2);
-	for (int i = strln - 4; i < strln; i++)
+	for (i = strln - 4; i < strln; i++)
+	{
+		resol[4 - (strln - i)] = fn2[i];
+	}
+	if (strcmp(".txt", resol))
+	{
+		printf(ERROR_FILE_EXTENSION);
+		_log("File has wrong extension");
+		exit(FILE_FORMAT_FAILURE);
+	}
+	_log("Filenames had good format");
+	return 1;
+}
+
+BOOL check_filenames_3(char* fn1, char* fn2, char* fn3)
+{
+	int strln;
+	int i; // iterator
+	char resol[5];
+	resol[4] = '\0';
+	if (!strcmp(fn1, fn2) || !strcmp(fn2, fn3) || !strcmp(fn1, fn3))
+	{
+		printf(ERROR_FILE_IDENT);
+		_log("Files had same names");
+		exit(FILE_FORMAT_FAILURE);
+	}
+	if (strlen(fn1) < 6 || strlen(fn2) < 6 || strlen(fn3) < 6)
+	{
+		printf(ERROR_FILE_EXTENSION);
+		_log("1 or more files had less then 5 symbols in filename");
+		exit(FILE_FORMAT_FAILURE);
+	}
+
+	strln = strlen(fn1);
+	for (i = strln - 4; i < strln; i++)
+	{
+		resol[4 - (strln - i)] = fn1[i];
+	}
+	if (strcmp(".txt", resol))
+	{
+		printf(ERROR_FILE_EXTENSION);
+		_log("File has wrong extension");
+		exit(FILE_FORMAT_FAILURE);
+	}
+
+	strln = strlen(fn2);
+	for (i = strln - 4; i < strln; i++)
 	{
 		resol[4 - (strln - i)] = fn2[i];
 	}
@@ -95,7 +90,7 @@ BOOL check_filenames_3(char* fn1, char* fn2, char* fn3)
 	}
 
 	strln = strlen(fn3);
-	for (int i = strln - 4; i < strln; i++)
+	for (i = strln - 4; i < strln; i++)
 	{
 		resol[4 - (strln - i)] = fn3[i];
 	}
@@ -117,7 +112,7 @@ FILE* check_file_exist_write(char* filename)
 
 	if (file == NULL)
 	{
-		_log("Error while saving open key file");
+		_log("Error while saving file");
 		exit(FILE_OPEN_FAILURE);
 	}
 	return file;
@@ -130,7 +125,7 @@ FILE* check_file_exist_read(char* filename)
 
 	if (file == NULL)
 	{
-		_log("Error while saving open key file");
+		_log("Error while reading file");
 		exit(FILE_OPEN_FAILURE);
 	}
 	return file;
@@ -161,19 +156,18 @@ void save_num_to_file(FILE* file, number* value)
 
 void check_readed_num(char* string)
 {
-	char buff[PREFIX_SIZE+1];
+	char buff[PREFIX_SIZE + 1];
 	int i; // iterator
 	int str_len;
 	char check_str_min = 'a', check_str_max = 'a' + 15;
 	BOOL result = FALSE;
-
 
 	buff[PREFIX_SIZE] = '\0';
 	for (i = 0; i < PREFIX_SIZE; i++)
 	{
 		buff[i] = string[i];
 	}
-	if (!strcmp("_n_", buff)|| !strcmp("_d_", buff)|| !strcmp("_e_", buff)|| !strcmp("_c_", buff))
+	if (!strcmp("_n_", buff) || !strcmp("_d_", buff) || !strcmp("_e_", buff) || !strcmp("_c_", buff))
 		result = TRUE;
 	if (!result)
 	{
@@ -181,10 +175,14 @@ void check_readed_num(char* string)
 		exit(GET_NUMBER_FAILURE);
 	}
 
-	str_len = strlen(string)-1;
+#ifdef _WIN32
+	str_len = strlen(string) - 2;
+#else
+	str_len = strlen(string) - 2;
+#endif
 	if (string[str_len] != '#')
 	{
-		_log("End number doesnt exist");
+		_log("End of number doesnt exist");
 		exit(GET_NUMBER_FAILURE);
 	}
 
@@ -207,12 +205,12 @@ int read_num_from_file(FILE* file, number* value)
 	char buff[2048];
 
 	fgets(buff, 2048, file);
-	check_readed_num(buff);
-
 	if (!strcmp("EOF", buff))
 	{
 		return 0;
 	}
+	check_readed_num(buff);
+
 
 	i = 3;
 	while ((c = (int)buff[i]) != (int)'#')
@@ -232,7 +230,7 @@ int read_num_from_file(FILE* file, number* value)
 	return 1;
 }
 
-void save_key(char* filename, number* mod, number* subkey, char log) 
+void save_key(char* filename, number* mod, number* subkey, char log)
 {
 	FILE* file;
 	char str[2];
@@ -246,10 +244,10 @@ void save_key(char* filename, number* mod, number* subkey, char log)
 		add_digit(mod, 0);
 	}
 
-	for (i = 0; i < mod->current_count - 1; i+=4)
+	for (i = 0; i < mod->current_count - 1; i += 4)
 	{
 		c = 0;
-		for (j = i+3; j >= i; j--)
+		for (j = i + 3; j >= i; j--)
 		{
 			c = c * 2 + mod->mas[j];
 		}
@@ -288,8 +286,8 @@ void read_key(char* filename, number* mod, number* subkey, char log)
 	int i, j; // iterators 
 	int c;
 	int ms[4];
-	
-	*mod = init(); *subkey=init();
+
+	*mod = init(); *subkey = init();
 	file = check_file_exist_read(filename);
 
 	char buff[2048];
@@ -329,73 +327,150 @@ void read_key(char* filename, number* mod, number* subkey, char log)
 		}
 		i++;
 	}
-	
-	
+
 	normalize(mod);
 	normalize(subkey);
 	fclose(file);
-	_log("Open key parced succesfully. We read: ");
+	_log("Key parced succesfully. We read: ");
 	str[0] = log;
 	str[1] = '\0';
 	_log(str);
 }
 
-
-
-//переработать как read_num
-
-number get_prime_from_file(char* filename, int line_number, int bit_size) 
+void check_readed_prime(char* string)
 {
-	FILE* file; 
-	int c = 0, line_num;
+	char buff[PRIME_PREFIX_SIZE + 1];
+	int i; // iterator
+	int str_len;
+	char check_str_min = '0', check_str_max = '0' + 1;
+	char check_prx_min = '0', check_prx_max = '0' + 9;
+	BOOL result = FALSE;
+
+	if (strcmp("&", string))
+	{
+		buff[PRIME_PREFIX_SIZE] = '\0';
+		for (i = 0; i < PRIME_PREFIX_SIZE; i++)
+		{
+			buff[i] = string[i];
+		}
+		if (buff[0] != '_')
+		{
+			_log("Wrong prime number prefix:");
+			_log(buff);
+			exit(GET_PRIME_FAILURE);
+		}
+		i--;
+		while (buff[i] != '_')
+		{
+			buff[i] = '\0';
+			i--;
+		}
+		str_len = strlen(buff);
+		if (str_len < 3)
+		{
+			_log("Wrong prime number prefix:");
+			_log(buff);
+			snprintf(buff, 5, "%d", str_len);
+			_log(buff);
+			exit(GET_PRIME_FAILURE);
+		}
+		for (i = 1; i < str_len - 1; i++)
+		{
+			if (string[i]<check_prx_min || string[i] > check_prx_max)
+			{
+				_log("There's exist some unexpected symbol");
+				_log(buff);
+				buff[1] = '\0';
+				buff[0] = string[i];
+				_log(buff);
+				snprintf(buff, 5, "%d", i);
+				_log(buff);
+				exit(GET_PRIME_FAILURE);
+			}
+		}
+
+#ifdef _WIN32
+		str_len = strlen(string) - 2;
+#else
+		str_len = strlen(string) - 3;
+#endif
+		if (string[str_len] != '#')
+		{
+			_log("End of number doesnt exist");
+			buff[1] = '\0';
+			buff[0] = string[str_len];
+			_log(buff);
+			snprintf(buff, 5, "%d", str_len);
+			_log(buff);
+			snprintf(buff, 5, "%d", (int)string[str_len]);
+			_log(buff);
+			exit(GET_PRIME_FAILURE);
+		}
+
+		for (i = strlen(buff); i < str_len; i++)
+		{
+			if (string[i]<check_str_min || string[i] > check_str_max)
+			{
+				_log("There's exist some unexpected symbol");
+				exit(GET_PRIME_FAILURE);
+			}
+		}
+	}
+}
+ 
+number get_prime_from_file(char* filename, int line_number, int bit_size)
+{
+	FILE* file;
+	int c = 0, line_num, i=0;
 	char str[3];
 	number res = init();
+	char buff[4096];
 
-	file = fopen(filename, "r");
-	if (file == NULL)
+	file = check_file_exist_read(filename);
+
+	fgets(buff, 4096, file);
+	check_readed_prime(buff);
+	while (strcmp("&", buff))
 	{
-		_log("Error while opening primes file");
-		exit(FILE_OPEN_FAILURE);
-	}
-	while (c != (int)'&')
-	{
-		c = fgetc(file);
-		if (c == (int)'_')
+		i = 1;
+		c = buff[i];
+		line_num = 0;
+		while (c != (int)'_')
 		{
-			line_num = 0;
-			c = fgetc(file);
-			while (c != (int)'_')
+			line_num *= 10;
+			line_num += (int)(c - '0');
+			i++;
+			c = buff[i];
+		}
+		i++;
+		c = buff[i];
+		if (line_num == line_number)
+		{
+			while (c != (int)'#')
 			{
-				line_num *= 10;
-				line_num += (int)(c - '0');
-				c = fgetc(file);
-			}
-			c = fgetc(file);
-			if (line_num != line_number)
-			{
-				while (c != (int)'#')
-				{
-					c = fgetc(file);
-				}
-			}
-			else
-			{
-				while (c != (int)'#')
-				{
-					add_digit(&res, (int)(c - '0'));
-					c = fgetc(file);
-				}
-				if (res.current_count-1 != bit_size)
+				add_digit(&res, (int)(c - '0'));
+				i++;
+				if (i > 2100)
 				{
 					_log("Doesnt got prime number succesfully. Bit size doesnt match");
 					fclose(file);
 					exit(GET_PRIME_FAILURE);
 				}
-				_log("Got prime number succesfully");
-				fclose(file);
-				return res;
+				c = buff[i];
 			}
+			if (res.current_count - 1 != bit_size)
+			{
+				_log("Doesnt got prime number succesfully. Bit size doesnt match");
+				fclose(file);
+				exit(GET_PRIME_FAILURE);
+			}
+			_log("Got prime number succesfully");
+			fclose(file);
+			return res;
 		}
+
+		fgets(buff, 4096, file);
+		check_readed_prime(buff);
 	}
 
 	sprintf(str, "%d", line_number);

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef CONFIG_H
+#define CONFIG_H
+
 #define _CRT_SECURE_NO_WARNINGS
 //#define DEBUG
 
@@ -12,7 +14,7 @@
 #include <locale.h>
 #include <sys/stat.h>
 
-//input console checking
+// input console checking
 #define HELP_CONSOLE_OPTION_1 "-h"
 #define HELP_CONSOLE_OPTION_2 "--help"
 #define GENKEY_CONSOLE_OPTION "genkey"
@@ -32,7 +34,7 @@
 #define TRUE 1
 #define FALSE 0
 
-//RSA
+// RSA
 #define KEYSIZE_MODULE 256
 typedef enum {
 	KEY_256 = 256,
@@ -41,8 +43,7 @@ typedef enum {
 	KEY_2048 = 2048
 } KEY_BIT_SIZE;
 
-//file
-
+// file
 #define FILE_OPENING_ERROR "Cannot open the %s file.\n"
 
 #define primes_128_bit_filename "primes_128_bit.blackleague"
@@ -68,6 +69,11 @@ enum EXIT_CODE {
 	DEBUG_EXIT_CODE = 100
 };
 
-//fast funcs
+// fast funcs
 #define swap(a,b); b = a+b; a = b-a; b = b-a;
-//#define max(a,b) (a>b)? a : b
+#ifdef _WIN32
+#else
+#define max(a,b) (a>b)? a : b
+#endif
+
+#endif // !CONFIG_H

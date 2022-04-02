@@ -1,8 +1,11 @@
-#pragma once
+#ifndef _FILE__H
+#define _FILE__H
+
 #include "config.h"
 #include "bit_LA.h"
 
 #define PREFIX_SIZE 3
+#define PRIME_PREFIX_SIZE 5
 
 /// <summary>
 /// ѕровер€ет имена файлов на правильность формата и совпадение
@@ -65,4 +68,13 @@ void save_key(char* filename, number* mod, number* subkey, char log);
 /// <param name="subkey">второй параметр (e или d)</param>
 void read_key(char* filename, number* mod, number* subkey, char log);
 
+/// <summary>
+/// Function, returning a prime number from file.
+/// </summary>
+/// <param name="filename">char array contains filename</param>
+/// <param name="line_number">number of prime number. can be one from 1-500</param>
+/// <param name="bit_size">bit size of prime number</param>
+/// <returns></returns>
 number get_prime_from_file(char* filename, int line_number, int bit_size);
+
+#endif // !_FILE__H

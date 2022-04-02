@@ -1,4 +1,6 @@
-#pragma once
+#ifndef BIT_LA_H
+#define BIT_LA_H
+
 #include "_log_.h"
 
 #define NUMBER_SYSTEM_BASE 2
@@ -221,3 +223,5 @@ number generate_random(int bit_count);
 /// <param name="value">Число</param>
 /// <returns>1 - если простое, 0 - если составное</returns>
 BOOL Millers_method(number* value);
+
+#endif // !BIT_LA_H

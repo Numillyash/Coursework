@@ -5,23 +5,18 @@ char filename[29];
 
 void _log_start()
 {
-	//проверить папку на существование
 	FILE* file;
 	const time_t time_programm_started = time(NULL);
 	struct tm* u = localtime(&time_programm_started);
 #ifdef __linux__ 
 	mkdir("logs", S_IRWXU);
 #elif _WIN32
-	mkdir("logs");                                           //////////////////////////////////////// !
+	mkdir("logs");
 #endif
 	
 	strftime(date, 18, "%H.%M.%S %d.%m.%y", u);
 
 	snprintf(filename, 29, "./logs/%s.log", date);
-	//strcat(filename, "./logs/");
-	//strcat(filename, date);
-	//strcat(filename, ".log");
-	//printf(filename); printf("\n");
 	file = fopen(filename, "w");
 	if (file == NULL)
 	{
@@ -30,10 +25,6 @@ void _log_start()
 	else
 	{
 		fprintf(file, "%s: CREATED LOG\n", date);
-		/*fputs(date, file);
-		fputs(": ", file);
-		fputs("CREATED LOG", file);
-		fputs("\n", file);*/
 	}
 	fclose(file);
 }

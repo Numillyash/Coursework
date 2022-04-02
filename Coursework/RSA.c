@@ -18,7 +18,7 @@ BOOL check_sign_file(char* input_filename, char* pubkey_filename, char* sign_fil
 		msg = module_pow(&msg_ci, &e, &n);
 		c = number_to_int(&msg) - 100;
 		c2 = fgetc(input);
-		if (c2 == NULL || c2 == EOF || c2 != c)
+		if (c2 == EOF || c2 != c)
 		{
 			clear_mem(&msg);
 			clear_mem(&msg_ci);
@@ -94,6 +94,8 @@ void decrypt_file(char* input_filename, char* seckey_filename, char* output_file
 		msg_ci = init();
 	}
 
+	// cleanup
+
 	clear_mem(&d);
 	clear_mem(&n);
 	clear_mem(&msg_ci);
@@ -133,7 +135,6 @@ void encrypt_file(char* input_filename, char* pubkey_filename, char* output_file
 
 void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filename)
 {
-	FILE* pubkey, * seckey;
 	KEY_BIT_SIZE keysize; 
 	int key_s_buf = 0, rand_num_p = -1, rand_num_q = -1;
 	number p, q, n, phi_n, e, d, buff1, buff2, numb_one, numb_zero;
@@ -241,6 +242,12 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 	//_d_"smth"#
 	//&
 	//all numbers will be saved in 4-bit form
+	_log("N");
+	debug_log(&n);
+	_log("E");
+	debug_log(&e);
+	_log("D");
+	debug_log(&d);
 
 	save_key(pubkey_filename, &n, &e, 'e');
 	save_key(seckey_filename, &n, &d, 'd');
