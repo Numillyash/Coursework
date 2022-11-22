@@ -97,12 +97,12 @@ int main(int argc, char *argv[])
 			check_filenames_3(argv[3], argv[5], argv[7]);
 			if (check_sign_file(argv[3], argv[5], argv[7]))
 			{
-				printf("File signature is correct!");
+				printf("File signature is correct!\n");
 				_log("File signature is correct!");
 			}
 			else
 			{
-				printf("File signature is NOT correct!");
+				printf("File signature is NOT correct!\n");
 				_log("File signature is NOT correct!");
 			}
 		}
