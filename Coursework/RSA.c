@@ -1,11 +1,11 @@
 #include "RSA.h"
 
-BOOL check_sign_file(char* input_filename, char* pubkey_filename, char* sign_filename)
+BOOL check_sign_file(char *input_filename, char *pubkey_filename, char *sign_filename)
 {
 	number n, e, msg, msg_ci;
 	int c = 0;
 	int c2 = 0;
-	FILE* input, * sign;
+	FILE *input, *sign;
 	read_key(pubkey_filename, &n, &e, 'e');
 
 	msg_ci = init();
@@ -43,11 +43,11 @@ BOOL check_sign_file(char* input_filename, char* pubkey_filename, char* sign_fil
 	return 1;
 }
 
-void signify_file(char* input_filename, char* seckey_filename, char* sign_filename)
+void signify_file(char *input_filename, char *seckey_filename, char *sign_filename)
 {
 	number n, d, msg, msg_ci;
 	int c = 0;
-	FILE* input, * sign;
+	FILE *input, *sign;
 	read_key(seckey_filename, &n, &d, 'd');
 
 	input = check_file_exist_read(input_filename);
@@ -72,11 +72,11 @@ void signify_file(char* input_filename, char* seckey_filename, char* sign_filena
 	_log("Signify complete");
 }
 
-void decrypt_file(char* input_filename, char* seckey_filename, char* output_filename)
+void decrypt_file(char *input_filename, char *seckey_filename, char *output_filename)
 {
 	number n, d, msg, msg_ci;
 	int c = 0;
-	FILE* input, * output;
+	FILE *input, *output;
 	read_key(seckey_filename, &n, &d, 'd');
 
 	msg_ci = init();
@@ -104,7 +104,7 @@ void decrypt_file(char* input_filename, char* seckey_filename, char* output_file
 	fclose(output);
 }
 
-void encrypt_file(char* input_filename, char* pubkey_filename, char* output_filename)
+void encrypt_file(char *input_filename, char *pubkey_filename, char *output_filename)
 {
 	number n, e, msg, msg_ci;
 	int c = 0;
@@ -116,7 +116,7 @@ void encrypt_file(char* input_filename, char* pubkey_filename, char* output_file
 
 	while ((c = fgetc(input)) != EOF)
 	{
-		msg = int_to_number(c+100);
+		msg = int_to_number(c + 100);
 		msg_ci = module_pow(&msg, &e, &n);
 		save_num_to_file(output, &msg_ci);
 		clear_mem(&msg);
@@ -133,12 +133,12 @@ void encrypt_file(char* input_filename, char* pubkey_filename, char* output_file
 	_log("Encrypt complete");
 }
 
-void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filename)
+void generate_key(char *key_size_str, char *pubkey_filename, char *seckey_filename)
 {
-	KEY_BIT_SIZE keysize; 
+	KEY_BIT_SIZE keysize;
 	int key_s_buf = 0, rand_num_p = -1, rand_num_q = -1;
 	number p, q, n, phi_n, e, d, buff1, buff2, numb_one, numb_zero;
-	number* arr;
+	number *arr;
 
 	key_s_buf = atoi(key_size_str);
 	if (key_s_buf == 0)
@@ -170,7 +170,8 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 		}
 	srand((unsigned int)time(NULL));
 
-	while (rand_num_p == rand_num_q) {
+	while (rand_num_p == rand_num_q)
+	{
 		rand_num_p = rand() % 500 + 1;
 		rand_num_q = rand() % 500 + 1;
 	}
@@ -211,8 +212,8 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 	e = int_to_number(65537);
 	_log("genkey: const done");
 
-	arr = (number*)malloc(4 * sizeof(number)); // = { 1,0,0,1 };
-	arr[0] = copy(&numb_one);                                             ////////////////////////////////////////// !
+	arr = (number *)malloc(4 * sizeof(number)); // = { 1,0,0,1 };
+	arr[0] = copy(&numb_one);					////////////////////////////////////////// !
 	arr[1] = copy(&numb_zero);
 	arr[2] = copy(&numb_zero);
 	arr[3] = copy(&numb_one);
@@ -233,15 +234,15 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 	clear_mem(&arr[2]);
 	clear_mem(&arr[3]);
 
-	//File format
-	//pubkey
+	// File format
+	// pubkey
 	//_n_"smth"#
 	//_e_"smth"#
 	//&
-	//seckey
+	// seckey
 	//_d_"smth"#
 	//&
-	//all numbers will be saved in 4-bit form
+	// all numbers will be saved in 4-bit form
 	_log("N");
 	debug_log(&n);
 	_log("E");
@@ -255,6 +256,4 @@ void generate_key(char* key_size_str, char* pubkey_filename, char* seckey_filena
 	clear_mem(&n);
 	clear_mem(&e);
 	clear_mem(&d);
-
-	exit(DEBUG_EXIT_CODE);
 }
