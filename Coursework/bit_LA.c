@@ -71,7 +71,7 @@ number init()
 number copy(number *value)
 {
 	// TODO: Избавиться от add_digit и использовать фор для прямого добавления
-
+	// FIXME ассемблировать?
 	number result = init();
 	int i; // iterator
 	for (i = 0; i < value->current_count - 1; i++)
@@ -195,6 +195,7 @@ void normalize(number *value)
 
 void clear_mem(number *value)
 {
+	// FIXME ассемблировать здесь
 	free(value->mas);
 	value->mas = NULL;
 }
