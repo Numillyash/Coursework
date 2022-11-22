@@ -143,7 +143,7 @@ void generate_key(char *key_size_str, char *pubkey_filename, char *seckey_filena
 	key_s_buf = atoi(key_size_str);
 	if (key_s_buf == 0)
 	{
-		printf("Wrong key size: %s.\nType -h for help", key_size_str);
+		printf("Wrong key size: %s.\nType -h for help\n", key_size_str);
 		_log("Error when try to make string \"key size\" to integer");
 		exit(FAILURE);
 	}
