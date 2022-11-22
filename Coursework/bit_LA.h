@@ -7,221 +7,198 @@
 #define MILLERS_METHOD_ITERATIONS_NUMBER 20
 
 /// <summary>
-/// Структура, описывающая целочисленный тип с изменяемым размером памяти
+/// РЎС‚СЂСѓРєС‚СѓСЂР°, РѕРїРёСЃС‹РІР°СЋС‰Р°СЏ С†РµР»РѕС‡РёСЃР»РµРЅРЅС‹Р№ С‚РёРї СЃ РёР·РјРµРЅСЏРµРјС‹Рј СЂР°Р·РјРµСЂРѕРј РїР°РјСЏС‚Рё
 /// </summary>
 typedef struct
 {
-    int current_count; // текущее количество элементов
-    int size; // реальный размер массива
-    uint8_t* mas; // массив данных
-}number;
+    int current_count; // С‚РµРєСѓС‰РµРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЌР»РµРјРµРЅС‚РѕРІ
+    int size;          // СЂРµР°Р»СЊРЅС‹Р№ СЂР°Р·РјРµСЂ РјР°СЃСЃРёРІР°
+    uint8_t *mas;      // РјР°СЃСЃРёРІ РґР°РЅРЅС‹С…
+} number;
 
 /// <summary>
-/// Побитовое исключающее ИЛИ
-/// </summary>
-/// <param name="a">Первый бит</param>
-/// <param name="b">Второй бит</param>
-/// <returns>Результат операции</returns>
-inline uint8_t XOR(uint8_t a, uint8_t b);
-
-/// <summary>
-/// Побитовое НЕ
-/// </summary>
-/// <param name="a">Бит числа</param>
-/// <returns>Результат операции</returns>
-inline uint8_t NOT(uint8_t a);
-
-/// <summary>
-/// Побитовое И
-/// </summary>
-/// <param name="a">Первый бит</param>
-/// <param name="b">Второй бит</param>
-/// <returns>Результат операции</returns>
-inline uint8_t AND(uint8_t a, uint8_t b);
-
-/// <summary>
-/// Перевод числа в дополнительный код
+/// РџРµСЂРµРІРѕРґ С‡РёСЃР»Р° РІ РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Р№ РєРѕРґ
 /// </summary>
 /// <param name="value"></param>
-void additional_code(number* value);
+void additional_code(number *value);
 
 /// <summary>
-/// Перевод числа из дополнительного в прямой код
+/// РџРµСЂРµРІРѕРґ С‡РёСЃР»Р° РёР· РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅРѕРіРѕ РІ РїСЂСЏРјРѕР№ РєРѕРґ
 /// </summary>
 /// <param name="value"></param>
-void nonadditional_code(number* value);
+void nonadditional_code(number *value);
 
 /// <summary>
-/// Инициализирует обьект структуры с пустым массивом и положительным negative
+/// РРЅРёС†РёР°Р»РёР·РёСЂСѓРµС‚ РѕР±СЊРµРєС‚ СЃС‚СЂСѓРєС‚СѓСЂС‹ СЃ РїСѓСЃС‚С‹Рј РјР°СЃСЃРёРІРѕРј Рё РїРѕР»РѕР¶РёС‚РµР»СЊРЅС‹Рј negative
 /// </summary>
-/// <returns>Обьект структуры</returns>
+/// <returns>РћР±СЊРµРєС‚ СЃС‚СЂСѓРєС‚СѓСЂС‹</returns>
 number init();
 
 /// <summary>
-/// Возвращает структуру идентичную данной
+/// Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃС‚СЂСѓРєС‚СѓСЂСѓ РёРґРµРЅС‚РёС‡РЅСѓСЋ РґР°РЅРЅРѕР№
 /// </summary>
-/// <param name="value">Ссылка на структуру</param>
-/// <returns>Обьект структуры, идентичный данному</returns>
-number copy(number* value);
+/// <param name="value">РЎСЃС‹Р»РєР° РЅР° СЃС‚СЂСѓРєС‚СѓСЂСѓ</param>
+/// <returns>РћР±СЊРµРєС‚ СЃС‚СЂСѓРєС‚СѓСЂС‹, РёРґРµРЅС‚РёС‡РЅС‹Р№ РґР°РЅРЅРѕРјСѓ</returns>
+number copy(number *value);
 
 /// <summary>
-/// Возвращает структуру, в которой записано данное число в диапазоне int
+/// Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃС‚СЂСѓРєС‚СѓСЂСѓ, РІ РєРѕС‚РѕСЂРѕР№ Р·Р°РїРёСЃР°РЅРѕ РґР°РЅРЅРѕРµ С‡РёСЃР»Рѕ РІ РґРёР°РїР°Р·РѕРЅРµ int
 /// </summary>
-/// <param name="value">Целое число</param>
-/// <returns>Обьект структуры, содержащий данное число</returns>
+/// <param name="value">Р¦РµР»РѕРµ С‡РёСЃР»Рѕ</param>
+/// <returns>РћР±СЊРµРєС‚ СЃС‚СЂСѓРєС‚СѓСЂС‹, СЃРѕРґРµСЂР¶Р°С‰РёР№ РґР°РЅРЅРѕРµ С‡РёСЃР»Рѕ</returns>
 number int_to_number(int value);
 
 /// <summary>
-/// Возвращает int, в котором записано данное число
+/// Р’РѕР·РІСЂР°С‰Р°РµС‚ int, РІ РєРѕС‚РѕСЂРѕРј Р·Р°РїРёСЃР°РЅРѕ РґР°РЅРЅРѕРµ С‡РёСЃР»Рѕ
 /// </summary>
-/// <param name="value">Number число</param>
-/// <returns>Целое число</returns>
-int number_to_int(number* value);
+/// <param name="value">Number С‡РёСЃР»Рѕ</param>
+/// <returns>Р¦РµР»РѕРµ С‡РёСЃР»Рѕ</returns>
+int number_to_int(number *value);
 
 /// <summary>
-/// Возвращает number-обьект без незначащих нулей
+/// Р’РѕР·РІСЂР°С‰Р°РµС‚ number-РѕР±СЊРµРєС‚ Р±РµР· РЅРµР·РЅР°С‡Р°С‰РёС… РЅСѓР»РµР№
 /// </summary>
-/// <param name="value">Ссылка на обьект</param>
-void normalize(number* value);
+/// <param name="value">РЎСЃС‹Р»РєР° РЅР° РѕР±СЊРµРєС‚</param>
+void normalize(number *value);
 
 /// <summary>
-/// Освобождение динамически выделенной памяти
+/// РћСЃРІРѕР±РѕР¶РґРµРЅРёРµ РґРёРЅР°РјРёС‡РµСЃРєРё РІС‹РґРµР»РµРЅРЅРѕР№ РїР°РјСЏС‚Рё
 /// </summary>
-void clear_mem(number* value);
+void clear_mem(number *value);
 
 /// <summary>
-/// Добавляет char-элемент в конец массива структуры (новый разряд слева)
+/// Р”РѕР±Р°РІР»СЏРµС‚ char-СЌР»РµРјРµРЅС‚ РІ РєРѕРЅРµС† РјР°СЃСЃРёРІР° СЃС‚СЂСѓРєС‚СѓСЂС‹ (РЅРѕРІС‹Р№ СЂР°Р·СЂСЏРґ СЃР»РµРІР°)
 /// </summary>
-/// <param name="object">Ссылка на структуру</param>
-/// <param name="value">Значение</param>
-void add_digit(number* object, uint8_t value);
+/// <param name="object">РЎСЃС‹Р»РєР° РЅР° СЃС‚СЂСѓРєС‚СѓСЂСѓ</param>
+/// <param name="value">Р—РЅР°С‡РµРЅРёРµ</param>
+void add_digit(number *object, uint8_t value);
 
 /// <summary>
-/// Удаление последней цифры (смещение на один разряд вправо)
+/// РЈРґР°Р»РµРЅРёРµ РїРѕСЃР»РµРґРЅРµР№ С†РёС„СЂС‹ (СЃРјРµС‰РµРЅРёРµ РЅР° РѕРґРёРЅ СЂР°Р·СЂСЏРґ РІРїСЂР°РІРѕ)
 /// </summary>
-void offset_right(number* object);
+void offset_right(number *object);
 
 /// <summary>
-/// Добавление нуля в конец (смещение на один разряд влево)
+/// Р”РѕР±Р°РІР»РµРЅРёРµ РЅСѓР»СЏ РІ РєРѕРЅРµС† (СЃРјРµС‰РµРЅРёРµ РЅР° РѕРґРёРЅ СЂР°Р·СЂСЏРґ РІР»РµРІРѕ)
 /// </summary>
-void offset_left(number* object);
+void offset_left(number *object);
 
 /// <summary>
-/// Разворачивает число в данном обьекте
+/// Р Р°Р·РІРѕСЂР°С‡РёРІР°РµС‚ С‡РёСЃР»Рѕ РІ РґР°РЅРЅРѕРј РѕР±СЊРµРєС‚Рµ
 /// </summary>
-/// <param name="value">Ссылка на число</param>
-void reverse(number* value);
+/// <param name="value">РЎСЃС‹Р»РєР° РЅР° С‡РёСЃР»Рѕ</param>
+void reverse(number *value);
 
 /// <summary>
-/// Печатает обьект с учетом знака так, как он хранится в памяти
+/// РџРµС‡Р°С‚Р°РµС‚ РѕР±СЊРµРєС‚ СЃ СѓС‡РµС‚РѕРј Р·РЅР°РєР° С‚Р°Рє, РєР°Рє РѕРЅ С…СЂР°РЅРёС‚СЃСЏ РІ РїР°РјСЏС‚Рё
 /// </summary>
-/// <param name="value">Ссылка на число</param>
-void print_number_as_is(number* value);
+/// <param name="value">РЎСЃС‹Р»РєР° РЅР° С‡РёСЃР»Рѕ</param>
+void print_number_as_is(number *value);
 
 /// <summary>
-/// Печатает обьект с учетом знака в десятичной СС
+/// РџРµС‡Р°С‚Р°РµС‚ РѕР±СЊРµРєС‚ СЃ СѓС‡РµС‚РѕРј Р·РЅР°РєР° РІ РґРµСЃСЏС‚РёС‡РЅРѕР№ РЎРЎ
 /// </summary>
-/// <param name="value">Ссылка на число</param>
-void print_number_decimal(number* value);
+/// <param name="value">РЎСЃС‹Р»РєР° РЅР° С‡РёСЃР»Рѕ</param>
+void print_number_decimal(number *value);
 
 /// <summary>
-/// Печатает обьект с учетом знака
+/// РџРµС‡Р°С‚Р°РµС‚ РѕР±СЊРµРєС‚ СЃ СѓС‡РµС‚РѕРј Р·РЅР°РєР°
 /// </summary>
-/// <param name="value">Ссылка на число</param>
-void print_number(number* value);
+/// <param name="value">РЎСЃС‹Р»РєР° РЅР° С‡РёСЃР»Рѕ</param>
+void print_number(number *value);
 
 /// <summary>
-/// Печатает число в лог
+/// РџРµС‡Р°С‚Р°РµС‚ С‡РёСЃР»Рѕ РІ Р»РѕРі
 /// </summary>
-/// <param name="value">Ссылка на число</param>
-void debug_log(number* value);
+/// <param name="value">РЎСЃС‹Р»РєР° РЅР° С‡РёСЃР»Рѕ</param>
+void debug_log(number *value);
 
 /// <summary>
-/// Сравнение числа с 0 (Равно нулю/не равно нулю)
+/// РЎСЂР°РІРЅРµРЅРёРµ С‡РёСЃР»Р° СЃ 0 (Р Р°РІРЅРѕ РЅСѓР»СЋ/РЅРµ СЂР°РІРЅРѕ РЅСѓР»СЋ)
 /// </summary>
-/// <param name="object">Число, которое необходимо проверить</param>
-/// <returns>Результат сравнения</returns>
-BOOL is_zero(number* object);
+/// <param name="object">Р§РёСЃР»Рѕ, РєРѕС‚РѕСЂРѕРµ РЅРµРѕР±С…РѕРґРёРјРѕ РїСЂРѕРІРµСЂРёС‚СЊ</param>
+/// <returns>Р РµР·СѓР»СЊС‚Р°С‚ СЃСЂР°РІРЅРµРЅРёСЏ</returns>
+BOOL is_zero(number *object);
 
 /// <summary>
-/// Сравнение числа с другим число (Равны/не равны)
+/// РЎСЂР°РІРЅРµРЅРёРµ С‡РёСЃР»Р° СЃ РґСЂСѓРіРёРј С‡РёСЃР»Рѕ (Р Р°РІРЅС‹/РЅРµ СЂР°РІРЅС‹)
 /// </summary>
-/// <param name="value1">Первое число, которое необходимо сравнить</param>
-/// <param name="value2">Второе число, которое необходимо сравнить</param>
-/// <returns>Результат сравнения</returns>
-BOOL is_equal(number* value1, number* value2);
+/// <param name="value1">РџРµСЂРІРѕРµ С‡РёСЃР»Рѕ, РєРѕС‚РѕСЂРѕРµ РЅРµРѕР±С…РѕРґРёРјРѕ СЃСЂР°РІРЅРёС‚СЊ</param>
+/// <param name="value2">Р’С‚РѕСЂРѕРµ С‡РёСЃР»Рѕ, РєРѕС‚РѕСЂРѕРµ РЅРµРѕР±С…РѕРґРёРјРѕ СЃСЂР°РІРЅРёС‚СЊ</param>
+/// <returns>Р РµР·СѓР»СЊС‚Р°С‚ СЃСЂР°РІРЅРµРЅРёСЏ</returns>
+BOOL is_equal(number *value1, number *value2);
 
 /// <summary>
-/// Прибавляет одно число к другому, с учетом внутреннего знака данных на вход чисел, и возвращает результат типа number
+/// РџСЂРёР±Р°РІР»СЏРµС‚ РѕРґРЅРѕ С‡РёСЃР»Рѕ Рє РґСЂСѓРіРѕРјСѓ, СЃ СѓС‡РµС‚РѕРј РІРЅСѓС‚СЂРµРЅРЅРµРіРѕ Р·РЅР°РєР° РґР°РЅРЅС‹С… РЅР° РІС…РѕРґ С‡РёСЃРµР», Рё РІРѕР·РІСЂР°С‰Р°РµС‚ СЂРµР·СѓР»СЊС‚Р°С‚ С‚РёРїР° number
 /// </summary>
-/// <param name="value1">Первое число</param>
-/// <param name="value2">Второе число</param>
-/// <returns>Результат сложения</returns>
-number addition(number* value1, number* value2);
+/// <param name="value1">РџРµСЂРІРѕРµ С‡РёСЃР»Рѕ</param>
+/// <param name="value2">Р’С‚РѕСЂРѕРµ С‡РёСЃР»Рѕ</param>
+/// <returns>Р РµР·СѓР»СЊС‚Р°С‚ СЃР»РѕР¶РµРЅРёСЏ</returns>
+number addition(number *value1, number *value2);
 
 /// <summary>
-/// Вычитает одно число из другого, с учетом внутреннего знака данных на вход чисел, и возвращает результат типа number
+/// Р’С‹С‡РёС‚Р°РµС‚ РѕРґРЅРѕ С‡РёСЃР»Рѕ РёР· РґСЂСѓРіРѕРіРѕ, СЃ СѓС‡РµС‚РѕРј РІРЅСѓС‚СЂРµРЅРЅРµРіРѕ Р·РЅР°РєР° РґР°РЅРЅС‹С… РЅР° РІС…РѕРґ С‡РёСЃРµР», Рё РІРѕР·РІСЂР°С‰Р°РµС‚ СЂРµР·СѓР»СЊС‚Р°С‚ С‚РёРїР° number
 /// </summary>
-/// <param name="value1">Первое число</param>
-/// <param name="value2">Второе число</param>
-/// <returns>Результат вычитания</returns>
-number difference(number* value1, number* value2);
+/// <param name="value1">РџРµСЂРІРѕРµ С‡РёСЃР»Рѕ</param>
+/// <param name="value2">Р’С‚РѕСЂРѕРµ С‡РёСЃР»Рѕ</param>
+/// <returns>Р РµР·СѓР»СЊС‚Р°С‚ РІС‹С‡РёС‚Р°РЅРёСЏ</returns>
+number difference(number *value1, number *value2);
 
 /// <summary>
-/// Умножает одно число на другое и возвращает результат типа number
+/// РЈРјРЅРѕР¶Р°РµС‚ РѕРґРЅРѕ С‡РёСЃР»Рѕ РЅР° РґСЂСѓРіРѕРµ Рё РІРѕР·РІСЂР°С‰Р°РµС‚ СЂРµР·СѓР»СЊС‚Р°С‚ С‚РёРїР° number
 /// </summary>
-/// <param name="value1">Первое число</param>
-/// <param name="value2">Второе число</param>
-/// <returns>Результат умножения</returns>
-number multiplication(number* value1, number* value2);
+/// <param name="value1">РџРµСЂРІРѕРµ С‡РёСЃР»Рѕ</param>
+/// <param name="value2">Р’С‚РѕСЂРѕРµ С‡РёСЃР»Рѕ</param>
+/// <returns>Р РµР·СѓР»СЊС‚Р°С‚ СѓРјРЅРѕР¶РµРЅРёСЏ</returns>
+number multiplication(number *value1, number *value2);
 
 /// <summary>
-/// Деление с остатком
+/// Р”РµР»РµРЅРёРµ СЃ РѕСЃС‚Р°С‚РєРѕРј
 /// </summary>
-/// <param name="value1">Делимое</param>
-/// <param name="value2">Делитель</param>
-/// <param name="ost">Остаток</param>
-/// <returns>Частное</returns>
-number division_with_module(number* value1, number* value2, number* ost);
+/// <param name="value1">Р”РµР»РёРјРѕРµ</param>
+/// <param name="value2">Р”РµР»РёС‚РµР»СЊ</param>
+/// <param name="ost">РћСЃС‚Р°С‚РѕРє</param>
+/// <returns>Р§Р°СЃС‚РЅРѕРµ</returns>
+number division_with_module(number *value1, number *value2, number *ost);
 
 /// <summary>
-/// Возвращает модуль от деление числа a в степени t на b
+/// Р’РѕР·РІСЂР°С‰Р°РµС‚ РјРѕРґСѓР»СЊ РѕС‚ РґРµР»РµРЅРёРµ С‡РёСЃР»Р° a РІ СЃС‚РµРїРµРЅРё t РЅР° b
 /// </summary>
-/// <param name="a">Делимое</param>
-/// <param name="t">Степень</param>
-/// <param name="b">Делитель</param>
-/// <returns>Остаток</returns>
-number module_pow(number* a, number* t, number* b);
+/// <param name="a">Р”РµР»РёРјРѕРµ</param>
+/// <param name="t">РЎС‚РµРїРµРЅСЊ</param>
+/// <param name="b">Р”РµР»РёС‚РµР»СЊ</param>
+/// <returns>РћСЃС‚Р°С‚РѕРє</returns>
+number module_pow(number *a, number *t, number *b);
 
 /// <summary>
-/// Возвращает НОД двух чисел
+/// Р’РѕР·РІСЂР°С‰Р°РµС‚ РќРћР” РґРІСѓС… С‡РёСЃРµР»
 /// </summary>
-/// <param name="value1">Первое число</param>
-/// <param name="value2">Второе число</param>
-/// <returns>НОД</returns>
-number euclide_algorithm(number* value1, number* value2);
+/// <param name="value1">РџРµСЂРІРѕРµ С‡РёСЃР»Рѕ</param>
+/// <param name="value2">Р’С‚РѕСЂРѕРµ С‡РёСЃР»Рѕ</param>
+/// <returns>РќРћР”</returns>
+number euclide_algorithm(number *value1, number *value2);
 
 /// <summary>
-/// Возвращает НОД двух чисел и матрицу множетелей
+/// Р’РѕР·РІСЂР°С‰Р°РµС‚ РќРћР” РґРІСѓС… С‡РёСЃРµР» Рё РјР°С‚СЂРёС†Сѓ РјРЅРѕР¶РµС‚РµР»РµР№
 /// </summary>
-/// <param name="value1">Первое число</param>
-/// <param name="value2">Второе число</param>
-/// <param name="values">Массив с матрицей</param>
-/// <returns>НОД</returns>
-number euclide_algorithm_modifyed(number* value1, number* value2, number* values);
+/// <param name="value1">РџРµСЂРІРѕРµ С‡РёСЃР»Рѕ</param>
+/// <param name="value2">Р’С‚РѕСЂРѕРµ С‡РёСЃР»Рѕ</param>
+/// <param name="values">РњР°СЃСЃРёРІ СЃ РјР°С‚СЂРёС†РµР№</param>
+/// <returns>РќРћР”</returns>
+number euclide_algorithm_modifyed(number *value1, number *value2, number *values);
 
 /// <summary>
-/// Генерация случайного числа с заданным количеством бит
+/// Р“РµРЅРµСЂР°С†РёСЏ СЃР»СѓС‡Р°Р№РЅРѕРіРѕ С‡РёСЃР»Р° СЃ Р·Р°РґР°РЅРЅС‹Рј РєРѕР»РёС‡РµСЃС‚РІРѕРј Р±РёС‚
 /// </summary>
-/// <param name="bit_count">Кол-во бит</param>
-/// <returns>Сгенерированное число</returns>
+/// <param name="bit_count">РљРѕР»-РІРѕ Р±РёС‚</param>
+/// <returns>РЎРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅРѕРµ С‡РёСЃР»Рѕ</returns>
 number generate_random(int bit_count);
 
 /// <summary>
-/// Проверка числа на простоту
+/// РџСЂРѕРІРµСЂРєР° С‡РёСЃР»Р° РЅР° РїСЂРѕСЃС‚РѕС‚Сѓ
 /// </summary>
-/// <param name="value">Число</param>
-/// <returns>1 - если простое, 0 - если составное</returns>
-BOOL Millers_method(number* value);
+/// <param name="value">Р§РёСЃР»Рѕ</param>
+/// <returns>1 - РµСЃР»Рё РїСЂРѕСЃС‚РѕРµ, 0 - РµСЃР»Рё СЃРѕСЃС‚Р°РІРЅРѕРµ</returns>
+BOOL Millers_method(number *value);
 
 #endif // !BIT_LA_H

@@ -8,65 +8,65 @@
 #define PRIME_PREFIX_SIZE 5
 
 /// <summary>
-/// Проверяет имена файлов на правильность формата и совпадение
+/// РџСЂРѕРІРµСЂСЏРµС‚ РёРјРµРЅР° С„Р°Р№Р»РѕРІ РЅР° РїСЂР°РІРёР»СЊРЅРѕСЃС‚СЊ С„РѕСЂРјР°С‚Р° Рё СЃРѕРІРїР°РґРµРЅРёРµ
 /// </summary>
-/// <param name="fn1">Имя первого файла</param>
-/// <param name="fn2">Имя второго файла</param>
-/// <returns>1, если все проверки пройдены. 0, если хотя бы одна из проверок не пройдена</returns>
-BOOL check_filenames_2(char* fn1, char* fn2);
+/// <param name="fn1">РРјСЏ РїРµСЂРІРѕРіРѕ С„Р°Р№Р»Р°</param>
+/// <param name="fn2">РРјСЏ РІС‚РѕСЂРѕРіРѕ С„Р°Р№Р»Р°</param>
+/// <returns>1, РµСЃР»Рё РІСЃРµ РїСЂРѕРІРµСЂРєРё РїСЂРѕР№РґРµРЅС‹. 0, РµСЃР»Рё С…РѕС‚СЏ Р±С‹ РѕРґРЅР° РёР· РїСЂРѕРІРµСЂРѕРє РЅРµ РїСЂРѕР№РґРµРЅР°</returns>
+BOOL check_filenames_2(char *fn1, char *fn2);
 
 /// <summary>
-/// Проверяет имена файлов на правильность формата и совпадение
+/// РџСЂРѕРІРµСЂСЏРµС‚ РёРјРµРЅР° С„Р°Р№Р»РѕРІ РЅР° РїСЂР°РІРёР»СЊРЅРѕСЃС‚СЊ С„РѕСЂРјР°С‚Р° Рё СЃРѕРІРїР°РґРµРЅРёРµ
 /// </summary>
-/// <param name="fn1">Имя первого файла</param>
-/// <param name="fn2">Имя второго файла</param>
-/// <param name="fn3">Имя третьего файла</param>
-/// <returns>1, если все проверки пройдены. 0, если хотя бы одна из проверок не пройдена</returns>
-BOOL check_filenames_3(char* fn1, char* fn2, char* fn3);
+/// <param name="fn1">РРјСЏ РїРµСЂРІРѕРіРѕ С„Р°Р№Р»Р°</param>
+/// <param name="fn2">РРјСЏ РІС‚РѕСЂРѕРіРѕ С„Р°Р№Р»Р°</param>
+/// <param name="fn3">РРјСЏ С‚СЂРµС‚СЊРµРіРѕ С„Р°Р№Р»Р°</param>
+/// <returns>1, РµСЃР»Рё РІСЃРµ РїСЂРѕРІРµСЂРєРё РїСЂРѕР№РґРµРЅС‹. 0, РµСЃР»Рё С…РѕС‚СЏ Р±С‹ РѕРґРЅР° РёР· РїСЂРѕРІРµСЂРѕРє РЅРµ РїСЂРѕР№РґРµРЅР°</returns>
+BOOL check_filenames_3(char *fn1, char *fn2, char *fn3);
 
 /// <summary>
-/// Проверка на существование файла (запись)
+/// РџСЂРѕРІРµСЂРєР° РЅР° СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ С„Р°Р№Р»Р° (Р·Р°РїРёСЃСЊ)
 /// </summary>
-/// <param name="filename">Имя файла в виде строки</param>
-/// <returns>Указатель на файл</returns>
-FILE* check_file_exist_write(char* filename);
+/// <param name="filename">РРјСЏ С„Р°Р№Р»Р° РІ РІРёРґРµ СЃС‚СЂРѕРєРё</param>
+/// <returns>РЈРєР°Р·Р°С‚РµР»СЊ РЅР° С„Р°Р№Р»</returns>
+FILE *check_file_exist_write(char *filename);
 
 /// <summary>
-/// Проверка на существование файла (чтение)
+/// РџСЂРѕРІРµСЂРєР° РЅР° СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ С„Р°Р№Р»Р° (С‡С‚РµРЅРёРµ)
 /// </summary>
-/// <param name="filename">Имя файла в виде строки</param>
-/// <returns>Указатель на файл</returns>
-FILE* check_file_exist_read(char* filename);
+/// <param name="filename">РРјСЏ С„Р°Р№Р»Р° РІ РІРёРґРµ СЃС‚СЂРѕРєРё</param>
+/// <returns>РЈРєР°Р·Р°С‚РµР»СЊ РЅР° С„Р°Р№Р»</returns>
+FILE *check_file_exist_read(char *filename);
 
 /// <summary>
-/// Запись number в файл
+/// Р—Р°РїРёСЃСЊ number РІ С„Р°Р№Р»
 /// </summary>
-/// <param name="file">указатель на файл</param>
-/// <param name="value">число</param>
-void save_num_to_file(FILE* file, number* value);
+/// <param name="file">СѓРєР°Р·Р°С‚РµР»СЊ РЅР° С„Р°Р№Р»</param>
+/// <param name="value">С‡РёСЃР»Рѕ</param>
+void save_num_to_file(FILE *file, number *value);
 
 /// <summary>
-/// Чтение number из файла
+/// Р§С‚РµРЅРёРµ number РёР· С„Р°Р№Р»Р°
 /// </summary>
-/// <param name="file">указатель на файл</param>
-/// <param name="value">число</param>
-int read_num_from_file(FILE* file, number* value);
+/// <param name="file">СѓРєР°Р·Р°С‚РµР»СЊ РЅР° С„Р°Р№Р»</param>
+/// <param name="value">С‡РёСЃР»Рѕ</param>
+int read_num_from_file(FILE *file, number *value);
 
 /// <summary>
-/// Сохраняет ключ
+/// РЎРѕС…СЂР°РЅСЏРµС‚ РєР»СЋС‡
 /// </summary>
-/// <param name="filename">имя файла</param>
+/// <param name="filename">РёРјСЏ С„Р°Р№Р»Р°</param>
 /// <param name="mod">N</param>
-/// <param name="subkey">второй параметр (e или d)</param>
-void save_key(char* filename, number* mod, number* subkey, char log);
+/// <param name="subkey">РІС‚РѕСЂРѕР№ РїР°СЂР°РјРµС‚СЂ (e РёР»Рё d)</param>
+void save_key(char *filename, number *mod, number *subkey, char log);
 
 /// <summary>
-/// Читает ключ из файла
+/// Р§РёС‚Р°РµС‚ РєР»СЋС‡ РёР· С„Р°Р№Р»Р°
 /// </summary>
-/// <param name="filename">имя файла</param>
+/// <param name="filename">РёРјСЏ С„Р°Р№Р»Р°</param>
 /// <param name="mod">N</param>
-/// <param name="subkey">второй параметр (e или d)</param>
-void read_key(char* filename, number* mod, number* subkey, char log);
+/// <param name="subkey">РІС‚РѕСЂРѕР№ РїР°СЂР°РјРµС‚СЂ (e РёР»Рё d)</param>
+void read_key(char *filename, number *mod, number *subkey, char log);
 
 /// <summary>
 /// Function, returning a prime number from file.
@@ -75,6 +75,6 @@ void read_key(char* filename, number* mod, number* subkey, char log);
 /// <param name="line_number">number of prime number. can be one from 1-500</param>
 /// <param name="bit_size">bit size of prime number</param>
 /// <returns></returns>
-number get_prime_from_file(char* filename, int line_number, int bit_size);
+number get_prime_from_file(char *filename, int line_number, int bit_size);
 
 #endif // !_FILE__H

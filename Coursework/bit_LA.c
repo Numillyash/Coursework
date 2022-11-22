@@ -3,24 +3,16 @@
 //
 #include "bit_LA.h"
 
-inline uint8_t XOR(uint8_t a, uint8_t b)
-{
-	return a ^ b;
-}
+#define XOR(a, b) a ^ b
 
-inline uint8_t NOT(uint8_t a)
-{
-	return (a) ? 0 : 1;
-}
+#define NOT(a) !a
 
-inline uint8_t AND(uint8_t a, uint8_t b)
-{
-	return a & b;
-}
+#define AND(a, b) a &b
 
-void additional_code(number* value)
+void additional_code(number *value)
 {
-	if (!is_zero(value)) {
+	if (!is_zero(value))
+	{
 		uint8_t addit_digit = 1;
 		int iter;
 
@@ -38,9 +30,10 @@ void additional_code(number* value)
 	}
 }
 
-void nonadditional_code(number* value)
+void nonadditional_code(number *value)
 {
-	if (!is_zero(value)) {
+	if (!is_zero(value))
+	{
 		uint8_t addit_digit = 1;
 		int iter;
 
@@ -58,9 +51,10 @@ void nonadditional_code(number* value)
 	}
 }
 
-number init() {
-	number result = { 1, 1 };
-	result.mas = (uint8_t*)malloc(sizeof(uint8_t));
+number init()
+{
+	number result = {1, 1};
+	result.mas = (uint8_t *)malloc(sizeof(uint8_t));
 	if (result.mas == NULL)
 	{
 		_log("Memory allocation failure in init() function");
@@ -70,7 +64,8 @@ number init() {
 	return result;
 }
 
-number copy(number* value) {
+number copy(number *value)
+{
 	number result = init();
 	int i; // iterator
 	for (i = 0; i < value->current_count - 1; i++)
@@ -79,13 +74,15 @@ number copy(number* value) {
 	return result;
 }
 
-number int_to_number(int value) {
+number int_to_number(int value)
+{
 	int ostatok;
 	number result = init();
 	if (value < 0)
 	{
 		value *= -1;
-		while (value > 0) {
+		while (value > 0)
+		{
 			ostatok = value % NUMBER_SYSTEM_BASE;
 			add_digit(&result, ostatok);
 			value >>= 1;
@@ -96,7 +93,8 @@ number int_to_number(int value) {
 	}
 	else
 	{
-		while (value > 0) {
+		while (value > 0)
+		{
 			ostatok = value % NUMBER_SYSTEM_BASE;
 			add_digit(&result, ostatok);
 			value >>= 1;
@@ -110,10 +108,10 @@ number int_to_number(int value) {
 	return result;
 }
 
-int number_to_int(number* value) 
+int number_to_int(number *value)
 {
 	int res = 0, i, zn = 1;
-	int x = 1; // степень двойки
+	int x = 1; // СЃС‚РµРїРµРЅСЊ РґРІРѕР№РєРё
 
 	if (value->mas[value->current_count - 1])
 	{
@@ -137,65 +135,75 @@ int number_to_int(number* value)
 	return res;
 }
 
-void normalize(number* value) {
+void normalize(number *value)
+{
 	number result = init();
-	int i; //iterator
+	int i; // iterator
 	int end = value->current_count - 2;
 	if (value->mas[value->current_count - 1])
 	{
-		for (i = value->current_count - 2; i > 0; i--) {
+		for (i = value->current_count - 2; i > 0; i--)
+		{
 			end = i;
-			if (value->mas[i] == 0 || value->mas[i - 1] == 0) {
+			if (value->mas[i] == 0 || value->mas[i - 1] == 0)
+			{
 				break;
 			}
 		}
 	}
 	else
 	{
-		for (i = value->current_count - 2; i >= 0; i--) {
+		for (i = value->current_count - 2; i >= 0; i--)
+		{
 			end = i;
-			if (value->mas[i] != 0) {
+			if (value->mas[i] != 0)
+			{
 				break;
 			}
 		}
 	}
-	for (i = 0; i <= end; i++) {
+	for (i = 0; i <= end; i++)
+	{
 		add_digit(&result, value->mas[i]);
 	}
 	result.mas[result.current_count - 1] = value->mas[value->current_count - 1];
 	value->current_count = 1;
 	value->size = 1;
 	free(value->mas);
-	value->mas = (uint8_t*)malloc(sizeof(uint8_t));
+	value->mas = (uint8_t *)malloc(sizeof(uint8_t));
 	if (value->mas == NULL)
 	{
 		_log("Memory allocation failure in normalize() function");
 		exit(MEMORY_ALLOCATION_FAILURE);
 	}
-	for (i = 0; i <= end; i++) {
+	for (i = 0; i <= end; i++)
+	{
 		add_digit(value, result.mas[i]);
 	}
 	value->mas[value->current_count - 1] = result.mas[result.current_count - 1];
 	clear_mem(&result);
 }
 
-void clear_mem(number* value)
+void clear_mem(number *value)
 {
 	free(value->mas);
 	value->mas = NULL;
 }
 
-void add_digit(number* object, uint8_t value) {
+void add_digit(number *object, uint8_t value)
+{
 	int iter;
-	uint8_t* buff;
+	uint8_t *buff;
 
-	if (object->current_count < object->size) {
+	if (object->current_count < object->size)
+	{
 		object->mas[object->current_count] = object->mas[object->current_count - 1];
 		object->mas[object->current_count - 1] = value;
 		object->current_count += 1;
 	}
-	else {
-		buff = (uint8_t*)malloc(sizeof(uint8_t) * (object->current_count));
+	else
+	{
+		buff = (uint8_t *)malloc(sizeof(uint8_t) * (object->current_count));
 		if (buff == NULL)
 		{
 			_log("Memory allocation failure in add_digit() function (buffer)");
@@ -206,7 +214,7 @@ void add_digit(number* object, uint8_t value) {
 			buff[iter] = object->mas[iter];
 		}
 		clear_mem(object);
-		object->mas = (uint8_t*)malloc(sizeof(uint8_t) * (object->size) * 2);
+		object->mas = (uint8_t *)malloc(sizeof(uint8_t) * (object->size) * 2);
 		if (object->mas == NULL)
 		{
 			_log("Memory allocation failure in add_digit() function (object)");
@@ -224,7 +232,7 @@ void add_digit(number* object, uint8_t value) {
 	}
 }
 
-void offset_right(number* object)
+void offset_right(number *object)
 {
 	if (object->current_count == 2)
 	{
@@ -240,7 +248,7 @@ void offset_right(number* object)
 	}
 }
 
-void offset_left(number* object)
+void offset_left(number *object)
 {
 	reverse(object);
 	add_digit(object, 0);
@@ -249,7 +257,7 @@ void offset_left(number* object)
 	normalize(object);
 }
 
-void reverse(number* value)
+void reverse(number *value)
 {
 	number prom = init();
 	int i; // iterator
@@ -264,8 +272,9 @@ void reverse(number* value)
 	clear_mem(&prom);
 }
 
-void print_number_as_is(number* value) {
-	int i; //iterator
+void print_number_as_is(number *value)
+{
+	int i; // iterator
 	for (i = 0; i <= value->current_count - 2; i++)
 	{
 		printf("%d", (int)value->mas[i]);
@@ -276,15 +285,16 @@ void print_number_as_is(number* value) {
 	printf("\n");
 }
 
-void print_number_decimal(number* value) {
-	int y; //iterator
+void print_number_decimal(number *value)
+{
+	int y;	   // iterator
 	int x = 1; // stepen 2
 	int s = 0; // summa
 	if (value->mas[value->current_count - 1])
 	{
 		printf("-");
 		nonadditional_code(value);
-		
+
 		for (y = 0; y < value->current_count - 1; y++)
 		{
 			s += value->mas[y] * x;
@@ -304,8 +314,9 @@ void print_number_decimal(number* value) {
 	}
 }
 
-void print_number(number* value) {
-	int i; //iterator
+void print_number(number *value)
+{
+	int i; // iterator
 	printf("%d ", (int)value->mas[value->current_count - 1]);
 	while (((value->current_count) - 1) % 4 != 0)
 	{
@@ -321,16 +332,16 @@ void print_number(number* value) {
 	printf("\n");
 }
 
-void debug_log(number* value)
+void debug_log(number *value)
 {
 	int i, n = value->current_count;
 	char buff[4000];
-	buff[0] = value->mas[n - 1]+'0';
+	buff[0] = value->mas[n - 1] + '0';
 	buff[1] = ' ';
 
 	//    |
-	//100101 cc=6
-	//1 01001
+	// 100101 cc=6
+	// 1 01001
 	//  |
 
 	for (i = n - 2; i >= 0; i--)
@@ -338,11 +349,11 @@ void debug_log(number* value)
 		buff[n - i] = value->mas[i] + '0';
 	}
 	buff[n + 1] = '\0';
-	//printf("%s\n", buff);
+	// printf("%s\n", buff);
 	_log(buff);
 }
 
-BOOL is_zero(number* object)
+BOOL is_zero(number *object)
 {
 	int iterator = 0;
 
@@ -357,7 +368,7 @@ BOOL is_zero(number* object)
 	return TRUE;
 }
 
-BOOL is_equal(number* value1, number* value2)
+BOOL is_equal(number *value1, number *value2)
 {
 	short iterator = 0;
 
@@ -375,7 +386,8 @@ BOOL is_equal(number* value1, number* value2)
 	return TRUE;
 }
 
-number addition(number* value1, number* value2) {
+number addition(number *value1, number *value2)
+{
 	number summand, addend;
 	number carry = init();
 	int real_symb = 0;
@@ -383,13 +395,16 @@ number addition(number* value1, number* value2) {
 	int iter = 0;
 	int max_symb = 0;
 
-	normalize(value1); normalize(value2);
+	normalize(value1);
+	normalize(value2);
 
-	if ((value1->current_count) >= (value2->current_count)) {
+	if ((value1->current_count) >= (value2->current_count))
+	{
 		summand = copy(value1);
 		addend = copy(value2);
 	}
-	else {
+	else
+	{
 		summand = copy(value2);
 		addend = copy(value1);
 	}
@@ -415,7 +430,11 @@ number addition(number* value1, number* value2) {
 	{
 		max_symb = max(summand.current_count, addend.current_count);
 		max_symb = max(max_symb, carry.current_count);
-		if (max_symb == 2) { max_symb++; real_symb++; }
+		if (max_symb == 2)
+		{
+			max_symb++;
+			real_symb++;
+		}
 
 		for (iter = max_symb - summand.current_count; iter > 0; iter--)
 		{
@@ -439,17 +458,17 @@ number addition(number* value1, number* value2) {
 				add_digit(&carry, 0);
 		}
 
-		//carry = (summand & addend);
+		// carry = (summand & addend);
 		for (iter = 0; iter < max_symb; iter++)
 		{
 			carry.mas[iter] = AND(summand.mas[iter], addend.mas[iter]);
 		}
-		//summand = summand ^ addend;
+		// summand = summand ^ addend;
 		for (iter = 0; iter < max_symb; iter++)
 		{
 			summand.mas[iter] = XOR(summand.mas[iter], addend.mas[iter]);
 		}
-		//addend = (carry << 1);
+		// addend = (carry << 1);
 		clear_mem(&addend);
 		addend = copy(&carry);
 		offset_left(&addend);
@@ -469,7 +488,8 @@ number addition(number* value1, number* value2) {
 	return summand;
 }
 
-number difference(number* value1, number* value2) {
+number difference(number *value1, number *value2)
+{
 	number b = copy(value2), buff;
 	if (value2->mas[value2->current_count - 1])
 		nonadditional_code(&b);
@@ -483,20 +503,22 @@ number difference(number* value1, number* value2) {
 	return buff;
 }
 
-number easy_mult(number* value1, number* value2)
+number easy_mult(number *value1, number *value2)
 {
 	number result;
 	int a = number_to_int(value1);
 	int b = number_to_int(value2);
-	
-	result = int_to_number(a*b);
+
+	result = int_to_number(a * b);
 
 	return result;
 }
 
-number karatsuba(number* value1, number* value2)
+number karatsuba(number *value1, number *value2)
 {
-	int n; int k; int iter;
+	int n;
+	int k;
+	int iter;
 	number res = init(), buff1, buff2;
 	number a, b, c, d, p1, p2, t, v1, v2;
 
@@ -523,14 +545,18 @@ number karatsuba(number* value1, number* value2)
 		print_number(value1);
 		printf("v2 = ");
 		print_number(value2);
-#endif // DEBUG   
+#endif // DEBUG
 		return easy_mult(value1, value2);
 	}
 	else
 	{
-		v1 = copy(value1); v2 = copy(value2);
+		v1 = copy(value1);
+		v2 = copy(value2);
 
-		a = init(); b = init(); c = init(); d = init();
+		a = init();
+		b = init();
+		c = init();
+		d = init();
 
 		for (iter = n - v1.current_count; iter > 0; iter--)
 		{
@@ -572,7 +598,7 @@ number karatsuba(number* value1, number* value2)
 		print_number(&c);
 		printf("d = ");
 		print_number(&d);
-#endif // DEBUG                  
+#endif // DEBUG
 
 		p1 = karatsuba(&b, &d);
 		p2 = karatsuba(&a, &c);
@@ -580,7 +606,14 @@ number karatsuba(number* value1, number* value2)
 		buff2 = addition(&c, &d);
 		t = karatsuba(&buff1, &buff2);
 
-		clear_mem(&buff1); clear_mem(&buff2); clear_mem(&a); clear_mem(&b); clear_mem(&c); clear_mem(&d); clear_mem(&v1); clear_mem(&v2);
+		clear_mem(&buff1);
+		clear_mem(&buff2);
+		clear_mem(&a);
+		clear_mem(&b);
+		clear_mem(&c);
+		clear_mem(&d);
+		clear_mem(&v1);
+		clear_mem(&v2);
 
 		buff1 = copy(&t);
 		clear_mem(&t);
@@ -646,9 +679,11 @@ number karatsuba(number* value1, number* value2)
 	}
 }
 
-number multiplication(number* value1, number* value2) {
+number multiplication(number *value1, number *value2)
+{
 	number result, a, b;
-	a = copy(value1); b = copy(value2);
+	a = copy(value1);
+	b = copy(value2);
 	int sign = a.mas[a.current_count - 1] + b.mas[b.current_count - 1];
 	if (a.mas[a.current_count - 1])
 	{
@@ -660,16 +695,18 @@ number multiplication(number* value1, number* value2) {
 	}
 
 	result = karatsuba(&a, &b);
-	clear_mem(&a); clear_mem(&b);
+	clear_mem(&a);
+	clear_mem(&b);
 
-	if (sign == 1) {
+	if (sign == 1)
+	{
 		additional_code(&result);
 	}
 	normalize(&result);
 	return result;
 }
 
-number division_with_module(number* value1, number* value2, number* ost)
+number division_with_module(number *value1, number *value2, number *ost)
 {
 	number mod = int_to_number(0), rem = copy(value1), sub = copy(value2);
 	number add = int_to_number(1);
@@ -715,7 +752,8 @@ number division_with_module(number* value1, number* value2, number* ost)
 			rem = copy(&buff);
 			clear_mem(&buff);
 		}
-		else {
+		else
+		{
 			buff = difference(value2, &rem);
 			clear_mem(&rem);
 			rem = copy(&buff);
@@ -777,7 +815,7 @@ number division_with_module(number* value1, number* value2, number* ost)
 	return mod;
 }
 
-number module_pow(number* a, number* t, number* b)
+number module_pow(number *a, number *t, number *b)
 {
 	number d, ost, iterator = init(), buff, buff2, buff3;
 
@@ -832,7 +870,7 @@ number module_pow(number* a, number* t, number* b)
 	return ost;
 }
 
-number euclide_algorithm(number* value1, number* value2)
+number euclide_algorithm(number *value1, number *value2)
 {
 	number buff, a, b, mod;
 
@@ -871,7 +909,7 @@ number euclide_algorithm(number* value1, number* value2)
 	{
 		nonadditional_code(&b);
 	}
-	//a = b * q_0 + r_1                          
+	// a = b * q_0 + r_1
 	buff = division_with_module(&a, &b, &mod);
 	clear_mem(&buff);
 
@@ -893,7 +931,7 @@ number euclide_algorithm(number* value1, number* value2)
 	}
 }
 
-number euclide_algorithm_modifyed(number* value1, number* value2, number* values)
+number euclide_algorithm_modifyed(number *value1, number *value2, number *values)
 {
 	number buff, a, b, mod, div, GCD;
 	number _a, _b, _c, _d;
@@ -917,7 +955,7 @@ number euclide_algorithm_modifyed(number* value1, number* value2, number* values
 		a = copy(value1);
 		b = copy(value2);
 	}
-	//a = b * q_0 + r_1  
+	// a = b * q_0 + r_1
 
 	div = division_with_module(&a, &b, &mod);
 	if (!is_zero(&mod))
@@ -1009,7 +1047,7 @@ number generate_random(int bit_count)
 	return res;
 }
 
-BOOL Millers_method(number* value)
+BOOL Millers_method(number *value)
 {
 	number t, buff, buff2, a, N_minus_1;
 	BOOL fl1, fl2;
@@ -1044,7 +1082,7 @@ BOOL Millers_method(number* value)
 		return FALSE;
 	}
 
-	//N-1 = 2^s * t, t - нечетно
+	// N-1 = 2^s * t, t - РЅРµС‡РµС‚РЅРѕ
 
 	N_minus_1 = difference(value, &step);
 	t = copy(&N_minus_1);
@@ -1075,14 +1113,14 @@ BOOL Millers_method(number* value)
 		clear_mem(&buff);
 
 		buff = euclide_algorithm(value, &a);
-		if (!is_equal(&buff, &step)) //свойство 1
+		if (!is_equal(&buff, &step)) // СЃРІРѕР№СЃС‚РІРѕ 1
 		{
 			fl1 = FALSE;
 		}
 		clear_mem(&buff);
 
 		buff = module_pow(&a, &t, value);
-		if (!is_equal(&buff, &step)) // свойство 2
+		if (!is_equal(&buff, &step)) // СЃРІРѕР№СЃС‚РІРѕ 2
 		{
 			fl2 = FALSE;
 			for (k = 1; k <= s; k++)
@@ -1099,7 +1137,7 @@ BOOL Millers_method(number* value)
 
 				if (is_equal(&buff, &N_minus_1))
 				{
-					//printf("= is %d\n", is_equal(&buff, &N_minus_1));
+					// printf("= is %d\n", is_equal(&buff, &N_minus_1));
 					fl2 = TRUE;
 				}
 			}
