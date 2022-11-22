@@ -16,6 +16,8 @@ void additional_code(number *value)
 		uint8_t addit_digit = 1;
 		int iter;
 
+		// TODO: Обьеденить циклы
+
 		for (iter = 0; iter < value->current_count; iter++)
 		{
 			value->mas[iter] = NOT(value->mas[iter]);
@@ -36,6 +38,8 @@ void nonadditional_code(number *value)
 	{
 		uint8_t addit_digit = 1;
 		int iter;
+
+		// TODO: Обьеденить циклы
 
 		for (iter = 0; iter < value->current_count; iter++)
 		{
@@ -66,6 +70,8 @@ number init()
 
 number copy(number *value)
 {
+	// TODO: Избавиться от add_digit и использовать фор для прямого добавления
+
 	number result = init();
 	int i; // iterator
 	for (i = 0; i < value->current_count - 1; i++)
@@ -78,6 +84,9 @@ number int_to_number(int value)
 {
 	int ostatok;
 	number result = init();
+
+	// TODO: Двоичная система: % заменяется на &
+
 	if (value < 0)
 	{
 		value *= -1;
@@ -195,6 +204,8 @@ void add_digit(number *object, uint8_t value)
 	int iter;
 	uint8_t *buff;
 
+	// TODO: memcpy?
+
 	if (object->current_count < object->size)
 	{
 		object->mas[object->current_count] = object->mas[object->current_count - 1];
@@ -234,6 +245,8 @@ void add_digit(number *object, uint8_t value)
 
 void offset_right(number *object)
 {
+	// TODO: Не нравится куча реверсов
+
 	if (object->current_count == 2)
 	{
 		*object = int_to_number(0);
@@ -250,6 +263,7 @@ void offset_right(number *object)
 
 void offset_left(number *object)
 {
+	// TODO: Не нравится куча реверсов
 	reverse(object);
 	add_digit(object, 0);
 	swap(object->mas[object->current_count - 2], object->mas[object->current_count - 1]);
@@ -259,6 +273,8 @@ void offset_left(number *object)
 
 void reverse(number *value)
 {
+	// TODO: Обоийтись без лишнего инита и копировать по другому?
+
 	number prom = init();
 	int i; // iterator
 	for (i = value->current_count - 2; i >= 0; i--)
@@ -355,6 +371,8 @@ void debug_log(number *value)
 
 BOOL is_zero(number *object)
 {
+	// TODO: Оптимизировать?
+
 	int iterator = 0;
 
 	for (iterator = 0; iterator < object->current_count; iterator++)
@@ -371,6 +389,8 @@ BOOL is_zero(number *object)
 BOOL is_equal(number *value1, number *value2)
 {
 	short iterator = 0;
+
+	// TODO: Заменить фор на вайл?
 
 	normalize(value1);
 	normalize(value2);
@@ -505,6 +525,7 @@ number difference(number *value1, number *value2)
 
 number easy_mult(number *value1, number *value2)
 {
+	// TODO: Не использовать numb_to_int, а делать прямо тут
 	number result;
 	int a = number_to_int(value1);
 	int b = number_to_int(value2);
@@ -708,6 +729,7 @@ number multiplication(number *value1, number *value2)
 
 number division_with_module(number *value1, number *value2, number *ost)
 {
+	// TODO темный лес
 	number mod = int_to_number(0), rem = copy(value1), sub = copy(value2);
 	number add = int_to_number(1);
 	number buff;
@@ -817,6 +839,7 @@ number division_with_module(number *value1, number *value2, number *ost)
 
 number module_pow(number *a, number *t, number *b)
 {
+	// TODO тоже темный лес, но светлее
 	number d, ost, iterator = init(), buff, buff2, buff3;
 
 	add_digit(&iterator, 1);
@@ -933,6 +956,7 @@ number euclide_algorithm(number *value1, number *value2)
 
 number euclide_algorithm_modifyed(number *value1, number *value2, number *values)
 {
+	// TODO ...
 	number buff, a, b, mod, div, GCD;
 	number _a, _b, _c, _d;
 

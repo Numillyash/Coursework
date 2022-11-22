@@ -1,6 +1,6 @@
 #include "_file_.h"
 
-BOOL check_filenames_2(char* fn1, char* fn2)
+BOOL check_filenames_2(char *fn1, char *fn2)
 {
 	int strln;
 	int i; // iterator
@@ -46,7 +46,7 @@ BOOL check_filenames_2(char* fn1, char* fn2)
 	return 1;
 }
 
-BOOL check_filenames_3(char* fn1, char* fn2, char* fn3)
+BOOL check_filenames_3(char *fn1, char *fn2, char *fn3)
 {
 	int strln;
 	int i; // iterator
@@ -105,9 +105,9 @@ BOOL check_filenames_3(char* fn1, char* fn2, char* fn3)
 	return 1;
 }
 
-FILE* check_file_exist_write(char* filename)
+FILE *check_file_exist_write(char *filename)
 {
-	FILE* file;
+	FILE *file;
 	file = fopen(filename, "w");
 
 	if (file == NULL)
@@ -118,9 +118,9 @@ FILE* check_file_exist_write(char* filename)
 	return file;
 }
 
-FILE* check_file_exist_read(char* filename)
+FILE *check_file_exist_read(char *filename)
 {
-	FILE* file;
+	FILE *file;
 	file = fopen(filename, "r");
 
 	if (file == NULL)
@@ -131,7 +131,7 @@ FILE* check_file_exist_read(char* filename)
 	return file;
 }
 
-void save_num_to_file(FILE* file, number* value)
+void save_num_to_file(FILE *file, number *value)
 {
 	int i, c, j;
 
@@ -154,7 +154,7 @@ void save_num_to_file(FILE* file, number* value)
 	fprintf(file, "#\n");
 }
 
-void check_readed_num(char* string)
+void check_readed_num(char *string)
 {
 	char buff[PREFIX_SIZE + 1];
 	int i; // iterator
@@ -188,18 +188,17 @@ void check_readed_num(char* string)
 
 	for (i = 3; i < str_len; i++)
 	{
-		if (string[i]<check_str_min || string[i] > check_str_max)
+		if (string[i] < check_str_min || string[i] > check_str_max)
 		{
 			_log("There's exist some unexpected symbol");
 			exit(GET_NUMBER_FAILURE);
 		}
 	}
-
 }
 
-int read_num_from_file(FILE* file, number* value)
+int read_num_from_file(FILE *file, number *value)
 {
-	int i, j; // iterators 
+	int i, j; // iterators
 	int c;
 	int ms[4];
 	char buff[2048];
@@ -210,7 +209,6 @@ int read_num_from_file(FILE* file, number* value)
 		return 0;
 	}
 	check_readed_num(buff);
-
 
 	i = 3;
 	while ((c = (int)buff[i]) != (int)'#')
@@ -230,11 +228,11 @@ int read_num_from_file(FILE* file, number* value)
 	return 1;
 }
 
-void save_key(char* filename, number* mod, number* subkey, char log)
+void save_key(char *filename, number *mod, number *subkey, char log)
 {
-	FILE* file;
+	FILE *file;
 	char str[2];
-	int i, j; // iterators 
+	int i, j; // iterators
 	int c;
 	file = check_file_exist_write(filename);
 
@@ -279,15 +277,16 @@ void save_key(char* filename, number* mod, number* subkey, char log)
 	_log(str);
 }
 
-void read_key(char* filename, number* mod, number* subkey, char log)
+void read_key(char *filename, number *mod, number *subkey, char log)
 {
-	FILE* file;
+	FILE *file;
 	char str[2];
-	int i, j; // iterators 
+	int i, j; // iterators
 	int c;
 	int ms[4];
 
-	*mod = init(); *subkey = init();
+	*mod = init();
+	*subkey = init();
 	file = check_file_exist_read(filename);
 
 	char buff[2048];
@@ -316,6 +315,7 @@ void read_key(char* filename, number* mod, number* subkey, char log)
 	while ((c = (int)buff[i]) != (int)'#')
 	{
 		c = (int)(buff[i] - 'a');
+		// TODO Оптимизировать цикл - избавиться от цикла
 		for (j = 0; j < 4; j++)
 		{
 			ms[j] = c % 2;
@@ -337,7 +337,7 @@ void read_key(char* filename, number* mod, number* subkey, char log)
 	_log(str);
 }
 
-void check_readed_prime(char* string)
+void check_readed_prime(char *string)
 {
 	char buff[PRIME_PREFIX_SIZE + 1];
 	int i; // iterator
@@ -376,7 +376,7 @@ void check_readed_prime(char* string)
 		}
 		for (i = 1; i < str_len - 1; i++)
 		{
-			if (string[i]<check_prx_min || string[i] > check_prx_max)
+			if (string[i] < check_prx_min || string[i] > check_prx_max)
 			{
 				_log("There's exist some unexpected symbol");
 				_log(buff);
@@ -409,7 +409,7 @@ void check_readed_prime(char* string)
 
 		for (i = strlen(buff); i < str_len; i++)
 		{
-			if (string[i]<check_str_min || string[i] > check_str_max)
+			if (string[i] < check_str_min || string[i] > check_str_max)
 			{
 				_log("There's exist some unexpected symbol");
 				exit(GET_PRIME_FAILURE);
@@ -417,11 +417,11 @@ void check_readed_prime(char* string)
 		}
 	}
 }
- 
-number get_prime_from_file(char* filename, int line_number, int bit_size)
+
+number get_prime_from_file(char *filename, int line_number, int bit_size)
 {
-	FILE* file;
-	int c = 0, line_num, i=0;
+	FILE *file;
+	int c = 0, line_num, i = 0;
 	char str[3];
 	number res = init();
 	char buff[4096];
