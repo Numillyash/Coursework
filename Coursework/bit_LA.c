@@ -16,15 +16,9 @@ void additional_code(number *value)
 		uint8_t addit_digit = 1;
 		int iter;
 
-		// TODO: Обьеденить циклы
-
 		for (iter = 0; iter < value->current_count; iter++)
 		{
 			value->mas[iter] = NOT(value->mas[iter]);
-		}
-
-		for (iter = 0; iter < value->current_count; iter++)
-		{
 			value->mas[iter] = XOR(value->mas[iter], addit_digit);
 			if (value->mas[iter])
 				addit_digit = 0;
