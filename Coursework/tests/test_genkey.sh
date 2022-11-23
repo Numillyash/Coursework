@@ -5,7 +5,7 @@ file_inp="./test_results/keys/pb$keysize.txt"
 file_out="./test_results/keys/sc$keysize.txt"
 
     START_TIME=$(date +%s)
-./work1.exe genkey --size $keysize --pubkey $file_inp --secret $file_out
+./work1 genkey --size $keysize --pubkey $file_inp --secret $file_out
 exit_code=$?
 #runtime=$((end-start))
     END_TIME=$(date +%s)

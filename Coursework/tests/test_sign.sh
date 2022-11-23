@@ -9,7 +9,7 @@ do
     file_out="./test_results/tmp/test_tmp_sig_${num}_$keysize.txt"
     file_sec="./test_results/keys/sc$keysize.txt"
     START_TIME=$(date +%s)
-    ./work1.exe sign --infile $file_inp --secret $file_sec --sigfile $file_out
+    ./work1 sign --infile $file_inp --secret $file_sec --sigfile $file_out
     exit_code=$?
     END_TIME=$(date +%s)
     DIFF=$(( $END_TIME - $START_TIME ))
