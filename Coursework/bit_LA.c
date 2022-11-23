@@ -332,21 +332,23 @@ void print_number_decimal(number *value)
 	}
 }
 
-void print_number(number *value)
+void print_number(number *_value)
 {
 	int i; // iterator
-	printf("%d ", (int)value->mas[value->current_count - 1]);
-	while (((value->current_count) - 1) % 4 != 0)
+	number value = copy(_value);
+	printf("%d ", (int)value.mas[value.current_count - 1]);
+	while (((value.current_count) - 1) % 4 != 0)
 	{
-		add_digit(value, 0);
+		add_digit(&value, value.mas[value.current_count - 1] ? 1 : 0);
 	}
-	for (i = value->current_count - 2; i >= 0; i--)
+	for (i = value.current_count - 2; i >= 0; i--)
 	{
-		printf("%d", (int)value->mas[i]);
+		printf("%d", (int)value.mas[i]);
 		if (i % 4 == 0)
 			printf(" ");
 	}
-	normalize(value);
+	normalize(&value);
+
 	printf("\n");
 }
 
