@@ -222,6 +222,14 @@ void generate_key(char *key_size_str, char *pubkey_filename, char *seckey_filena
 	clear_mem(&buff1);
 	d = copy(&arr[1]);
 
+	if (d.mas[d.current_count - 1])
+	{
+		buff1 = addition(&d, &phi_n);
+		clear_mem(&d);
+		d = copy(&buff1);
+		clear_mem(&buff1);
+	}
+
 	_log("genkey: all counts ready");
 
 	clear_mem(&p);
