@@ -9,15 +9,15 @@ mkdir test_results/tmp
 
 filename=$(date +"%F %X")
 echo $filename
-for i in {1..10}:
+for i in {1..10}
 do
 START_TIME=$(date +%s)
 #
 bash ./tests/test_genkey.sh "keygen-$filename" 
 # bash ./tests/test_sign.sh "sign-$filename"
 # bash ./tests/test_check.sh "check-$filename"
-bash ./tests/test_encrypt.sh "enc-$filename"
-bash ./tests/test_decrypt.sh "dec-$filename"
+bash ./tests/test_encrypt.sh "enc-$filename" $i
+bash ./tests/test_decrypt.sh "dec-$filename" $i
 #
 END_TIME=$(date +%s)
 DIFF=$(( $END_TIME - $START_TIME ))

@@ -4,8 +4,8 @@ while read -r b
 do
     keysize=$((a))
     num=$((b))
-    file_out="./test_results/test_outputs/test_dec_${num}_$keysize.txt"
-    file_inp="./test_results/tmp/test_tmp_enc_${num}_$keysize.txt"
+    file_out="./test_results/test_outputs/test_dec_${num}_${keysize}_($2).txt"
+    file_inp="./test_results/tmp/test_tmp_enc_${num}_${keysize}_($2).txt"
     file_sec="./test_results/keys/sc$keysize.txt"
     START_TIME=$(date +%s)
     ./work1 decrypt --infile $file_inp --secret $file_sec --outfile $file_out
