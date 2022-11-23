@@ -3,6 +3,8 @@
 //
 #include "bit_LA.h"
 
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+
 #define XOR(a, b) a ^ b
 
 #define NOT(a) !a
