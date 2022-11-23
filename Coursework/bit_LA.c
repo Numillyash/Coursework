@@ -3,6 +3,8 @@
 //
 #include "bit_LA.h"
 
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+
 #define XOR(a, b) a ^ b
 
 #define NOT(a) !a
@@ -30,6 +32,42 @@ void additional_code(number *value)
 				addit_digit = 0;
 		}
 	}
+	// if (!is_zero(value))
+	// {
+	// 	uint8_t addit_digit = 1;
+	// 	int iter;
+
+	// 	printf("ADD CODE START\n");
+	// 	printf("Was\n");
+	// 	print_number(value);
+	// 	print_number_as_is(value);
+	// 	printf("cur count = %d\n", value->current_count);
+	// 	for (iter = 0; iter < value->current_count; iter++)
+	// 	{
+	// 		printf("value->mas[iter] %d to %d\n", value->mas[iter], NOT(value->mas[iter]));
+	// 		printf("cur count = %d\n", value->current_count);
+	// 		value->mas[iter] = NOT(value->mas[iter]);
+	// 	}
+	// 	printf("Invert\n");
+	// 	print_number(value);
+	// 	print_number_as_is(value);
+
+	// 	printf("cur count = %d\n", value->current_count);
+	// 	for (iter = 0; iter < value->current_count; iter++)
+	// 	{
+	// 		value->mas[iter] = XOR(value->mas[iter], addit_digit);
+	// 		if (value->mas[iter])
+	// 		{
+	// 			addit_digit = 0;
+	// 			printf("Cicle\n");
+	// 			print_number(value);
+	// 			break;
+	// 		}
+	// 		printf("Cicle\n");
+	// 		print_number(value);
+	// 	}
+	// 	printf("ADD CODE END\n");
+	// }
 }
 
 void nonadditional_code(number *value)
@@ -330,21 +368,23 @@ void print_number_decimal(number *value)
 	}
 }
 
-void print_number(number *value)
+void print_number(number *_value)
 {
 	int i; // iterator
-	printf("%d ", (int)value->mas[value->current_count - 1]);
-	while (((value->current_count) - 1) % 4 != 0)
+	number value = copy(_value);
+	printf("%d ", (int)value.mas[value.current_count - 1]);
+	while (((value.current_count) - 1) % 4 != 0)
 	{
-		add_digit(value, 0);
+		add_digit(&value, value.mas[value.current_count - 1] ? 1 : 0);
 	}
-	for (i = value->current_count - 2; i >= 0; i--)
+	for (i = value.current_count - 2; i >= 0; i--)
 	{
-		printf("%d", (int)value->mas[i]);
+		printf("%d", (int)value.mas[i]);
 		if (i % 4 == 0)
 			printf(" ");
 	}
-	normalize(value);
+	normalize(&value);
+
 	printf("\n");
 }
 
