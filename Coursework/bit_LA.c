@@ -16,15 +16,10 @@ void additional_code(number *value)
 		uint8_t addit_digit = 1;
 		int iter;
 
-		// TODO: Обьеденить циклы
-
+		// TODO: Обьеденить циклы СДЕЛАНО, можно ли объеденить в одну операцию?
 		for (iter = 0; iter < value->current_count; iter++)
 		{
 			value->mas[iter] = NOT(value->mas[iter]);
-		}
-
-		for (iter = 0; iter < value->current_count; iter++)
-		{
 			value->mas[iter] = XOR(value->mas[iter], addit_digit);
 			if (value->mas[iter])
 				addit_digit = 0;
@@ -39,15 +34,9 @@ void nonadditional_code(number *value)
 		uint8_t addit_digit = 1;
 		int iter;
 
-		// TODO: Обьеденить циклы
-
-		for (iter = 0; iter < value->current_count; iter++)
-		{
+		// TODO: Обьеденить циклы СДЕЛАНО, можно ли объеденить в одну операцию?
+		for (iter = 0; iter < value->current_count; iter++){
 			value->mas[iter] = NOT(value->mas[iter]);
-		}
-
-		for (iter = 0; iter < value->current_count; iter++)
-		{
 			value->mas[iter] = XOR(value->mas[iter], addit_digit);
 			if (value->mas[iter])
 				addit_digit = 0;
@@ -196,8 +185,19 @@ void normalize(number *value)
 void clear_mem(number *value)
 {
 	// FIXME ассемблировать здесь
-	free(value->mas);
-	value->mas = NULL;
+	// asm(
+    //     "pushq	%rbx"
+	// 	".seh_pushreg	%rbx"
+	// 	"subq	$32, %rsp"
+	// 	".seh_stackalloc	32"
+	// 	".seh_endprologue"
+	// 	"movq	%rcx, %rbx"
+	// 	"movq	8(%rcx), %rcx"
+	// 	"call	free"
+	// 	"movq	$0, 8(%rbx)"
+	// 	"addq	$32, %rsp"
+	// 	"popq	%rbx"
+    // ); полностью не правильная вставка, как я понял это уже результат
 }
 
 void add_digit(number *object, uint8_t value)
@@ -376,7 +376,7 @@ BOOL is_zero(number *object)
 
 	int iterator = 0;
 
-	for (iterator = 0; iterator < object->current_count; iterator++)
+	for (iterator; iterator < object->current_count; iterator++) // убрано  приравнение к 0 у итератора фор на вайл? 
 	{
 		if (object->mas[iterator] != 0)
 		{
