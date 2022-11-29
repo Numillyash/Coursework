@@ -18,38 +18,9 @@ void additional_code(number *value)
 		uint8_t addit_digit = 1;
 		int iter;
 
-		// TODO: Обьеденить циклы
-
 		for (iter = 0; iter < value->current_count; iter++)
 		{
 			value->mas[iter] = NOT(value->mas[iter]);
-		}
-
-		for (iter = 0; iter < value->current_count; iter++)
-		{
-			value->mas[iter] = XOR(value->mas[iter], addit_digit);
-			if (value->mas[iter])
-				addit_digit = 0;
-		}
-	}
-}
-
-void nonadditional_code(number *value)
-{
-	if (!is_zero(value))
-	{
-		uint8_t addit_digit = 1;
-		int iter;
-
-		// TODO: Обьеденить циклы
-
-		for (iter = 0; iter < value->current_count; iter++)
-		{
-			value->mas[iter] = NOT(value->mas[iter]);
-		}
-
-		for (iter = 0; iter < value->current_count; iter++)
-		{
 			value->mas[iter] = XOR(value->mas[iter], addit_digit);
 			if (value->mas[iter])
 				addit_digit = 0;
@@ -75,10 +46,16 @@ number copy(number *value)
 	// TODO: Избавиться от add_digit и использовать фор для прямого добавления
 
 	number result = init();
-	int i; // iterator
-	for (i = 0; i < value->current_count - 1; i++)
-		add_digit(&result, value->mas[i]);
-	result.mas[result.current_count - 1] = value->mas[value->current_count - 1];
+	clear_mem(&result);
+	result.mas = (uint8_t *)malloc(sizeof(uint8_t) * (value->size));
+	if (result.mas == NULL)
+	{
+		_log("Memory allocation failure in add_digit() function (buffer)");
+		exit(MEMORY_ALLOCATION_FAILURE);
+	}
+	memcpy(result.mas, value->mas, value->size);
+	result.current_count = value->current_count;
+	result.size = value->size;
 	return result;
 }
 
@@ -127,7 +104,7 @@ int number_to_int(number *value)
 	if (value->mas[value->current_count - 1])
 	{
 		zn = -1;
-		nonadditional_code(value);
+		additional_code(value); // nonadditional_code is used
 		for (i = 0; i < value->current_count - 1; i++)
 		{
 			res += value->mas[i] * x;
@@ -206,8 +183,6 @@ void add_digit(number *object, uint8_t value)
 	int iter;
 	uint8_t *buff;
 
-	// TODO: memcpy?
-
 	if (object->current_count < object->size)
 	{
 		object->mas[object->current_count] = object->mas[object->current_count - 1];
@@ -222,10 +197,9 @@ void add_digit(number *object, uint8_t value)
 			_log("Memory allocation failure in add_digit() function (buffer)");
 			exit(MEMORY_ALLOCATION_FAILURE);
 		}
-		for (iter = 0; iter < object->current_count; ++iter)
-		{
-			buff[iter] = object->mas[iter];
-		}
+
+		memcpy(buff, object->mas, object->current_count);
+
 		clear_mem(object);
 		object->mas = (uint8_t *)malloc(sizeof(uint8_t) * (object->size) * 2);
 		if (object->mas == NULL)
@@ -233,10 +207,9 @@ void add_digit(number *object, uint8_t value)
 			_log("Memory allocation failure in add_digit() function (object)");
 			exit(MEMORY_ALLOCATION_FAILURE);
 		}
-		for (iter = 0; iter < object->current_count; ++iter)
-		{
-			object->mas[iter] = buff[iter];
-		}
+
+		memcpy(object->mas, buff, object->current_count);
+
 		free(buff);
 		object->mas[object->current_count] = object->mas[object->current_count - 1];
 		object->mas[object->current_count - 1] = value;
@@ -248,17 +221,25 @@ void add_digit(number *object, uint8_t value)
 void offset_right(number *object)
 {
 	// TODO: Не нравится куча реверсов
-
 	if (object->current_count == 2)
 	{
 		*object = int_to_number(0);
 	}
 	else
 	{
+		// prom = init
+		// копируем символы с первого (не с 0)
+		// clear_mem(value)
+		// value = copy(&prom)
+		//
+		// v[i] = v[i+1]
+		// object->current_count -= 1;
+
 		reverse(object);
 		object->mas[object->current_count - 2] = object->mas[object->current_count - 1];
 		object->current_count -= 1;
 		reverse(object);
+
 		normalize(object);
 	}
 }
@@ -311,7 +292,7 @@ void print_number_decimal(number *value)
 	if (value->mas[value->current_count - 1])
 	{
 		printf("-");
-		nonadditional_code(value);
+		additional_code(value); // nonadditional_code is used
 
 		for (y = 0; y < value->current_count - 1; y++)
 		{
@@ -375,8 +356,6 @@ void debug_log(number *value)
 
 BOOL is_zero(number *object)
 {
-	// TODO: Оптимизировать?
-
 	int iterator = 0;
 
 	for (iterator = 0; iterator < object->current_count; iterator++)
@@ -393,9 +372,6 @@ BOOL is_zero(number *object)
 BOOL is_equal(number *value1, number *value2)
 {
 	short iterator = 0;
-
-	// TODO: Заменить фор на вайл?
-
 	normalize(value1);
 	normalize(value2);
 
@@ -436,8 +412,8 @@ number addition(number *value1, number *value2)
 	if (summand.mas[summand.current_count - 1] && addend.mas[addend.current_count - 1])
 	{
 		clear_mem(&carry);
-		nonadditional_code(&summand);
-		nonadditional_code(&addend);
+		additional_code(&summand); // nonadditional_code is used
+		additional_code(&addend);  // nonadditional_code is used
 		carry = addition(&summand, &addend);
 		additional_code(&carry);
 		clear_mem(&addend);
@@ -516,7 +492,7 @@ number difference(number *value1, number *value2)
 {
 	number b = copy(value2), buff;
 	if (value2->mas[value2->current_count - 1])
-		nonadditional_code(&b);
+		additional_code(&b); // nonadditional_code is used
 	else
 		additional_code(&b);
 	// _b = -b
@@ -750,7 +726,7 @@ number division_with_module(number *value1, number *value2, number *ost)
 		clear_mem(&rem);
 
 		buff = copy(value2);
-		nonadditional_code(&buff);
+		additional_code(&buff); // nonadditional_code is used
 		mod = division_with_module(value1, &buff, &rem);
 		clear_mem(&buff);
 
@@ -767,7 +743,7 @@ number division_with_module(number *value1, number *value2, number *ost)
 
 		// b - ( |a| % b )
 		buff = copy(value1);
-		nonadditional_code(&buff);
+		additional_code(&buff);							 // nonadditional_code is used
 		mod = division_with_module(&buff, value2, &rem); // ost = ( |a| % b )
 		clear_mem(&buff);
 
@@ -904,12 +880,12 @@ number euclide_algorithm(number *value1, number *value2)
 	a = copy(value1);
 	if (a.mas[a.current_count - 1])
 	{
-		nonadditional_code(&a);
+		additional_code(&a); // nonadditional_code is used
 	}
 	b = copy(value2);
 	if (b.mas[b.current_count - 1])
 	{
-		nonadditional_code(&b);
+		additional_code(&b); // nonadditional_code is used
 	}
 	buff = difference(&a, &b);
 	if (buff.mas[buff.current_count - 1])
@@ -930,11 +906,11 @@ number euclide_algorithm(number *value1, number *value2)
 	}
 	if (a.mas[a.current_count - 1])
 	{
-		nonadditional_code(&a);
+		additional_code(&a); // nonadditional_code is used
 	}
 	if (b.mas[b.current_count - 1])
 	{
-		nonadditional_code(&b);
+		additional_code(&b); // nonadditional_code is used
 	}
 	// a = b * q_0 + r_1
 	buff = division_with_module(&a, &b, &mod);
