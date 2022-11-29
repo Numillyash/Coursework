@@ -511,7 +511,7 @@ number easy_mult(number *value1, number *value2)
 	int b = number_to_int(value2);
 
 	result = int_to_number(a * b);
-
+	// test commit
 	return result;
 }
 
