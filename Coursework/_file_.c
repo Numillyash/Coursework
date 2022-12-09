@@ -392,7 +392,7 @@ void check_readed_prime(char *string)
 #ifdef _WIN32
 		str_len = strlen(string) - 2;
 #else
-		str_len = strlen(string) - 3;
+		str_len = strlen(string) - 2;
 #endif
 		if (string[str_len] != '#')
 		{
