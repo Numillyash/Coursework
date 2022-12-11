@@ -1049,17 +1049,17 @@ number multiplication(number *value1, number *value2)
 
 	result = multiply_furie(&a, &b); // karatsuba(&a, &b);
 	// number karat = karatsuba(&a, &b);
-	// TODO
-	//  if (!is_equal(&karat, &result))
-	//  {
-	//  	_log("NOT EQUAL");
-	//  	debug_log(&a);
-	//  	_log("*");
-	//  	debug_log(&b);
-	//  	_log("=");
-	//  	debug_log(&karat);
-	//  	debug_log(&result);
-	//  }
+	// // TODO
+	// // if (!is_equal(&karat, &result))
+	// {
+	// 	_log("NOT EQUAL");
+	// 	debug_log(&a);
+	// 	_log("*");
+	// 	debug_log(&b);
+	// 	_log("=");
+	// 	debug_log(&karat);
+	// 	debug_log(&result);
+	// }
 	clear_mem(&a);
 	clear_mem(&b);
 
