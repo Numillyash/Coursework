@@ -11,6 +11,257 @@
 
 #define AND(a, b) a &b
 
+#pragma region furie
+
+#define NUMBER_IS_2_POW_K(x) ((!((x) & ((x)-1))) && ((x) > 1)) // x is pow(2, k), k=1,2, ...
+#define FT_DIRECT -1										   // Direct transform.
+#define FT_INVERSE 1										   // Inverse transform.
+#define bool char
+#define true 1
+#define false 0
+#define max_error 0.001
+
+BOOL FFT(float *Rdat, float *Idat, int N, int LogN, int Ft_Flag)
+{
+	// parameters error check:
+	if ((Rdat == NULL) || (Idat == NULL))
+		return FALSE;
+	if ((N > 16384) || (N < 1))
+		return FALSE;
+	if (!NUMBER_IS_2_POW_K(N))
+		return FALSE;
+	if ((LogN < 2) || (LogN > 14))
+		return FALSE;
+	if ((Ft_Flag != FT_DIRECT) && (Ft_Flag != FT_INVERSE))
+		return FALSE;
+
+	register int i, j, n, k, io, ie, in, nn;
+	float ru, iu, rtp, itp, rtq, itq, rw, iw, sr;
+
+	static const float Rcoef[14] =
+		{-1.0000000000000000F, 0.0000000000000000F, 0.7071067811865475F,
+		 0.9238795325112867F, 0.9807852804032304F, 0.9951847266721969F,
+		 0.9987954562051724F, 0.9996988186962042F, 0.9999247018391445F,
+		 0.9999811752826011F, 0.9999952938095761F, 0.9999988234517018F,
+		 0.9999997058628822F, 0.9999999264657178F};
+	static const float Icoef[14] =
+		{0.0000000000000000F, -1.0000000000000000F, -0.7071067811865474F,
+		 -0.3826834323650897F, -0.1950903220161282F, -0.0980171403295606F,
+		 -0.0490676743274180F, -0.0245412285229122F, -0.0122715382857199F,
+		 -0.0061358846491544F, -0.0030679567629659F, -0.0015339801862847F,
+		 -0.0007669903187427F, -0.0003834951875714F};
+
+	nn = N >> 1;
+	ie = N;
+	for (n = 1; n <= LogN; n++)
+	{
+		rw = Rcoef[LogN - n];
+		iw = Icoef[LogN - n];
+		if (Ft_Flag == FT_INVERSE)
+			iw = -iw;
+		in = ie >> 1;
+		ru = 1.0F;
+		iu = 0.0F;
+		for (j = 0; j < in; j++)
+		{
+			for (i = j; i < N; i += ie)
+			{
+				io = i + in;
+				rtp = Rdat[i] + Rdat[io];
+				itp = Idat[i] + Idat[io];
+				rtq = Rdat[i] - Rdat[io];
+				itq = Idat[i] - Idat[io];
+				Rdat[io] = rtq * ru - itq * iu;
+				Idat[io] = itq * ru + rtq * iu;
+				Rdat[i] = rtp;
+				Idat[i] = itp;
+			}
+
+			sr = ru;
+			ru = ru * rw - iu * iw;
+			iu = iu * rw + sr * iw;
+		}
+
+		ie >>= 1;
+	}
+
+	for (j = i = 1; i < N; i++)
+	{
+		if (i < j)
+		{
+			io = i - 1;
+			in = j - 1;
+			rtp = Rdat[in];
+			itp = Idat[in];
+			Rdat[in] = Rdat[io];
+			Idat[in] = Idat[io];
+			Rdat[io] = rtp;
+			Idat[io] = itp;
+		}
+
+		k = nn;
+
+		while (k < j)
+		{
+			j = j - k;
+			k >>= 1;
+		}
+
+		j = j + k;
+	}
+
+	if (Ft_Flag == FT_DIRECT)
+		return TRUE;
+
+	rw = 1.0F / N;
+
+	for (i = 0; i < N; i++)
+	{
+		Rdat[i] *= rw;
+		Idat[i] *= rw;
+	}
+
+	return TRUE;
+}
+
+int convert_number(number *value, char **input, int *count, int *ln_count)
+{
+	int num = 1, i;
+	*ln_count = 0;
+	*input = (char *)malloc(value->current_count);
+	if (*input == NULL)
+	{
+		return MEMORY_ALLOCATION_FAILURE;
+	}
+	memcpy(*input, value->mas, value->current_count);
+	*count = value->current_count;
+	do
+	{
+		num <<= 1;
+		*ln_count += 1;
+	} while (*count > num);
+	*input = (char *)realloc(*input, num);
+	if (*input == NULL)
+	{
+		return MEMORY_ALLOCATION_FAILURE;
+	}
+	for (; *count < num; (*count)++)
+		(*input)[(*count)] = 0;
+}
+
+number multiply_furie(number *value_1, number *value_2)
+{
+	// Init variables
+	int len, ln_count, len_1, ln_count_1, len_2, ln_count_2;
+	char *mas_1, *mas_2;
+	int i; // iterator
+
+	// Convert number to char arrays
+	convert_number(value_1, &mas_1, &len_1, &ln_count_1);
+	convert_number(value_2, &mas_2, &len_2, &ln_count_2);
+	// Alignment
+	if (len_1 > len_2)
+	{
+		mas_1 = (char *)realloc(mas_1, len_1 * 2);
+		for (i = len_1; i < len_1 * 2; i++)
+		{
+			mas_1[i] = 0;
+		}
+		mas_2 = (char *)realloc(mas_2, len_1 * 2);
+		for (i = len_2; i < len_1 * 2; i++)
+		{
+			mas_2[i] = 0;
+		}
+		len = len_1 << 1;
+		ln_count = ++ln_count_1;
+	}
+	else
+	{
+		mas_1 = (char *)realloc(mas_1, len_2 * 2);
+		for (i = len_1; i < len_2 * 2; i++)
+		{
+			mas_1[i] = 0;
+		}
+		mas_2 = (char *)realloc(mas_2, len_2 * 2);
+		for (i = len_2; i < len_2 * 2; i++)
+		{
+			mas_2[i] = 0;
+		}
+		len = len_2 << 1;
+		ln_count = ++ln_count_2;
+	}
+
+	// Init furie arrays
+	float *Re_1 = (float *)malloc(len * sizeof(float));
+	float *Im_1 = (float *)malloc(len * sizeof(float));
+	float *Re_2 = (float *)malloc(len * sizeof(float));
+	float *Im_2 = (float *)malloc(len * sizeof(float));
+	// answer
+	float *Re_3 = (float *)malloc(len * sizeof(float));
+	float *Im_3 = (float *)malloc(len * sizeof(float));
+	// fill furie arrays from string
+	for (i = 0; i < len; i++)
+	{
+		Re_1[i] = (float)mas_1[i];
+		Im_1[i] = 0.0;
+	}
+	for (i = 0; i < len; i++)
+	{
+		Re_2[i] = (float)mas_2[i];
+		Im_2[i] = 0.0;
+	}
+	free(mas_1);
+	free(mas_2);
+	// answer
+	for (i = 0; i < len; i++)
+	{
+		Re_3[i] = 0.0;
+		Im_3[i] = 0.0;
+	}
+	// Straight FFT
+	FFT(Re_1, Im_1, len, ln_count, FT_DIRECT);
+	FFT(Re_2, Im_2, len, ln_count, FT_DIRECT);
+	// Multy
+	for (i = 0; i < len; i++)
+	{
+		Re_3[i] = Re_1[i] * Re_2[i] - Im_1[i] * Im_2[i];
+		Im_3[i] = Im_1[i] * Re_2[i] + Re_1[i] * Im_2[i];
+	}
+	free(Re_1);
+	free(Im_1);
+	free(Re_2);
+	free(Im_2);
+	// Rev FFT
+	FFT(Re_3, Im_3, len, ln_count, FT_INVERSE);
+	// Convert to number
+	number result = init();
+	result.size = len;
+	result.current_count = len;
+	free(result.mas);
+	free(Im_3);
+	result.mas = (char *)malloc(len);
+	memset(result.mas, 0, len);
+	for (i = 0; i < len; i++)
+	{
+		result.mas[i] += (int)(Re_3[i] < 0 ? (Re_3[i] - 0.5) : (Re_3[i] + 0.5));
+		if (result.mas[i] >> 1)
+		{
+			result.mas[i + 1] = result.mas[i] >> 1;
+			result.mas[i] &= 1;
+		}
+	}
+	free(Re_3);
+	for (i = len - 1; i > 0 && result.mas[i - 1] == 0; i--)
+		;
+	result.mas = (char *)realloc(result.mas, i + 1);
+	result.current_count = i;
+	add_digit(&result, 0);
+	swap(result.mas[result.current_count - 1], result.mas[result.current_count - 2]);
+	return result;
+}
+
+#pragma endregion furie
+
 void additional_code(number *value)
 {
 	if (!is_zero(value))
@@ -682,6 +933,8 @@ number karatsuba(number *value1, number *value2)
 
 number multiplication(number *value1, number *value2)
 {
+	if (is_zero(value1) || is_zero(value2))
+		return int_to_number(0);
 	number result, a, b;
 	a = copy(value1);
 	b = copy(value2);
@@ -695,7 +948,7 @@ number multiplication(number *value1, number *value2)
 		additional_code(&b);
 	}
 
-	result = karatsuba(&a, &b);
+	result = multiply_furie(&a, &b); // karatsuba(&a, &b);
 	clear_mem(&a);
 	clear_mem(&b);
 

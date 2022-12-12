@@ -179,18 +179,22 @@ void generate_key(char *key_size_str, char *pubkey_filename, char *seckey_filena
 	switch (keysize)
 	{
 	case KEY_256:
+		_log("Try to make 256-bit key");
 		p = get_prime_from_file(primes_128_bit_filename, rand_num_p, KEY_256 / 2);
 		q = get_prime_from_file(primes_128_bit_filename, rand_num_q, KEY_256 / 2);
 		break;
 	case KEY_512:
+		_log("Try to make 512-bit key");
 		p = get_prime_from_file(primes_256_bit_filename, rand_num_p, KEY_512 / 2);
 		q = get_prime_from_file(primes_256_bit_filename, rand_num_q, KEY_512 / 2);
 		break;
 	case KEY_1024:
+		_log("Try to make 1024-bit key");
 		p = get_prime_from_file(primes_512_bit_filename, rand_num_p, KEY_1024 / 2);
 		q = get_prime_from_file(primes_512_bit_filename, rand_num_q, KEY_1024 / 2);
 		break;
 	case KEY_2048:
+		_log("Try to make 2048-bit key");
 		p = get_prime_from_file(primes_1024_bit_filename, rand_num_p, KEY_2048 / 2);
 		q = get_prime_from_file(primes_1024_bit_filename, rand_num_q, KEY_2048 / 2);
 		break;
@@ -231,6 +235,14 @@ void generate_key(char *key_size_str, char *pubkey_filename, char *seckey_filena
 	}
 
 	_log("genkey: all counts ready");
+
+	_log("Checking the result. Must be '0 1'");
+	number check = multiplication(&e, &d);
+	number mod;
+	division_with_module(&check, &phi_n, &mod);
+	debug_log(&mod);
+	clear_mem(&mod);
+	clear_mem(&check);
 
 	clear_mem(&p);
 	clear_mem(&q);

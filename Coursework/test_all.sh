@@ -9,7 +9,7 @@ mkdir test_results/tmp
 
 filename=$(date +"%F %X")
 echo $filename
-for i in {1..1}
+for i in {1..10}
 do
     start=`date +%s.%N`
     #START_TIME=$(date +%s)
