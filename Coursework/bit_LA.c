@@ -653,16 +653,16 @@ void reverse(number *value)
 	// TODO: Обоийтись без лишнего инита и копировать по другому?
 
 	number prom = init();
-	int i;		   // iterator
-	uint8_t *iter; // iterator
-	// for (i = value->current_count - 2; i >= 0; i--)
-	// {
-	// 	add_digit(&prom, value->mas[i]);
-	// }
-	for (iter = value->mas + value->current_count - 2; iter >= value->mas; iter--)
+	int i; // iterator
+	// uint8_t *iter; // iterator
+	for (i = value->current_count - 2; i >= 0; i--)
 	{
-		add_digit(&prom, *iter);
+		add_digit(&prom, value->mas[i]);
 	}
+	// for (iter = value->mas + value->current_count - 2; iter >= value->mas; iter--)
+	// {
+	// 	add_digit(&prom, *iter);
+	// }
 	memcpy(value->mas, prom.mas, prom.current_count - 1);
 	// for (i = 0; i <= prom.current_count - 2; i++)
 	// {
