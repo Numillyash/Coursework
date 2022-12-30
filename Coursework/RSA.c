@@ -228,6 +228,7 @@ void generate_key(char *key_size_str, char *pubkey_filename, char *seckey_filena
 
 	if (d.mas[d.current_count - 1])
 	{
+		_log("genkey: d < 0");
 		buff1 = addition(&d, &phi_n);
 		clear_mem(&d);
 		d = copy(&buff1);
