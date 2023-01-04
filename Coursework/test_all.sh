@@ -28,5 +28,5 @@ do
     #DIFF=$(( $END_TIME - $START_TIME ))
     DIFF=$( echo "$end - $start" | bc -l )
     echo "Runtime: ALL, time: $DIFF" >> ./test_results/logs/"ALL=$filename".txt
-    tail a2.txt
+    #tail a2.txt
 done

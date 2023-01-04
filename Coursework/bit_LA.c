@@ -548,8 +548,13 @@ void normalize(number *value)
 
 void clear_mem(number *value)
 {
-	free(value->mas);
-	value->mas = NULL;
+	// free(value->mas);
+	// value->mas = NULL;
+	asm(
+		"movq	%0, %%rdi\n"
+		"call	free\n"
+		"xorl	%%eax, %%eax\n"
+		: "=m"(value->mas));
 }
 
 void add_digit(number *object, uint8_t value)
@@ -1299,7 +1304,12 @@ number division_with_module(number *value1, number *value2, number *ost)
 		offset_left(&add);
 		clear_mem(&buff);
 		buff = difference(&sub, &rem);
-		shifts++;
+		// shifts++;
+		asm(
+			"movl %0, %%eax\n"
+			"addl $1, %%eax\n"
+			"movl %%eax, %0\n"
+			: "=m"(shifts));
 	}
 	clear_mem(&buff);
 	// printf("Second cycle\n");
