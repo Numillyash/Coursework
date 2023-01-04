@@ -384,7 +384,7 @@ number multiply_furie(number *value_1, number *value_2)
 
 void additional_code(number *value)
 {
-	additional_code_++;
+	// additional_code_++;
 	if (!is_zero(value))
 	{
 		uint8_t addit_digit = 1;
@@ -402,7 +402,7 @@ void additional_code(number *value)
 
 number init()
 {
-	init_++;
+	// init_++;
 	number result = {1, 1};
 	result.mas = (uint8_t *)malloc(sizeof(uint8_t));
 	if (result.mas == NULL)
@@ -416,7 +416,7 @@ number init()
 
 number copy(number *value)
 {
-	copy_++;
+	// copy_++;
 	// TODO: Избавиться от add_digit и использовать фор для прямого добавления
 
 	number result = init();
@@ -499,7 +499,7 @@ int number_to_int(number *value)
 
 void normalize(number *value)
 {
-	normalize_++;
+	// normalize_++;
 	// normalize_n(value);
 	// return;
 	int i; // iterator
@@ -559,7 +559,7 @@ void clear_mem(number *value)
 
 void add_digit(number *object, uint8_t value)
 {
-	add_digit_++;
+	// add_digit_++;
 	// TODO malloc в realloc?
 	int iter;
 	uint8_t *buff;
@@ -601,7 +601,7 @@ void add_digit(number *object, uint8_t value)
 
 void offset_right(number *object)
 {
-	offset_right_++;
+	// offset_right_++;
 	// TODO: Не нравится куча реверсов
 	if (object->current_count == 2)
 	{
@@ -629,7 +629,7 @@ void offset_right(number *object)
 
 void offset_left(number *value)
 {
-	offset_left_++;
+	// offset_left_++;
 	// _log("offset_left");
 	// debug_log(value);
 	// TODO: Не нравится куча реверсов
@@ -654,7 +654,7 @@ void offset_left(number *value)
 
 void reverse(number *value)
 {
-	reverse_++;
+	// reverse_++;
 	// TODO: Обоийтись без лишнего инита и копировать по другому?
 
 	number prom = init();
@@ -761,7 +761,7 @@ void debug_log(number *value)
 
 BOOL is_zero(number *object)
 {
-	is_zero_++;
+	// is_zero_++;
 	int iterator = 0;
 
 	for (iterator = 0; iterator < object->current_count; iterator++)
@@ -777,7 +777,7 @@ BOOL is_zero(number *object)
 
 BOOL is_equal(number *value1, number *value2)
 {
-	is_equal_++;
+	// is_equal_++;
 	short iterator = 0;
 	normalize(value1);
 	normalize(value2);
@@ -795,7 +795,7 @@ BOOL is_equal(number *value1, number *value2)
 
 number addition(number *value1, number *value2)
 {
-	addition_++;
+	// addition_++;
 	number summand, addend;
 	number carry = init();
 	int real_symb = 0;
@@ -898,7 +898,7 @@ number addition(number *value1, number *value2)
 
 number difference(number *value1, number *value2)
 {
-	difference_++;
+	// difference_++;
 	number b = copy(value2), buff;
 	if (value2->mas[value2->current_count - 1])
 		additional_code(&b); // nonadditional_code is used
@@ -914,7 +914,7 @@ number difference(number *value1, number *value2)
 
 number easy_mult(number *value1, number *value2)
 {
-	easy_mult_++;
+	// easy_mult_++;
 	// TODO: Не использовать numb_to_int, а делать прямо тут
 	number result;
 	int a = number_to_int(value1);
@@ -927,7 +927,7 @@ number easy_mult(number *value1, number *value2)
 
 number karatsuba(number *value1, number *value2)
 {
-	karatsuba_++;
+	// karatsuba_++;
 	// printf("Karatsuba\n%d = a_count, %d = b count\n", value1->current_count, value2->current_count);
 	// printf("Start karatsuba\n");
 	if (value1->current_count < 5 && value2->current_count < 5)
@@ -1145,7 +1145,7 @@ number karatsuba(number *value1, number *value2)
 
 number multiplication(number *value1, number *value2)
 {
-	multiplication_++;
+	// multiplication_++;
 	// printf("start multy\n");
 
 	if (is_zero(value1) || is_zero(value2))
@@ -1225,7 +1225,7 @@ number multiplication(number *value1, number *value2)
 
 number division_with_module(number *value1, number *value2, number *ost)
 {
-	division_with_module_++;
+	// division_with_module_++;
 	// TODO темный лес
 	// printf("Start divMod\n");
 	// debug_log(value1);
@@ -1348,7 +1348,7 @@ number division_with_module(number *value1, number *value2, number *ost)
 
 number module_pow(number *a, number *t, number *b)
 {
-	module_pow_++;
+	// module_pow_++;
 	// printf("=====================================\nD is ");
 	// print_number_as_is(t);
 	// TODO тоже темный лес, но светлее
