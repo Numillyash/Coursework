@@ -11,68 +11,7 @@
 
 #define AND(a, b) a &b
 
-#pragma region counters
-#define ull unsigned long long
-ull multy_fur = 0;
-ull additional_code_ = 0;
-ull init_ = 0;
-ull copy_ = 0;
-ull normalize_ = 0;
-ull add_digit_ = 0;
-ull offset_right_ = 0;
-ull offset_left_ = 0;
-ull reverse_ = 0;
-ull is_zero_ = 0;
-ull is_equal_ = 0;
-ull addition_ = 0;
-ull difference_ = 0;
-ull easy_mult_ = 0;
-ull karatsuba_ = 0;
-ull multiplication_ = 0;
-ull division_with_module_ = 0;
-ull module_pow_ = 0;
-#pragma endregion counters
-
-void _log_counters()
-{
-	_log("add_digit_");
-	_log_ull(add_digit_);
-	_log("init_");
-	_log_ull(init_);
-	_log("reverse_");
-	_log_ull(reverse_);
-	_log("normalize_");
-	_log_ull(normalize_);
-	_log("copy_");
-	_log_ull(copy_);
-	_log("is_zero_");
-	_log_ull(is_zero_);
-	_log("offset_left_");
-	_log_ull(offset_left_);
-	_log("addition_");
-	_log_ull(addition_);
-	_log("additional_code_");
-	_log_ull(additional_code_);
-	_log("difference_");
-	_log_ull(difference_);
-	_log("offset_right_");
-	_log_ull(offset_right_);
-	_log("division_with_module_");
-	_log_ull(division_with_module_);
-	_log("multy_fur");
-	_log_ull(multy_fur);
-	_log("karatsuba_");
-	_log_ull(karatsuba_);
-	_log("multiplication_");
-	_log_ull(multiplication_);
-	_log("module_pow_");
-	_log_ull(module_pow_);
-	_log("is_equal_");
-	_log_ull(is_equal_);
-	_log("easy_mult_");
-	_log_ull(easy_mult_);
-}
-
+// FIXME алгоритмическая
 #pragma region furie
 
 #define NUMBER_IS_2_POW_K(x) ((!((x) & ((x)-1))) && ((x) > 1)) // x is pow(2, k), k=1,2, ...
@@ -213,66 +152,60 @@ int convert_number(number *value, char **input, int *count, int *ln_count)
 
 number multiply_furie(number *value_1, number *value_2)
 {
-	multy_fur++;
 	if (is_zero(value_1) || is_zero(value_2))
 		return int_to_number(0);
 	int i; // iterator
 
+	if ((value_1->current_count >> 1) >= value_2->current_count)
 	{
-		if ((value_1->current_count >> 1) >= value_2->current_count)
+		number tmp1 = copy(value_1);
+		number tmp2 = copy(value_1);
+		tmp2.current_count = value_2->current_count;
+		tmp2.mas[tmp2.current_count - 1] = 0;
+		for (i = 0; i < value_2->current_count - 1; i++)
 		{
-			number tmp1 = copy(value_1);
-			number tmp2 = copy(value_1);
-			tmp2.current_count = value_2->current_count;
-			tmp2.mas[tmp2.current_count - 1] = 0;
-			for (i = 0; i < value_2->current_count - 1; i++)
-			{
-				offset_right(&tmp1);
-			}
-			number result1 = multiply_furie(&tmp1, value_2);
-			number result2 = multiply_furie(&tmp2, value_2);
-			for (i = 0; i < value_2->current_count - 1; i++)
-			{
-				offset_left(&result1);
-			}
-			number result = addition(&result1, &result2);
-			clear_mem(&tmp1);
-			clear_mem(&tmp2);
-			clear_mem(&result1);
-			clear_mem(&result2);
-			normalize(&result);
-			return result;
+			offset_right(&tmp1);
 		}
-		if ((value_2->current_count >> 1) >= value_2->current_count)
+		number result1 = multiply_furie(&tmp1, value_2);
+		number result2 = multiply_furie(&tmp2, value_2);
+		for (i = 0; i < value_2->current_count - 1; i++)
 		{
-			number tmp1 = copy(value_2);
-			number tmp2 = copy(value_2);
-			tmp2.current_count = value_1->current_count;
-			tmp2.mas[tmp2.current_count - 1] = 0;
-			for (i = 0; i < value_1->current_count - 1; i++)
-			{
-				offset_right(&tmp1);
-			}
-			number result1 = multiply_furie(&tmp1, value_1);
-			number result2 = multiply_furie(&tmp2, value_1);
-			for (i = 0; i < value_1->current_count - 1; i++)
-			{
-				offset_left(&result1);
-			}
-			number result = addition(&result1, &result2);
-			clear_mem(&tmp1);
-			clear_mem(&tmp2);
-			clear_mem(&result1);
-			clear_mem(&result2);
-			normalize(&result);
-			return result;
+			offset_left(&result1);
 		}
+		number result = addition(&result1, &result2);
+		clear_mem(&tmp1);
+		clear_mem(&tmp2);
+		clear_mem(&result1);
+		clear_mem(&result2);
+		normalize(&result);
+		return result;
 	}
-
+	if ((value_2->current_count >> 1) >= value_2->current_count)
+	{
+		number tmp1 = copy(value_2);
+		number tmp2 = copy(value_2);
+		tmp2.current_count = value_1->current_count;
+		tmp2.mas[tmp2.current_count - 1] = 0;
+		for (i = 0; i < value_1->current_count - 1; i++)
+		{
+			offset_right(&tmp1);
+		}
+		number result1 = multiply_furie(&tmp1, value_1);
+		number result2 = multiply_furie(&tmp2, value_1);
+		for (i = 0; i < value_1->current_count - 1; i++)
+		{
+			offset_left(&result1);
+		}
+		number result = addition(&result1, &result2);
+		clear_mem(&tmp1);
+		clear_mem(&tmp2);
+		clear_mem(&result1);
+		clear_mem(&result2);
+		normalize(&result);
+		return result;
+	}
 	int len, ln_count, len_1, ln_count_1, len_2, ln_count_2;
 	char *mas_1, *mas_2;
-
-	// printf("Start furie\nv1:%d, v2:%d\n", value_1->current_count, value_2->current_count);
 	//  Convert number to char arrays
 	convert_number(value_1, &mas_1, &len_1, &ln_count_1);
 	convert_number(value_2, &mas_2, &len_2, &ln_count_2);
@@ -358,18 +291,6 @@ number multiply_furie(number *value_1, number *value_2)
 	free(Im_3);
 	result.mas = (char *)malloc(len);
 	memset(result.mas, 0, len);
-	// // FIXME МАШИННО_ЗАВИСИМАЯ
-	// char *_mas;
-	// float *_re;
-	// for (_mas = result.mas, _re = Re_3; _mas < result.mas + len; _mas++, _re += sizeof(float))
-	// {
-	// 	*_mas += (int)((*_re) < 0 ? ((*_re) - 0.5) : ((*_re) + 0.5));
-	// 	if (*_mas >> 1)
-	// 	{
-	// 		*(_mas + 1) = (*_mas) >> 1;
-	// 		(*_mas) &= 1;
-	// 	}
-	// }
 	for (i = 0; i < len; i++)
 	{
 		result.mas[i] += (int)(Re_3[i] < 0 ? (Re_3[i] - 0.5) : (Re_3[i] + 0.5));
@@ -386,9 +307,7 @@ number multiply_furie(number *value_1, number *value_2)
 	result.current_count = i;
 	add_digit(&result, 0);
 	swap(result.mas[result.current_count - 1], result.mas[result.current_count - 2]);
-	// printf("End furie\n CC = %d, size = %d\n", result.current_count, result.size);
 	normalize(&result);
-	// printf("End normalize\n CC = %d, size = %d\n", result.current_count, result.size);
 	return result;
 }
 
@@ -402,8 +321,7 @@ void additional_code(number *value)
 		uint8_t addit_digit = 1;
 		char *iter;
 
-		// FIXME МАШИННО_ЗАВИСИМАЯ
-
+		// FIXME машинно-зависимая
 		for (iter = value->mas; iter < value->mas + value->current_count; iter++)
 		{
 			*iter = NOT(*iter);
@@ -411,7 +329,6 @@ void additional_code(number *value)
 			if (*iter)
 				addit_digit = 0;
 		}
-
 		// for (iter = 0; iter < value->current_count; iter++)
 		// {
 		// 	value->mas[iter] = NOT(value->mas[iter]);
@@ -424,7 +341,6 @@ void additional_code(number *value)
 
 number init()
 {
-	// init_++;
 	number result = {1, 1};
 	result.mas = (uint8_t *)malloc(sizeof(uint8_t));
 	if (result.mas == NULL)
@@ -438,9 +354,6 @@ number init()
 
 number copy(number *value)
 {
-	// copy_++;
-	// TODO: Избавиться от add_digit и использовать фор для прямого добавления
-
 	number result = init();
 	clear_mem(&result);
 	result.mas = (uint8_t *)malloc(sizeof(uint8_t) * (value->size));
@@ -449,6 +362,7 @@ number copy(number *value)
 		_log("Memory allocation failure in add_digit() function (buffer)");
 		exit(MEMORY_ALLOCATION_FAILURE);
 	}
+	// FIXME машинно-независимая + алгоритм?
 	memcpy(result.mas, value->mas, value->size);
 	result.current_count = value->current_count;
 	result.size = value->size;
@@ -460,14 +374,12 @@ number int_to_number(int value)
 	int ostatok;
 	number result = init();
 
-	// TODO: Двоичная система: % заменяется на &
-
 	if (value < 0)
 	{
 		value *= -1;
 		while (value > 0)
 		{
-			ostatok = value % NUMBER_SYSTEM_BASE;
+			ostatok = value & 1;
 			add_digit(&result, ostatok);
 			value >>= 1;
 		}
@@ -479,7 +391,7 @@ number int_to_number(int value)
 	{
 		while (value > 0)
 		{
-			ostatok = value % NUMBER_SYSTEM_BASE;
+			ostatok = value & 1;
 			add_digit(&result, ostatok);
 			value >>= 1;
 		}
@@ -521,9 +433,6 @@ int number_to_int(number *value)
 
 void normalize(number *value)
 {
-	// normalize_++;
-	// normalize_n(value);
-	// return;
 	int i; // iterator
 	int end = value->current_count - 2;
 	if (value->mas[value->current_count - 1])
@@ -555,6 +464,7 @@ void normalize(number *value)
 		_log("Memory allocation failure in init() function");
 		exit(MEMORY_ALLOCATION_FAILURE);
 	}
+	// FIXME машинно-независимая + алгоритм?
 	memcpy(buff, value->mas, end + 1);
 	buff[end + 1] = value->mas[value->current_count - 1];
 	free(value->mas);
@@ -570,6 +480,7 @@ void normalize(number *value)
 
 void clear_mem(number *value)
 {
+	// FIXME ассемблерная
 	// free(value->mas);
 	// value->mas = NULL;
 	asm(
@@ -581,8 +492,6 @@ void clear_mem(number *value)
 
 void add_digit(number *object, uint8_t value)
 {
-	// add_digit_++;
-	// TODO malloc в realloc?
 	int iter;
 	uint8_t *buff;
 
@@ -600,7 +509,7 @@ void add_digit(number *object, uint8_t value)
 			_log("Memory allocation failure in add_digit() function (buffer)");
 			exit(MEMORY_ALLOCATION_FAILURE);
 		}
-
+		// FIXME машинно-независимая
 		memcpy(buff, object->mas, object->current_count);
 
 		clear_mem(object);
@@ -623,8 +532,6 @@ void add_digit(number *object, uint8_t value)
 
 void offset_right(number *object)
 {
-	// offset_right_++;
-	// TODO: Не нравится куча реверсов
 	if (object->current_count == 2)
 	{
 		clear_mem(object);
@@ -632,14 +539,6 @@ void offset_right(number *object)
 	}
 	else
 	{
-		// prom = init
-		// копируем символы с первого (не с 0)
-		// clear_mem(value)
-		// value = copy(&prom)
-		//
-		// v[i] = v[i+1]
-		// object->current_count -= 1;
-
 		reverse(object);
 		object->mas[object->current_count - 2] = object->mas[object->current_count - 1];
 		object->current_count -= 1;
@@ -651,38 +550,19 @@ void offset_right(number *object)
 
 void offset_left(number *value)
 {
-	// offset_left_++;
-	// _log("offset_left");
-	// debug_log(value);
-	// TODO: Не нравится куча реверсов
-	//
 	reverse(value);
-	//
-
 	add_digit(value, 0);
-	//
-
 	swap(value->mas[value->current_count - 2], value->mas[value->current_count - 1]);
-	//
-
 	reverse(value);
-	//
-	// debug_log(value);
-	//_log("normalize");
 	normalize(value);
-	// debug_log(value);
-	//_log("end");
 }
 
 void reverse(number *value)
 {
-	// reverse_++;
-	// TODO: Обоийтись без лишнего инита и копировать по другому?
-
 	number prom = init();
 	char *i; // iterator
+	// FIXME машинно-зависимая
 	// uint8_t *iter; // iterator
-	// FIXME МАШИННО_ЗАВИСИМАЯ
 	for (i = value->mas + value->current_count - 2; i >= value->mas; i--)
 	{
 		add_digit(&prom, *i);
@@ -691,11 +571,8 @@ void reverse(number *value)
 	// {
 	// 	add_digit(&prom, *iter);
 	// }
+	// FIXME машинно-независимая
 	memcpy(value->mas, prom.mas, prom.current_count - 1);
-	// for (i = 0; i <= prom.current_count - 2; i++)
-	// {
-	// 	value->mas[i] = prom.mas[i];
-	// }
 	clear_mem(&prom);
 }
 
@@ -784,7 +661,6 @@ void debug_log(number *value)
 
 BOOL is_zero(number *object)
 {
-	// is_zero_++;
 	int iterator = 0;
 
 	for (iterator = 0; iterator < object->current_count; iterator++)
@@ -800,7 +676,6 @@ BOOL is_zero(number *object)
 
 BOOL is_equal(number *value1, number *value2)
 {
-	// is_equal_++;
 	short iterator = 0;
 	normalize(value1);
 	normalize(value2);
@@ -818,7 +693,6 @@ BOOL is_equal(number *value1, number *value2)
 
 number addition(number *value1, number *value2)
 {
-	// addition_++;
 	number summand, addend;
 	number carry = init();
 	int real_symb = 0;
@@ -921,14 +795,11 @@ number addition(number *value1, number *value2)
 
 number difference(number *value1, number *value2)
 {
-	// difference_++;
 	number b = copy(value2), buff;
 	if (value2->mas[value2->current_count - 1])
 		additional_code(&b); // nonadditional_code is used
 	else
 		additional_code(&b);
-	// _b = -b
-	// a-b = a + (-b) = a + _b
 	buff = addition(value1, &b);
 	clear_mem(&b);
 
@@ -937,8 +808,6 @@ number difference(number *value1, number *value2)
 
 number easy_mult(number *value1, number *value2)
 {
-	// easy_mult_++;
-	// TODO: Не использовать numb_to_int, а делать прямо тут
 	number result;
 	int a = number_to_int(value1);
 	int b = number_to_int(value2);
@@ -950,17 +819,12 @@ number easy_mult(number *value1, number *value2)
 
 number karatsuba(number *value1, number *value2)
 {
-	// karatsuba_++;
-	// printf("Karatsuba\n%d = a_count, %d = b count\n", value1->current_count, value2->current_count);
-	// printf("Start karatsuba\n");
 	if (value1->current_count < 5 && value2->current_count < 5)
 	{
 		if (is_zero(value1) || is_zero(value2))
 			return int_to_number(0);
 		return easy_mult(value1, value2);
 	}
-
-	// printf("Karatsuba starts here\n");
 
 	int n;
 	int k;
@@ -973,7 +837,6 @@ number karatsuba(number *value1, number *value2)
 		if (is_zero(value1) || is_zero(value2))
 			return int_to_number(0);
 		res = multiply_furie(value1, value2);
-		// printf("End furie into karatsuba\n");
 		return res;
 	}
 	// k = n/2
@@ -989,17 +852,6 @@ number karatsuba(number *value1, number *value2)
 	if (n <= 5)
 	{
 		clear_mem(&res);
-#ifdef DEBUG
-		printf("Start easyMult\n");
-
-		printf("n = %d\n", n);
-		printf("k = %d\n", k);
-
-		printf("v1 = ");
-		print_number(value1);
-		printf("v2 = ");
-		print_number(value2);
-#endif // DEBUG
 		return easy_mult(value1, value2);
 	}
 	else
@@ -1012,7 +864,6 @@ number karatsuba(number *value1, number *value2)
 		c = init();
 		d = init();
 
-		// TODO тоже memcpy
 		for (iter = n - v1.current_count; iter > 0; iter--)
 		{
 			add_digit(&v1, 0);
@@ -1033,46 +884,6 @@ number karatsuba(number *value1, number *value2)
 			add_digit(&a, v1.mas[iter]);
 			add_digit(&c, v2.mas[iter]);
 		}
-
-#ifdef DEBUG
-		printf("Before all\n");
-
-		printf("n = %d\n", n);
-		printf("k = %d\n", k);
-
-		printf("v1 = ");
-		print_number(&v1);
-		printf("v2 = ");
-		print_number(&v2);
-
-		printf("a = ");
-		print_number(&a);
-		printf("b = ");
-		print_number(&b);
-		printf("c = ");
-		print_number(&c);
-		printf("d = ");
-		print_number(&d);
-#endif // DEBUG
-
-		// printf("Before all\n");
-
-		// printf("n = %d\n", n);
-		// printf("k = %d\n", k);
-
-		// printf("v1 = ");
-		// print_number_as_is(&v1);
-		// printf("v2 = ");
-		// print_number_as_is(&v2);
-
-		// printf("a = ");
-		// print_number_as_is(&a);
-		// printf("b = ");
-		// print_number_as_is(&b);
-		// printf("c = ");
-		// print_number_as_is(&c);
-		// printf("d = ");
-		// print_number_as_is(&d);
 
 		p1 = karatsuba(&b, &d);
 		p2 = karatsuba(&a, &c);
@@ -1099,43 +910,14 @@ number karatsuba(number *value1, number *value2)
 		t = difference(&buff1, &p2);
 		clear_mem(&buff1);
 
-		// printf("Berofe offset\np2 = ");
-		// print_number_as_is(&p2);
-		// printf("t = ");
-		// print_number_as_is(&t);
-		// printf("p1 = ");
-		// print_number_as_is(&p1);
-
-#ifdef DEBUG
-		printf("Berofe offset\np2 = ");
-		print_number(&p2);
-		printf("t = ");
-		print_number(&t);
-		printf("p1 = ");
-		print_number(&p1);
-#endif // DEBUG
-
-		// printf("offset p2\n");
 		for (iter = 0; iter < 2 * k; iter++)
 		{
 			offset_left(&p2);
 		}
-		// printf("offset t\n");
 		for (iter = 0; iter < k; iter++)
 		{
 			offset_left(&t);
 		}
-		// printf("end offset\n");
-
-#ifdef DEBUG
-		printf("After all\np2 = ");
-		print_number(&p2);
-		printf("t = ");
-		print_number(&t);
-		printf("p1 = ");
-		print_number(&p1);
-#endif // DEBUG
-
 		buff1 = copy(&res);
 		clear_mem(&res);
 		res = addition(&buff1, &p2);
@@ -1150,35 +932,20 @@ number karatsuba(number *value1, number *value2)
 		clear_mem(&res);
 		res = addition(&buff1, &t);
 		clear_mem(&buff1);
-#ifdef DEBUG
-		printf("res = ");
-		print_number(&res);
-#endif // DEBUG
-
-		// printf("res = ");
-		// print_number_as_is(&res);
-
 		clear_mem(&p1);
 		clear_mem(&p2);
 		clear_mem(&t);
-		////////////////////////////////////////////////////////////////////////////////////////////////
 		return res;
 	}
 }
 
 number multiplication(number *value1, number *value2)
 {
-	// multiplication_++;
-	// printf("start multy\n");
-
 	if (is_zero(value1) || is_zero(value2))
 		return int_to_number(0);
 	number result, a, b;
-	// printf("start copy a\n");
 	a = copy(value1);
-	// printf("start copy b\n");
 	b = copy(value2);
-	// printf("end copy\n");
 	int sign = a.mas[a.current_count - 1] + b.mas[b.current_count - 1];
 	if (a.mas[a.current_count - 1])
 	{
@@ -1188,71 +955,22 @@ number multiplication(number *value1, number *value2)
 	{
 		additional_code(&b);
 	}
-	// printf("go karat\n");
 
-	result = karatsuba(&a, &b); // karatsuba(&a, &b);
-	// number result2 = karatsuba(&a, &b);
-	// if (!is_equal(&result, &result2))
-	// {
-	// 	char num[100] = "";
-	// 	s//printf(num, "%d", 42);
-	// 	_log("=====");
-	// 	_log("Furie");
-	// 	debug_log(&result);
-	// 	s//printf(num, "Cur-count:%d, size:%d\n", result.current_count, result.size);
-	// 	_log(num);
-	// 	num[0] = '\0';
-	// 	_log("Karatsuba");
-	// 	debug_log(&result2);
-	// 	s//printf(num, "Cur-count:%d, size:%d\n", result2.current_count, result2.size);
-	// 	_log(num);
-	// 	_log("A");
-	// 	debug_log(&a);
-	// 	_log("B");
-	// 	debug_log(&b);
-	// 	_log("!!!!!");
-	// 	FILE *file;
-	// 	file = fopen("debug.txt", "w");
-
-	// 	if (file == NULL)
-	// 	{
-	// 		_log("Error while reading file (write):");
-	// 		_log("debug.txt");
-	// 		exit(FILE_OPEN_FAILURE);
-	// 	}
-	// 	save_num_to_filer(file, &result);
-	// 	save_num_to_filer(file, &result2);
-	// 	save_num_to_filer(file, &a);
-	// 	save_num_to_filer(file, &b);
-	// 	fclose(file);
-	// 	exit(FAILURE);
-	// }
-	// printf("clear_mem a\n");
+	result = karatsuba(&a, &b);
 	clear_mem(&a);
-	// printf("clear_mem b\n");
 	clear_mem(&b);
-	// printf("clear_mem done\n");
 
 	if (sign == 1)
 	{
-		// printf("go add_code\n");
 		additional_code(&result);
-		// printf("end add_code\n");
 	}
-	// printf("go normal\n");
 	normalize(&result);
-	// printf("end normal\n");
 
 	return result;
 }
 
 number division_with_module(number *value1, number *value2, number *ost)
 {
-	// division_with_module_++;
-	// TODO темный лес
-	// printf("Start divMod\n");
-	// debug_log(value1);
-	// debug_log(value2);
 	number mod = int_to_number(0), rem = copy(value1), sub = copy(value2);
 	number add = int_to_number(1);
 	number buff;
@@ -1317,16 +1035,13 @@ number division_with_module(number *value1, number *value2, number *ost)
 	}
 
 	buff = difference(&sub, &rem);
-	// debug_log(&buff);
-	// debug_log(&sub);
-	// debug_log(&rem);
-	// printf("First cycle\n");
 	while (buff.mas[buff.current_count - 1])
 	{
 		offset_left(&sub);
 		offset_left(&add);
 		clear_mem(&buff);
 		buff = difference(&sub, &rem);
+		// FIXME ассемблерная
 		// shifts++;
 		asm(
 			"movl %0, %%eax\n"
@@ -1335,7 +1050,6 @@ number division_with_module(number *value1, number *value2, number *ost)
 			: "=m"(shifts));
 	}
 	clear_mem(&buff);
-	// printf("Second cycle\n");
 	while (shifts)
 	{
 		buff = difference(&rem, &sub);
@@ -1371,17 +1085,12 @@ number division_with_module(number *value1, number *value2, number *ost)
 
 number module_pow(number *a, number *t, number *b)
 {
-	// module_pow_++;
-	// printf("=====================================\nD is ");
-	// print_number_as_is(t);
-	// TODO тоже темный лес, но светлее
 	number d, ost, iterator = init(), buff, buff2, buff3;
 
 	add_digit(&iterator, 1);
 	buff3 = division_with_module(a, b, &d);
 	clear_mem(&buff3);
 	ost = copy(&d);
-	// printf("=====================================\nPassed divMod\n");
 	if (is_zero(&d))
 	{
 		clear_mem(&d);
@@ -1491,7 +1200,6 @@ number euclide_algorithm(number *value1, number *value2)
 
 number euclide_algorithm_modifyed(number *value1, number *value2, number *values)
 {
-	// TODO ...
 	number buff, a, b, mod, div, GCD;
 	number _a, _b, _c, _d;
 
@@ -1593,134 +1301,4 @@ number euclide_algorithm_modifyed(number *value1, number *value2, number *values
 		normalize(&GCD);
 		return GCD;
 	}
-}
-
-number generate_random(int bit_count)
-{
-	int i;
-	number res = init();
-	for (i = 0; i < bit_count - 1; i++)
-	{
-		add_digit(&res, rand() % 2);
-	}
-	return res;
-}
-
-BOOL Millers_method(number *value)
-{
-	number t, buff, buff2, a, N_minus_1;
-	BOOL fl1, fl2;
-	number step = int_to_number(1);
-	number step2 = int_to_number(2);
-	number N_3 = int_to_number(3);
-	int n = MILLERS_METHOD_ITERATIONS_NUMBER;
-	int s = 0;
-	int i, k, j; // iterators
-
-	if (is_equal(value, &step2))
-	{
-		clear_mem(&step);
-		clear_mem(&step2);
-		clear_mem(&N_3);
-		return TRUE;
-	}
-
-	if (is_equal(value, &N_3))
-	{
-		clear_mem(&step);
-		clear_mem(&step2);
-		clear_mem(&N_3);
-		return TRUE;
-	}
-
-	if (!value->mas[0])
-	{
-		clear_mem(&step);
-		clear_mem(&step2);
-		clear_mem(&N_3);
-		return FALSE;
-	}
-
-	// N-1 = 2^s * t, t - нечетно
-
-	N_minus_1 = difference(value, &step);
-	t = copy(&N_minus_1);
-
-	while (t.mas[0] == 0)
-	{
-		s++;
-		offset_right(&t);
-	}
-
-	srand((unsigned int)time(NULL));
-
-	for (i = 0; i < n; i++)
-	{
-		printf("i is %d\n", i);
-		fl1 = TRUE;
-		fl2 = TRUE;
-
-		a = generate_random(value->current_count - 1);
-		buff = difference(&a, &step2);
-		while (buff.mas[buff.current_count - 1])
-		{
-			clear_mem(&buff);
-			clear_mem(&a);
-			a = generate_random(value->current_count - 1);
-			buff = difference(&a, &step2);
-		}
-		clear_mem(&buff);
-
-		buff = euclide_algorithm(value, &a);
-		if (!is_equal(&buff, &step)) // свойство 1
-		{
-			fl1 = FALSE;
-		}
-		clear_mem(&buff);
-
-		buff = module_pow(&a, &t, value);
-		if (!is_equal(&buff, &step)) // свойство 2
-		{
-			fl2 = FALSE;
-			for (k = 1; k <= s; k++)
-			{
-				clear_mem(&buff);
-				buff2 = copy(&t);
-				for (j = 0; j < k - 1; j++)
-				{
-					offset_left(&buff2);
-				}
-
-				buff = module_pow(&a, &buff2, value);
-				clear_mem(&buff2);
-
-				if (is_equal(&buff, &N_minus_1))
-				{
-					// printf("= is %d\n", is_equal(&buff, &N_minus_1));
-					fl2 = TRUE;
-				}
-			}
-		}
-		clear_mem(&buff);
-
-		if (!fl1 || !fl2)
-		{
-			clear_mem(&step);
-			clear_mem(&step2);
-			clear_mem(&N_3);
-			clear_mem(&t);
-			clear_mem(&a);
-			clear_mem(&N_minus_1);
-			return FALSE;
-		}
-
-		clear_mem(&a);
-	}
-
-	clear_mem(&step);
-	clear_mem(&step2);
-	clear_mem(&N_3);
-	clear_mem(&t);
-	clear_mem(&N_minus_1);
-	return TRUE;
 }

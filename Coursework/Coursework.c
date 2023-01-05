@@ -131,6 +131,5 @@ int main(int argc, char *argv[])
 		_log("User typed wrong number of parameters");
 		exit(WRONG_ARGUMENT_FAILURE);
 	}
-	_log_counters();
 	return 1;
 }
