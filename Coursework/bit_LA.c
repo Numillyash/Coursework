@@ -358,6 +358,18 @@ number multiply_furie(number *value_1, number *value_2)
 	free(Im_3);
 	result.mas = (char *)malloc(len);
 	memset(result.mas, 0, len);
+	// // FIXME МАШИННО_ЗАВИСИМАЯ
+	// char *_mas;
+	// float *_re;
+	// for (_mas = result.mas, _re = Re_3; _mas < result.mas + len; _mas++, _re += sizeof(float))
+	// {
+	// 	*_mas += (int)((*_re) < 0 ? ((*_re) - 0.5) : ((*_re) + 0.5));
+	// 	if (*_mas >> 1)
+	// 	{
+	// 		*(_mas + 1) = (*_mas) >> 1;
+	// 		(*_mas) &= 1;
+	// 	}
+	// }
 	for (i = 0; i < len; i++)
 	{
 		result.mas[i] += (int)(Re_3[i] < 0 ? (Re_3[i] - 0.5) : (Re_3[i] + 0.5));
@@ -388,15 +400,25 @@ void additional_code(number *value)
 	if (!is_zero(value))
 	{
 		uint8_t addit_digit = 1;
-		int iter;
+		char *iter;
 
-		for (iter = 0; iter < value->current_count; iter++)
+		// FIXME МАШИННО_ЗАВИСИМАЯ
+
+		for (iter = value->mas; iter < value->mas + value->current_count; iter++)
 		{
-			value->mas[iter] = NOT(value->mas[iter]);
-			value->mas[iter] = XOR(value->mas[iter], addit_digit);
-			if (value->mas[iter])
+			*iter = NOT(*iter);
+			*iter = XOR(*iter, addit_digit);
+			if (*iter)
 				addit_digit = 0;
 		}
+
+		// for (iter = 0; iter < value->current_count; iter++)
+		// {
+		// 	value->mas[iter] = NOT(value->mas[iter]);
+		// 	value->mas[iter] = XOR(value->mas[iter], addit_digit);
+		// 	if (value->mas[iter])
+		// 		addit_digit = 0;
+		// }
 	}
 }
 
@@ -658,11 +680,12 @@ void reverse(number *value)
 	// TODO: Обоийтись без лишнего инита и копировать по другому?
 
 	number prom = init();
-	int i; // iterator
+	char *i; // iterator
 	// uint8_t *iter; // iterator
-	for (i = value->current_count - 2; i >= 0; i--)
+	// FIXME МАШИННО_ЗАВИСИМАЯ
+	for (i = value->mas + value->current_count - 2; i >= value->mas; i--)
 	{
-		add_digit(&prom, value->mas[i]);
+		add_digit(&prom, *i);
 	}
 	// for (iter = value->mas + value->current_count - 2; iter >= value->mas; iter--)
 	// {
