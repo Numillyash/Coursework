@@ -11,19 +11,27 @@
 
 void additional_code(number *value)
 {
+	// additional_code_++;
 	if (!is_zero(value))
 	{
 		uint8_t addit_digit = 1;
-		int iter;
-
-		// TODO: Обьеденить циклы СДЕЛАНО, можно ли объеденить в одну операцию?
-		for (iter = 0; iter < value->current_count; iter++)
+		char *iter;
+		// FIXME МАШИННО_ЗАВИСИМАЯ
+		for (iter = value->mas; iter < value->mas + value->current_count; iter++)
 		{
-			value->mas[iter] = NOT(value->mas[iter]);
-			value->mas[iter] = XOR(value->mas[iter], addit_digit);
-			if (value->mas[iter])
+			*iter = NOT(*iter);
+			*iter = XOR(*iter, addit_digit);
+			if (*iter)
 				addit_digit = 0;
 		}
+
+	// for (iter = 0; iter < value->current_count; iter++)
+	// {
+	// value->mas[iter] = NOT(value->mas[iter]);
+	// value->mas[iter] = XOR(value->mas[iter], addit_digit);
+	// if (value->mas[iter])
+	// addit_digit = 0;
+	// }
 	}
 }
 
@@ -32,13 +40,14 @@ void nonadditional_code(number *value)
 	if (!is_zero(value))
 	{
 		uint8_t addit_digit = 1;
-		int iter;
+		uint8_t *iter;
 
 		// TODO: Обьеденить циклы СДЕЛАНО, можно ли объеденить в одну операцию?
-		for (iter = 0; iter < value->current_count; iter++){
-			value->mas[iter] = NOT(value->mas[iter]);
-			value->mas[iter] = XOR(value->mas[iter], addit_digit);
-			if (value->mas[iter])
+		for (iter = &value->mas[0]; iter < &value->mas[value->current_count]; iter++)
+		{
+			*iter = NOT(*iter);
+			*iter = XOR(*iter, addit_digit);
+			if (*iter)
 				addit_digit = 0;
 		}
 	}
@@ -60,7 +69,6 @@ number init()
 number copy(number *value)
 {
 	// TODO: Избавиться от add_digit и использовать фор для прямого добавления
-	// FIXME ассемблировать?
 	number result = init();
 	int i; // iterator
 	for (i = 0; i < value->current_count - 1; i++)
@@ -185,19 +193,13 @@ void normalize(number *value)
 void clear_mem(number *value)
 {
 	// FIXME ассемблировать здесь
-	// asm(
-    //     "pushq	%rbx"
-	// 	".seh_pushreg	%rbx"
-	// 	"subq	$32, %rsp"
-	// 	".seh_stackalloc	32"
-	// 	".seh_endprologue"
-	// 	"movq	%rcx, %rbx"
-	// 	"movq	8(%rcx), %rcx"
-	// 	"call	free"
-	// 	"movq	$0, 8(%rbx)"
-	// 	"addq	$32, %rsp"
-	// 	"popq	%rbx"
-    // ); полностью не правильная вставка, как я понял это уже результат
+	// free(value->mas);
+	// value->mas = NULL;
+	asm(
+		"movq	%0, %%rdi\n"
+		"call	free\n"
+		"xorl	%%eax, %%eax\n"
+		: "=m"(value->mas));
 }
 
 void add_digit(number *object, uint8_t value)
@@ -274,18 +276,26 @@ void offset_left(number *object)
 
 void reverse(number *value)
 {
-	// TODO: Обоийтись без лишнего инита и копировать по другому?
+// reverse_++;
+// TODO: Обоийтись без лишнего инита и копировать по другому?
 
 	number prom = init();
-	int i; // iterator
-	for (i = value->current_count - 2; i >= 0; i--)
+	char *i; // iterator
+// uint8_t *iter; // iterator
+// FIXME МАШИННО_ЗАВИСИМАЯ
+	for (i = value->mas + value->current_count - 2; i >= value->mas; i--)
 	{
-		add_digit(&prom, value->mas[i]);
+		add_digit(&prom, *i);
 	}
-	for (i = 0; i <= prom.current_count - 2; i++)
-	{
-		value->mas[i] = prom.mas[i];
-	}
+	// for (iter = value->mas + value->current_count - 2; iter >= value->mas; iter--)
+	// {
+	// add_digit(&prom, *iter);
+	// }
+	memcpy(value->mas, prom.mas, prom.current_count - 1);
+	// for (i = 0; i <= prom.current_count - 2; i++)
+	// {
+	// value->mas[i] = prom.mas[i];
+	// }
 	clear_mem(&prom);
 }
 
@@ -376,7 +386,7 @@ BOOL is_zero(number *object)
 
 	int iterator = 0;
 
-	for (iterator; iterator < object->current_count; iterator++) // убрано  приравнение к 0 у итератора фор на вайл? 
+	for (iterator; iterator < object->current_count; iterator++) // убрано  приравнение к 0 у итератора фор на вайл?
 	{
 		if (object->mas[iterator] != 0)
 		{
@@ -455,6 +465,12 @@ number addition(number *value1, number *value2)
 		{
 			max_symb++;
 			real_symb++;
+			// asm(
+			// "movl %eax, %max_symb"
+			// "movl %ebx, %real_symb"
+			// "addl $1, %eax"
+			// "addl $1, %ebx"
+			// );
 		}
 
 		for (iter = max_symb - summand.current_count; iter > 0; iter--)
@@ -801,7 +817,12 @@ number division_with_module(number *value1, number *value2, number *ost)
 		offset_left(&add);
 		clear_mem(&buff);
 		buff = difference(&sub, &rem);
-		shifts++;
+		// shifts++;
+		asm(
+			"movl %0, %%eax\n"
+			"addl $1, %%eax\n"
+			"movl %%eax, %0\n"
+			: "=m"(shifts));
 	}
 	clear_mem(&buff);
 
@@ -1114,7 +1135,8 @@ BOOL Millers_method(number *value)
 
 	while (t.mas[0] == 0)
 	{
-		s++;
+		// s++;
+
 		offset_right(&t);
 	}
 
