@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 #define _CRT_SECURE_NO_WARNINGS
-//#define DEBUG
+// #define DEBUG
 
 #include <stdio.h>
 #include <math.h>
@@ -36,7 +36,8 @@
 
 // RSA
 #define KEYSIZE_MODULE 256
-typedef enum {
+typedef enum
+{
 	KEY_256 = 256,
 	KEY_512 = 512,
 	KEY_1024 = 1024,
@@ -54,7 +55,8 @@ typedef enum {
 /// <summary>
 /// Exit codes for exit()
 /// </summary>
-enum EXIT_CODE {
+enum EXIT_CODE
+{
 	SUCCESS,
 	FAILURE,
 	NO_ARGUMENTS_FAILURE,
@@ -70,10 +72,14 @@ enum EXIT_CODE {
 };
 
 // fast funcs
-#define swap(a,b); b = a+b; a = b-a; b = b-a;
+#define swap(a, b) \
+	;              \
+	b = a + b;     \
+	a = b - a;     \
+	b = b - a;
 #ifdef _WIN32
 #else
-#define max(a,b) (a>b)? a : b
+#define max(a, b) (a > b) ? a : b
 #endif
 
 #endif // !CONFIG_H

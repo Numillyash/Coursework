@@ -1,7 +1,6 @@
 #ifndef _FILE__H
 #define _FILE__H
 
-#include "config.h"
 #include "bit_LA.h"
 
 #define PREFIX_SIZE 3

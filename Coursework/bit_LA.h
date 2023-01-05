@@ -6,6 +6,8 @@
 #define NUMBER_SYSTEM_BASE 2
 #define MILLERS_METHOD_ITERATIONS_NUMBER 20
 
+void _log_counters();
+
 /// <summary>
 /// Структура, описывающая целочисленный тип с изменяемым размером памяти
 /// </summary>

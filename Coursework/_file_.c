@@ -112,7 +112,8 @@ FILE *check_file_exist_write(char *filename)
 
 	if (file == NULL)
 	{
-		_log("Error while saving file");
+		_log("Error while reading file (write):");
+		_log(filename);
 		exit(FILE_OPEN_FAILURE);
 	}
 	return file;
@@ -125,7 +126,8 @@ FILE *check_file_exist_read(char *filename)
 
 	if (file == NULL)
 	{
-		_log("Error while reading file");
+		_log("Error while reading file (read):");
+		_log(filename);
 		exit(FILE_OPEN_FAILURE);
 	}
 	return file;
@@ -392,7 +394,7 @@ void check_readed_prime(char *string)
 #ifdef _WIN32
 		str_len = strlen(string) - 2;
 #else
-		str_len = strlen(string) - 3;
+		str_len = strlen(string) - 2;
 #endif
 		if (string[str_len] != '#')
 		{
@@ -465,6 +467,7 @@ number get_prime_from_file(char *filename, int line_number, int bit_size)
 				exit(GET_PRIME_FAILURE);
 			}
 			_log("Got prime number succesfully");
+			debug_log(&res);
 			fclose(file);
 			return res;
 		}

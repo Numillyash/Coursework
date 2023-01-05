@@ -6,6 +6,8 @@
 
 void _log_start();
 
-void _log(char* message);
+void _log(char *message);
+
+void _log_ull(unsigned long long value);
 
 #endif // !_LOG__H

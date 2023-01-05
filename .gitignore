@@ -364,3 +364,23 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+Coursework/work1
+Coursework/test_results/keys/pb256.txt
+Coursework/test_results/keys/pb512.txt
+Coursework/test_results/keys/pb1024.txt
+Coursework/test_results/keys/pb2048.txt
+Coursework/test_results/keys/sc256.txt
+Coursework/test_results/keys/sc512.txt
+Coursework/test_results/keys/sc1024.txt
+Coursework/test_results/keys/sc2048.txt
+Coursework/test_results/test_outputs/test_dec_1_256_(1).txt
+Coursework/test_results/test_outputs/test_dec_1_512_(1).txt
+Coursework/test_results/test_outputs/test_dec_1_1024_(1).txt
+Coursework/test_results/test_outputs/test_dec_1_2048_(1).txt
+Coursework/test_results/tmp/test_tmp_enc_1_256_(1).txt
+Coursework/test_results/tmp/test_tmp_enc_1_512_(1).txt
+Coursework/test_results/tmp/test_tmp_enc_1_1024_(1).txt
+Coursework/test_results/tmp/test_tmp_enc_1_2048_(1).txt
+Coursework/tests/keysizes
+Coursework/test_results/keys/pb256.txt
+Coursework/test_results/keys/sc256.txt
