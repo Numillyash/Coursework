@@ -322,6 +322,7 @@ void additional_code(number *value)
 		char *iter;
 
 		// FIXME машинно-зависимая
+		// FIXME машинно-независимая (цикл)
 		for (iter = value->mas; iter < value->mas + value->current_count; iter++)
 		{
 			*iter = NOT(*iter);

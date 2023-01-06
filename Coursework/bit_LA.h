@@ -6,8 +6,6 @@
 #define NUMBER_SYSTEM_BASE 2
 #define MILLERS_METHOD_ITERATIONS_NUMBER 20
 
-void _log_counters();
-
 /// <summary>
 /// Структура, описывающая целочисленный тип с изменяемым размером памяти
 /// </summary>
@@ -188,19 +186,5 @@ number euclide_algorithm(number *value1, number *value2);
 /// <param name="values">Массив с матрицей</param>
 /// <returns>НОД</returns>
 number euclide_algorithm_modifyed(number *value1, number *value2, number *values);
-
-/// <summary>
-/// Генерация случайного числа с заданным количеством бит
-/// </summary>
-/// <param name="bit_count">Кол-во бит</param>
-/// <returns>Сгенерированное число</returns>
-number generate_random(int bit_count);
-
-/// <summary>
-/// Проверка числа на простоту
-/// </summary>
-/// <param name="value">Число</param>
-/// <returns>1 - если простое, 0 - если составное</returns>
-BOOL Millers_method(number *value);
 
 #endif // !BIT_LA_H
