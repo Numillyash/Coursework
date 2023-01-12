@@ -467,6 +467,7 @@ number get_prime_from_file(char *filename, int line_number, int bit_size)
 				exit(GET_PRIME_FAILURE);
 			}
 			_log("Got prime number succesfully");
+			debug_log(&res);
 			fclose(file);
 			return res;
 		}

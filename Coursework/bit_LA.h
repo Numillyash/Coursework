@@ -187,18 +187,4 @@ number euclide_algorithm(number *value1, number *value2);
 /// <returns>НОД</returns>
 number euclide_algorithm_modifyed(number *value1, number *value2, number *values);
 
-/// <summary>
-/// Генерация случайного числа с заданным количеством бит
-/// </summary>
-/// <param name="bit_count">Кол-во бит</param>
-/// <returns>Сгенерированное число</returns>
-number generate_random(int bit_count);
-
-/// <summary>
-/// Проверка числа на простоту
-/// </summary>
-/// <param name="value">Число</param>
-/// <returns>1 - если простое, 0 - если составное</returns>
-BOOL Millers_method(number *value);
-
 #endif // !BIT_LA_H

@@ -11,85 +11,332 @@
 
 #define AND(a, b) a &b
 
-void additional_code(number *value)
+// FIXME алгоритмическая
+#pragma region furie
+
+#define NUMBER_IS_2_POW_K(x) ((!((x) & ((x)-1))) && ((x) > 1)) // x is pow(2, k), k=1,2, ...
+#define FT_DIRECT -1										   // Direct transform.
+#define FT_INVERSE 1										   // Inverse transform.
+#define bool char
+#define true 1
+#define false 0
+#define max_error 0.001
+
+static const float Rcoef[14] =
+	{-1.0000000000000000F, 0.0000000000000000F, 0.7071067811865475F,
+	 0.9238795325112867F, 0.9807852804032304F, 0.9951847266721969F,
+	 0.9987954562051724F, 0.9996988186962042F, 0.9999247018391445F,
+	 0.9999811752826011F, 0.9999952938095761F, 0.9999988234517018F,
+	 0.9999997058628822F, 0.9999999264657178F};
+static const float Icoef[14] =
+	{0.0000000000000000F, -1.0000000000000000F, -0.7071067811865474F,
+	 -0.3826834323650897F, -0.1950903220161282F, -0.0980171403295606F,
+	 -0.0490676743274180F, -0.0245412285229122F, -0.0122715382857199F,
+	 -0.0061358846491544F, -0.0030679567629659F, -0.0015339801862847F,
+	 -0.0007669903187427F, -0.0003834951875714F};
+
+BOOL FFT(float *Rdat, float *Idat, int N, int LogN, int Ft_Flag)
 {
-	if (!is_zero(value))
+	// parameters error check:
+	if ((Rdat == NULL) || (Idat == NULL))
+		return FALSE;
+	if ((N > 16384) || (N < 1))
+		return FALSE;
+	if (!NUMBER_IS_2_POW_K(N))
+		return FALSE;
+	if ((LogN < 2) || (LogN > 14))
+		return FALSE;
+	if ((Ft_Flag != FT_DIRECT) && (Ft_Flag != FT_INVERSE))
+		return FALSE;
+
+	register int i, j, n, k, io, ie, in, nn;
+	float ru, iu, rtp, itp, rtq, itq, rw, iw, sr;
+
+	nn = N >> 1;
+	ie = N;
+	for (n = 1; n <= LogN; n++)
 	{
-		uint8_t addit_digit = 1;
-		int iter;
-
-		// TODO: Обьеденить циклы
-
-		for (iter = 0; iter < value->current_count; iter++)
+		rw = Rcoef[LogN - n];
+		iw = Icoef[LogN - n];
+		if (Ft_Flag == FT_INVERSE)
+			iw = -iw;
+		in = ie >> 1;
+		ru = 1.0F;
+		iu = 0.0F;
+		for (j = 0; j < in; j++)
 		{
-			value->mas[iter] = NOT(value->mas[iter]);
+			for (i = j; i < N; i += ie)
+			{
+				io = i + in;
+				rtp = Rdat[i] + Rdat[io];
+				itp = Idat[i] + Idat[io];
+				rtq = Rdat[i] - Rdat[io];
+				itq = Idat[i] - Idat[io];
+				Rdat[io] = rtq * ru - itq * iu;
+				Idat[io] = itq * ru + rtq * iu;
+				Rdat[i] = rtp;
+				Idat[i] = itp;
+			}
+
+			sr = ru;
+			ru = ru * rw - iu * iw;
+			iu = iu * rw + sr * iw;
 		}
 
-		for (iter = 0; iter < value->current_count; iter++)
-		{
-			value->mas[iter] = XOR(value->mas[iter], addit_digit);
-			if (value->mas[iter])
-				addit_digit = 0;
-		}
+		ie >>= 1;
 	}
-	// if (!is_zero(value))
-	// {
-	// 	uint8_t addit_digit = 1;
-	// 	int iter;
 
-	// 	printf("ADD CODE START\n");
-	// 	printf("Was\n");
-	// 	print_number(value);
-	// 	print_number_as_is(value);
-	// 	printf("cur count = %d\n", value->current_count);
-	// 	for (iter = 0; iter < value->current_count; iter++)
-	// 	{
-	// 		printf("value->mas[iter] %d to %d\n", value->mas[iter], NOT(value->mas[iter]));
-	// 		printf("cur count = %d\n", value->current_count);
-	// 		value->mas[iter] = NOT(value->mas[iter]);
-	// 	}
-	// 	printf("Invert\n");
-	// 	print_number(value);
-	// 	print_number_as_is(value);
+	for (j = i = 1; i < N; i++)
+	{
+		if (i < j)
+		{
+			io = i - 1;
+			in = j - 1;
+			rtp = Rdat[in];
+			itp = Idat[in];
+			Rdat[in] = Rdat[io];
+			Idat[in] = Idat[io];
+			Rdat[io] = rtp;
+			Idat[io] = itp;
+		}
 
-	// 	printf("cur count = %d\n", value->current_count);
-	// 	for (iter = 0; iter < value->current_count; iter++)
-	// 	{
-	// 		value->mas[iter] = XOR(value->mas[iter], addit_digit);
-	// 		if (value->mas[iter])
-	// 		{
-	// 			addit_digit = 0;
-	// 			printf("Cicle\n");
-	// 			print_number(value);
-	// 			break;
-	// 		}
-	// 		printf("Cicle\n");
-	// 		print_number(value);
-	// 	}
-	// 	printf("ADD CODE END\n");
-	// }
+		k = nn;
+
+		while (k < j)
+		{
+			j = j - k;
+			k >>= 1;
+		}
+
+		j = j + k;
+	}
+
+	if (Ft_Flag == FT_DIRECT)
+		return TRUE;
+
+	rw = 1.0F / N;
+
+	for (i = 0; i < N; i++)
+	{
+		Rdat[i] *= rw;
+		Idat[i] *= rw;
+	}
+
+	return TRUE;
 }
 
-void nonadditional_code(number *value)
+int convert_number(number *value, char **input, int *count, int *ln_count)
 {
+	int num = 1, i;
+	*ln_count = 0;
+	*input = (char *)malloc(value->current_count);
+	if (*input == NULL)
+	{
+		return MEMORY_ALLOCATION_FAILURE;
+	}
+	memcpy(*input, value->mas, value->current_count);
+	*count = value->current_count;
+	do
+	{
+		num <<= 1;
+		*ln_count += 1;
+	} while (*count > num);
+	*input = (char *)realloc(*input, num);
+	if (*input == NULL)
+	{
+		return MEMORY_ALLOCATION_FAILURE;
+	}
+	for (; *count < num; (*count)++)
+		(*input)[(*count)] = 0;
+}
+
+number multiply_furie(number *value_1, number *value_2)
+{
+	if (is_zero(value_1) || is_zero(value_2))
+		return int_to_number(0);
+	int i; // iterator
+
+	if ((value_1->current_count >> 1) >= value_2->current_count)
+	{
+		number tmp1 = copy(value_1);
+		number tmp2 = copy(value_1);
+		tmp2.current_count = value_2->current_count;
+		tmp2.mas[tmp2.current_count - 1] = 0;
+		for (i = 0; i < value_2->current_count - 1; i++)
+		{
+			offset_right(&tmp1);
+		}
+		number result1 = multiply_furie(&tmp1, value_2);
+		number result2 = multiply_furie(&tmp2, value_2);
+		for (i = 0; i < value_2->current_count - 1; i++)
+		{
+			offset_left(&result1);
+		}
+		number result = addition(&result1, &result2);
+		clear_mem(&tmp1);
+		clear_mem(&tmp2);
+		clear_mem(&result1);
+		clear_mem(&result2);
+		normalize(&result);
+		return result;
+	}
+	if ((value_2->current_count >> 1) >= value_2->current_count)
+	{
+		number tmp1 = copy(value_2);
+		number tmp2 = copy(value_2);
+		tmp2.current_count = value_1->current_count;
+		tmp2.mas[tmp2.current_count - 1] = 0;
+		for (i = 0; i < value_1->current_count - 1; i++)
+		{
+			offset_right(&tmp1);
+		}
+		number result1 = multiply_furie(&tmp1, value_1);
+		number result2 = multiply_furie(&tmp2, value_1);
+		for (i = 0; i < value_1->current_count - 1; i++)
+		{
+			offset_left(&result1);
+		}
+		number result = addition(&result1, &result2);
+		clear_mem(&tmp1);
+		clear_mem(&tmp2);
+		clear_mem(&result1);
+		clear_mem(&result2);
+		normalize(&result);
+		return result;
+	}
+	int len, ln_count, len_1, ln_count_1, len_2, ln_count_2;
+	char *mas_1, *mas_2;
+	//  Convert number to char arrays
+	convert_number(value_1, &mas_1, &len_1, &ln_count_1);
+	convert_number(value_2, &mas_2, &len_2, &ln_count_2);
+	// Alignment
+	if (len_1 > len_2)
+	{
+		mas_1 = (char *)realloc(mas_1, len_1 * 2);
+		for (i = len_1; i < len_1 * 2; i++)
+		{
+			mas_1[i] = 0;
+		}
+		mas_2 = (char *)realloc(mas_2, len_1 * 2);
+		for (i = len_2; i < len_1 * 2; i++)
+		{
+			mas_2[i] = 0;
+		}
+		len = len_1 << 1;
+		ln_count = ++ln_count_1;
+	}
+	else
+	{
+		mas_1 = (char *)realloc(mas_1, len_2 * 2);
+		for (i = len_1; i < len_2 * 2; i++)
+		{
+			mas_1[i] = 0;
+		}
+		mas_2 = (char *)realloc(mas_2, len_2 * 2);
+		for (i = len_2; i < len_2 * 2; i++)
+		{
+			mas_2[i] = 0;
+		}
+		len = len_2 << 1;
+		ln_count = ++ln_count_2;
+	}
+
+	// Init furie arrays
+	float *Re_1 = (float *)malloc(len * sizeof(float));
+	float *Im_1 = (float *)malloc(len * sizeof(float));
+	float *Re_2 = (float *)malloc(len * sizeof(float));
+	float *Im_2 = (float *)malloc(len * sizeof(float));
+	// answer
+	float *Re_3 = (float *)malloc(len * sizeof(float));
+	float *Im_3 = (float *)malloc(len * sizeof(float));
+	// fill furie arrays from string
+	for (i = 0; i < len; i++)
+	{
+		Re_1[i] = (float)mas_1[i];
+		Im_1[i] = 0.0;
+	}
+	for (i = 0; i < len; i++)
+	{
+		Re_2[i] = (float)mas_2[i];
+		Im_2[i] = 0.0;
+	}
+	free(mas_1);
+	free(mas_2);
+	// answer
+	for (i = 0; i < len; i++)
+	{
+		Re_3[i] = 0.0;
+		Im_3[i] = 0.0;
+	}
+	// Straight FFT
+	FFT(Re_1, Im_1, len, ln_count, FT_DIRECT);
+	FFT(Re_2, Im_2, len, ln_count, FT_DIRECT);
+	// Multy
+	for (i = 0; i < len; i++)
+	{
+		Re_3[i] = Re_1[i] * Re_2[i] - Im_1[i] * Im_2[i];
+		Im_3[i] = Im_1[i] * Re_2[i] + Re_1[i] * Im_2[i];
+	}
+	free(Re_1);
+	free(Im_1);
+	free(Re_2);
+	free(Im_2);
+	// Rev FFT
+	FFT(Re_3, Im_3, len, ln_count, FT_INVERSE);
+	// Convert to number
+	number result = init();
+	result.size = len;
+	result.current_count = len;
+	free(result.mas);
+	free(Im_3);
+	result.mas = (char *)malloc(len);
+	memset(result.mas, 0, len);
+	for (i = 0; i < len; i++)
+	{
+		result.mas[i] += (int)(Re_3[i] < 0 ? (Re_3[i] - 0.5) : (Re_3[i] + 0.5));
+		if (result.mas[i] >> 1)
+		{
+			result.mas[i + 1] = result.mas[i] >> 1;
+			result.mas[i] &= 1;
+		}
+	}
+	free(Re_3);
+	for (i = len - 1; i > 0 && result.mas[i - 1] == 0; i--)
+		;
+	result.mas = (char *)realloc(result.mas, i + 1);
+	result.current_count = i;
+	add_digit(&result, 0);
+	swap(result.mas[result.current_count - 1], result.mas[result.current_count - 2]);
+	normalize(&result);
+	return result;
+}
+
+#pragma endregion furie
+
+void additional_code(number *value)
+{
+	// additional_code_++;
 	if (!is_zero(value))
 	{
 		uint8_t addit_digit = 1;
-		int iter;
+		char *iter;
 
-		// TODO: Обьеденить циклы
-
-		for (iter = 0; iter < value->current_count; iter++)
+		// FIXME машинно-зависимая
+		// FIXME машинно-независимая (цикл)
+		for (iter = value->mas; iter < value->mas + value->current_count; iter++)
 		{
-			value->mas[iter] = NOT(value->mas[iter]);
-		}
-
-		for (iter = 0; iter < value->current_count; iter++)
-		{
-			value->mas[iter] = XOR(value->mas[iter], addit_digit);
-			if (value->mas[iter])
+			*iter = NOT(*iter);
+			*iter = XOR(*iter, addit_digit);
+			if (*iter)
 				addit_digit = 0;
 		}
+		// for (iter = 0; iter < value->current_count; iter++)
+		// {
+		// 	value->mas[iter] = NOT(value->mas[iter]);
+		// 	value->mas[iter] = XOR(value->mas[iter], addit_digit);
+		// 	if (value->mas[iter])
+		// 		addit_digit = 0;
+		// }
 	}
 }
 
@@ -108,13 +355,18 @@ number init()
 
 number copy(number *value)
 {
-	// TODO: Избавиться от add_digit и использовать фор для прямого добавления
-
 	number result = init();
-	int i; // iterator
-	for (i = 0; i < value->current_count - 1; i++)
-		add_digit(&result, value->mas[i]);
-	result.mas[result.current_count - 1] = value->mas[value->current_count - 1];
+	clear_mem(&result);
+	result.mas = (uint8_t *)malloc(sizeof(uint8_t) * (value->size));
+	if (result.mas == NULL)
+	{
+		_log("Memory allocation failure in add_digit() function (buffer)");
+		exit(MEMORY_ALLOCATION_FAILURE);
+	}
+	// FIXME машинно-независимая + алгоритм?
+	memcpy(result.mas, value->mas, value->size);
+	result.current_count = value->current_count;
+	result.size = value->size;
 	return result;
 }
 
@@ -123,14 +375,12 @@ number int_to_number(int value)
 	int ostatok;
 	number result = init();
 
-	// TODO: Двоичная система: % заменяется на &
-
 	if (value < 0)
 	{
 		value *= -1;
 		while (value > 0)
 		{
-			ostatok = value % NUMBER_SYSTEM_BASE;
+			ostatok = value & 1;
 			add_digit(&result, ostatok);
 			value >>= 1;
 		}
@@ -142,7 +392,7 @@ number int_to_number(int value)
 	{
 		while (value > 0)
 		{
-			ostatok = value % NUMBER_SYSTEM_BASE;
+			ostatok = value & 1;
 			add_digit(&result, ostatok);
 			value >>= 1;
 		}
@@ -163,7 +413,7 @@ int number_to_int(number *value)
 	if (value->mas[value->current_count - 1])
 	{
 		zn = -1;
-		nonadditional_code(value);
+		additional_code(value); // nonadditional_code is used
 		for (i = 0; i < value->current_count - 1; i++)
 		{
 			res += value->mas[i] * x;
@@ -184,7 +434,6 @@ int number_to_int(number *value)
 
 void normalize(number *value)
 {
-	number result = init();
 	int i; // iterator
 	int end = value->current_count - 2;
 	if (value->mas[value->current_count - 1])
@@ -209,40 +458,43 @@ void normalize(number *value)
 			}
 		}
 	}
-	for (i = 0; i <= end; i++)
+
+	char *buff = (char *)malloc(end + 2);
+	if (buff == NULL)
 	{
-		add_digit(&result, value->mas[i]);
-	}
-	result.mas[result.current_count - 1] = value->mas[value->current_count - 1];
-	value->current_count = 1;
-	value->size = 1;
-	free(value->mas);
-	value->mas = (uint8_t *)malloc(sizeof(uint8_t));
-	if (value->mas == NULL)
-	{
-		_log("Memory allocation failure in normalize() function");
+		_log("Memory allocation failure in init() function");
 		exit(MEMORY_ALLOCATION_FAILURE);
 	}
-	for (i = 0; i <= end; i++)
+	// FIXME машинно-независимая + алгоритм?
+	memcpy(buff, value->mas, end + 1);
+	buff[end + 1] = value->mas[value->current_count - 1];
+	free(value->mas);
+	value->mas = buff;
+	if (value->mas == NULL)
 	{
-		add_digit(value, result.mas[i]);
+		_log("Memory allocation failure in init() function");
+		exit(MEMORY_ALLOCATION_FAILURE);
 	}
-	value->mas[value->current_count - 1] = result.mas[result.current_count - 1];
-	clear_mem(&result);
+	value->size = end + 2;
+	value->current_count = end + 2;
 }
 
 void clear_mem(number *value)
 {
-	free(value->mas);
-	value->mas = NULL;
+	// FIXME ассемблерная
+	// free(value->mas);
+	// value->mas = NULL;
+	asm(
+		"movq	%0, %%rdi\n"
+		"call	free\n"
+		"xorl	%%eax, %%eax\n"
+		: "=m"(value->mas));
 }
 
 void add_digit(number *object, uint8_t value)
 {
 	int iter;
 	uint8_t *buff;
-
-	// TODO: memcpy?
 
 	if (object->current_count < object->size)
 	{
@@ -258,10 +510,9 @@ void add_digit(number *object, uint8_t value)
 			_log("Memory allocation failure in add_digit() function (buffer)");
 			exit(MEMORY_ALLOCATION_FAILURE);
 		}
-		for (iter = 0; iter < object->current_count; ++iter)
-		{
-			buff[iter] = object->mas[iter];
-		}
+		// FIXME машинно-независимая
+		memcpy(buff, object->mas, object->current_count);
+
 		clear_mem(object);
 		object->mas = (uint8_t *)malloc(sizeof(uint8_t) * (object->size) * 2);
 		if (object->mas == NULL)
@@ -269,10 +520,9 @@ void add_digit(number *object, uint8_t value)
 			_log("Memory allocation failure in add_digit() function (object)");
 			exit(MEMORY_ALLOCATION_FAILURE);
 		}
-		for (iter = 0; iter < object->current_count; ++iter)
-		{
-			object->mas[iter] = buff[iter];
-		}
+
+		memcpy(object->mas, buff, object->current_count);
+
 		free(buff);
 		object->mas[object->current_count] = object->mas[object->current_count - 1];
 		object->mas[object->current_count - 1] = value;
@@ -283,10 +533,9 @@ void add_digit(number *object, uint8_t value)
 
 void offset_right(number *object)
 {
-	// TODO: Не нравится куча реверсов
-
 	if (object->current_count == 2)
 	{
+		clear_mem(object);
 		*object = int_to_number(0);
 	}
 	else
@@ -295,34 +544,36 @@ void offset_right(number *object)
 		object->mas[object->current_count - 2] = object->mas[object->current_count - 1];
 		object->current_count -= 1;
 		reverse(object);
+
 		normalize(object);
 	}
 }
 
-void offset_left(number *object)
+void offset_left(number *value)
 {
-	// TODO: Не нравится куча реверсов
-	reverse(object);
-	add_digit(object, 0);
-	swap(object->mas[object->current_count - 2], object->mas[object->current_count - 1]);
-	reverse(object);
-	normalize(object);
+	reverse(value);
+	add_digit(value, 0);
+	swap(value->mas[value->current_count - 2], value->mas[value->current_count - 1]);
+	reverse(value);
+	normalize(value);
 }
 
 void reverse(number *value)
 {
-	// TODO: Обоийтись без лишнего инита и копировать по другому?
-
 	number prom = init();
-	int i; // iterator
-	for (i = value->current_count - 2; i >= 0; i--)
+	char *i; // iterator
+	// FIXME машинно-зависимая
+	// uint8_t *iter; // iterator
+	for (i = value->mas + value->current_count - 2; i >= value->mas; i--)
 	{
-		add_digit(&prom, value->mas[i]);
+		add_digit(&prom, *i);
 	}
-	for (i = 0; i <= prom.current_count - 2; i++)
-	{
-		value->mas[i] = prom.mas[i];
-	}
+	// for (iter = value->mas + value->current_count - 2; iter >= value->mas; iter--)
+	// {
+	// 	add_digit(&prom, *iter);
+	// }
+	// FIXME машинно-независимая
+	memcpy(value->mas, prom.mas, prom.current_count - 1);
 	clear_mem(&prom);
 }
 
@@ -347,7 +598,7 @@ void print_number_decimal(number *value)
 	if (value->mas[value->current_count - 1])
 	{
 		printf("-");
-		nonadditional_code(value);
+		additional_code(value); // nonadditional_code is used
 
 		for (y = 0; y < value->current_count - 1; y++)
 		{
@@ -411,8 +662,6 @@ void debug_log(number *value)
 
 BOOL is_zero(number *object)
 {
-	// TODO: Оптимизировать?
-
 	int iterator = 0;
 
 	for (iterator = 0; iterator < object->current_count; iterator++)
@@ -429,9 +678,6 @@ BOOL is_zero(number *object)
 BOOL is_equal(number *value1, number *value2)
 {
 	short iterator = 0;
-
-	// TODO: Заменить фор на вайл?
-
 	normalize(value1);
 	normalize(value2);
 
@@ -472,8 +718,8 @@ number addition(number *value1, number *value2)
 	if (summand.mas[summand.current_count - 1] && addend.mas[addend.current_count - 1])
 	{
 		clear_mem(&carry);
-		nonadditional_code(&summand);
-		nonadditional_code(&addend);
+		additional_code(&summand); // nonadditional_code is used
+		additional_code(&addend);  // nonadditional_code is used
 		carry = addition(&summand, &addend);
 		additional_code(&carry);
 		clear_mem(&addend);
@@ -552,11 +798,9 @@ number difference(number *value1, number *value2)
 {
 	number b = copy(value2), buff;
 	if (value2->mas[value2->current_count - 1])
-		nonadditional_code(&b);
+		additional_code(&b); // nonadditional_code is used
 	else
 		additional_code(&b);
-	// _b = -b
-	// a-b = a + (-b) = a + _b
 	buff = addition(value1, &b);
 	clear_mem(&b);
 
@@ -565,24 +809,37 @@ number difference(number *value1, number *value2)
 
 number easy_mult(number *value1, number *value2)
 {
-	// TODO: Не использовать numb_to_int, а делать прямо тут
 	number result;
 	int a = number_to_int(value1);
 	int b = number_to_int(value2);
 
 	result = int_to_number(a * b);
-
+	// test commit
 	return result;
 }
 
 number karatsuba(number *value1, number *value2)
 {
+	if (value1->current_count < 5 && value2->current_count < 5)
+	{
+		if (is_zero(value1) || is_zero(value2))
+			return int_to_number(0);
+		return easy_mult(value1, value2);
+	}
+
 	int n;
 	int k;
 	int iter;
 	number res = init(), buff1, buff2;
 	number a, b, c, d, p1, p2, t, v1, v2;
 
+	if (value1->current_count < 256 && value2->current_count < 256)
+	{
+		if (is_zero(value1) || is_zero(value2))
+			return int_to_number(0);
+		res = multiply_furie(value1, value2);
+		return res;
+	}
 	// k = n/2
 	// v1 = a * (2^k) + b, v2 = c * (2^k) + d
 	// p1 = b * d
@@ -596,17 +853,6 @@ number karatsuba(number *value1, number *value2)
 	if (n <= 5)
 	{
 		clear_mem(&res);
-#ifdef DEBUG
-		printf("Start easyMult\n");
-
-		printf("n = %d\n", n);
-		printf("k = %d\n", k);
-
-		printf("v1 = ");
-		print_number(value1);
-		printf("v2 = ");
-		print_number(value2);
-#endif // DEBUG
 		return easy_mult(value1, value2);
 	}
 	else
@@ -640,27 +886,6 @@ number karatsuba(number *value1, number *value2)
 			add_digit(&c, v2.mas[iter]);
 		}
 
-#ifdef DEBUG
-		printf("Before all\n");
-
-		printf("n = %d\n", n);
-		printf("k = %d\n", k);
-
-		printf("v1 = ");
-		print_number(&v1);
-		printf("v2 = ");
-		print_number(&v2);
-
-		printf("a = ");
-		print_number(&a);
-		printf("b = ");
-		print_number(&b);
-		printf("c = ");
-		print_number(&c);
-		printf("d = ");
-		print_number(&d);
-#endif // DEBUG
-
 		p1 = karatsuba(&b, &d);
 		p2 = karatsuba(&a, &c);
 		buff1 = addition(&a, &b);
@@ -686,34 +911,14 @@ number karatsuba(number *value1, number *value2)
 		t = difference(&buff1, &p2);
 		clear_mem(&buff1);
 
-#ifdef DEBUG
-		printf("Berofe offset\np2 = ");
-		print_number(&p2);
-		printf("t = ");
-		print_number(&t);
-		printf("p1 = ");
-		print_number(&p1);
-#endif // DEBUG
-
 		for (iter = 0; iter < 2 * k; iter++)
 		{
 			offset_left(&p2);
 		}
-
 		for (iter = 0; iter < k; iter++)
 		{
 			offset_left(&t);
 		}
-
-#ifdef DEBUG
-		printf("After all\np2 = ");
-		print_number(&p2);
-		printf("t = ");
-		print_number(&t);
-		printf("p1 = ");
-		print_number(&p1);
-#endif // DEBUG
-
 		buff1 = copy(&res);
 		clear_mem(&res);
 		res = addition(&buff1, &p2);
@@ -728,20 +933,17 @@ number karatsuba(number *value1, number *value2)
 		clear_mem(&res);
 		res = addition(&buff1, &t);
 		clear_mem(&buff1);
-#ifdef DEBUG
-		printf("res = ");
-		print_number(&res);
-#endif // DEBUG
 		clear_mem(&p1);
 		clear_mem(&p2);
 		clear_mem(&t);
-		////////////////////////////////////////////////////////////////////////////////////////////////
 		return res;
 	}
 }
 
 number multiplication(number *value1, number *value2)
 {
+	if (is_zero(value1) || is_zero(value2))
+		return int_to_number(0);
 	number result, a, b;
 	a = copy(value1);
 	b = copy(value2);
@@ -764,12 +966,12 @@ number multiplication(number *value1, number *value2)
 		additional_code(&result);
 	}
 	normalize(&result);
+
 	return result;
 }
 
 number division_with_module(number *value1, number *value2, number *ost)
 {
-	// TODO темный лес
 	number mod = int_to_number(0), rem = copy(value1), sub = copy(value2);
 	number add = int_to_number(1);
 	number buff;
@@ -786,7 +988,7 @@ number division_with_module(number *value1, number *value2, number *ost)
 		clear_mem(&rem);
 
 		buff = copy(value2);
-		nonadditional_code(&buff);
+		additional_code(&buff); // nonadditional_code is used
 		mod = division_with_module(value1, &buff, &rem);
 		clear_mem(&buff);
 
@@ -803,7 +1005,7 @@ number division_with_module(number *value1, number *value2, number *ost)
 
 		// b - ( |a| % b )
 		buff = copy(value1);
-		nonadditional_code(&buff);
+		additional_code(&buff);							 // nonadditional_code is used
 		mod = division_with_module(&buff, value2, &rem); // ost = ( |a| % b )
 		clear_mem(&buff);
 
@@ -840,10 +1042,15 @@ number division_with_module(number *value1, number *value2, number *ost)
 		offset_left(&add);
 		clear_mem(&buff);
 		buff = difference(&sub, &rem);
-		shifts++;
+		// FIXME ассемблерная
+		// shifts++;
+		asm(
+			"movl %0, %%eax\n"
+			"addl $1, %%eax\n"
+			"movl %%eax, %0\n"
+			: "=m"(shifts));
 	}
 	clear_mem(&buff);
-
 	while (shifts)
 	{
 		buff = difference(&rem, &sub);
@@ -879,14 +1086,12 @@ number division_with_module(number *value1, number *value2, number *ost)
 
 number module_pow(number *a, number *t, number *b)
 {
-	// TODO тоже темный лес, но светлее
 	number d, ost, iterator = init(), buff, buff2, buff3;
 
 	add_digit(&iterator, 1);
 	buff3 = division_with_module(a, b, &d);
 	clear_mem(&buff3);
 	ost = copy(&d);
-
 	if (is_zero(&d))
 	{
 		clear_mem(&d);
@@ -904,7 +1109,7 @@ number module_pow(number *a, number *t, number *b)
 		buff2 = copy(a);
 		while (!is_zero(&iterator))
 		{
-			if (iterator.mas[0] % 2 == 1)
+			if (iterator.mas[0] == 1)
 			{
 				buff = multiplication(&ost, &buff2);
 				clear_mem(&ost);
@@ -940,12 +1145,12 @@ number euclide_algorithm(number *value1, number *value2)
 	a = copy(value1);
 	if (a.mas[a.current_count - 1])
 	{
-		nonadditional_code(&a);
+		additional_code(&a); // nonadditional_code is used
 	}
 	b = copy(value2);
 	if (b.mas[b.current_count - 1])
 	{
-		nonadditional_code(&b);
+		additional_code(&b); // nonadditional_code is used
 	}
 	buff = difference(&a, &b);
 	if (buff.mas[buff.current_count - 1])
@@ -966,11 +1171,11 @@ number euclide_algorithm(number *value1, number *value2)
 	}
 	if (a.mas[a.current_count - 1])
 	{
-		nonadditional_code(&a);
+		additional_code(&a); // nonadditional_code is used
 	}
 	if (b.mas[b.current_count - 1])
 	{
-		nonadditional_code(&b);
+		additional_code(&b); // nonadditional_code is used
 	}
 	// a = b * q_0 + r_1
 	buff = division_with_module(&a, &b, &mod);
@@ -996,7 +1201,6 @@ number euclide_algorithm(number *value1, number *value2)
 
 number euclide_algorithm_modifyed(number *value1, number *value2, number *values)
 {
-	// TODO ...
 	number buff, a, b, mod, div, GCD;
 	number _a, _b, _c, _d;
 
@@ -1098,134 +1302,4 @@ number euclide_algorithm_modifyed(number *value1, number *value2, number *values
 		normalize(&GCD);
 		return GCD;
 	}
-}
-
-number generate_random(int bit_count)
-{
-	int i;
-	number res = init();
-	for (i = 0; i < bit_count - 1; i++)
-	{
-		add_digit(&res, rand() % 2);
-	}
-	return res;
-}
-
-BOOL Millers_method(number *value)
-{
-	number t, buff, buff2, a, N_minus_1;
-	BOOL fl1, fl2;
-	number step = int_to_number(1);
-	number step2 = int_to_number(2);
-	number N_3 = int_to_number(3);
-	int n = MILLERS_METHOD_ITERATIONS_NUMBER;
-	int s = 0;
-	int i, k, j; // iterators
-
-	if (is_equal(value, &step2))
-	{
-		clear_mem(&step);
-		clear_mem(&step2);
-		clear_mem(&N_3);
-		return TRUE;
-	}
-
-	if (is_equal(value, &N_3))
-	{
-		clear_mem(&step);
-		clear_mem(&step2);
-		clear_mem(&N_3);
-		return TRUE;
-	}
-
-	if (!value->mas[0])
-	{
-		clear_mem(&step);
-		clear_mem(&step2);
-		clear_mem(&N_3);
-		return FALSE;
-	}
-
-	// N-1 = 2^s * t, t - нечетно
-
-	N_minus_1 = difference(value, &step);
-	t = copy(&N_minus_1);
-
-	while (t.mas[0] == 0)
-	{
-		s++;
-		offset_right(&t);
-	}
-
-	srand((unsigned int)time(NULL));
-
-	for (i = 0; i < n; i++)
-	{
-		printf("i is %d\n", i);
-		fl1 = TRUE;
-		fl2 = TRUE;
-
-		a = generate_random(value->current_count - 1);
-		buff = difference(&a, &step2);
-		while (buff.mas[buff.current_count - 1])
-		{
-			clear_mem(&buff);
-			clear_mem(&a);
-			a = generate_random(value->current_count - 1);
-			buff = difference(&a, &step2);
-		}
-		clear_mem(&buff);
-
-		buff = euclide_algorithm(value, &a);
-		if (!is_equal(&buff, &step)) // свойство 1
-		{
-			fl1 = FALSE;
-		}
-		clear_mem(&buff);
-
-		buff = module_pow(&a, &t, value);
-		if (!is_equal(&buff, &step)) // свойство 2
-		{
-			fl2 = FALSE;
-			for (k = 1; k <= s; k++)
-			{
-				clear_mem(&buff);
-				buff2 = copy(&t);
-				for (j = 0; j < k - 1; j++)
-				{
-					offset_left(&buff2);
-				}
-
-				buff = module_pow(&a, &buff2, value);
-				clear_mem(&buff2);
-
-				if (is_equal(&buff, &N_minus_1))
-				{
-					// printf("= is %d\n", is_equal(&buff, &N_minus_1));
-					fl2 = TRUE;
-				}
-			}
-		}
-		clear_mem(&buff);
-
-		if (!fl1 || !fl2)
-		{
-			clear_mem(&step);
-			clear_mem(&step2);
-			clear_mem(&N_3);
-			clear_mem(&t);
-			clear_mem(&a);
-			clear_mem(&N_minus_1);
-			return FALSE;
-		}
-
-		clear_mem(&a);
-	}
-
-	clear_mem(&step);
-	clear_mem(&step2);
-	clear_mem(&N_3);
-	clear_mem(&t);
-	clear_mem(&N_minus_1);
-	return TRUE;
 }
