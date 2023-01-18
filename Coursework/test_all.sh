@@ -15,12 +15,12 @@ do
     start=`date +%s.%N`
     #START_TIME=$(date +%s)
     #
-    bash ./tests/test_genkey.sh "keygen-$filename" 
-    sleep 2
+    # bash ./tests/test_genkey.sh "keygen-$filename" 
+    # sleep 2
     # bash ./tests/test_sign.sh "sign-$filename"
     # bash ./tests/test_check.sh "check-$filename"
     bash ./tests/test_encrypt.sh "enc-$filename" $i
-    bash ./tests/test_decrypt.sh "dec-$filename" $i #> a2.txt
+    bash ./tests/test_decrypt.sh "dec-$filename" $i
     #
     end=`date +%s.%N`
     #END_TIME=$(date +%s)

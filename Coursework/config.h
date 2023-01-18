@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 #define _CRT_SECURE_NO_WARNINGS
-// #define DEBUG
+#define DEBUG
 
 #include <stdio.h>
 #include <math.h>
@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <locale.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 // input console checking
 #define HELP_CONSOLE_OPTION_1 "-h"

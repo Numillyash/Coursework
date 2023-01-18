@@ -833,13 +833,15 @@ number karatsuba(number *value1, number *value2)
 	number res = init(), buff1, buff2;
 	number a, b, c, d, p1, p2, t, v1, v2;
 
-	if (value1->current_count < 256 && value2->current_count < 256)
-	{
-		if (is_zero(value1) || is_zero(value2))
-			return int_to_number(0);
-		res = multiply_furie(value1, value2);
-		return res;
-	}
+	// #ifdef DEBUG
+	// 	if (value1->current_count < 256 && value2->current_count < 256)
+	// 	{
+	// 		if (is_zero(value1) || is_zero(value2))
+	// 			return int_to_number(0);
+	// 		res = multiply_furie(value1, value2);
+	// 		return res;
+	// 	}
+	// #endif
 	// k = n/2
 	// v1 = a * (2^k) + b, v2 = c * (2^k) + d
 	// p1 = b * d
@@ -940,8 +942,17 @@ number karatsuba(number *value1, number *value2)
 	}
 }
 
+// TODO timer
+struct timespec start, end;
+unsigned long long tt = 0;
+unsigned long long tt2 = 0;
+
 number multiplication(number *value1, number *value2)
 {
+
+	// TODO timer
+	clock_gettime(CLOCK_REALTIME, &start);
+
 	if (is_zero(value1) || is_zero(value2))
 		return int_to_number(0);
 	number result, a, b;
@@ -957,7 +968,12 @@ number multiplication(number *value1, number *value2)
 		additional_code(&b);
 	}
 
+#ifdef DEBUG
+	result = multiply_furie(value1, value2);
+#else
 	result = karatsuba(&a, &b);
+#endif
+
 	clear_mem(&a);
 	clear_mem(&b);
 
@@ -967,7 +983,17 @@ number multiplication(number *value1, number *value2)
 	}
 	normalize(&result);
 
+	// TODO timer
+	clock_gettime(CLOCK_REALTIME, &end);
+	tt = 100000 * (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 10000;
+	tt2 += tt;
+	_log_ull(tt);
 	return result;
+}
+
+void _log_tm()
+{
+	_log_ull(tt2);
 }
 
 number division_with_module(number *value1, number *value2, number *ost)
