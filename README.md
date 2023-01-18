@@ -58,6 +58,8 @@
 ![image](https://user-images.githubusercontent.com/60771708/213117305-bdbbeeb9-370f-4e1d-a5da-6012656d05e0.png)
 
 ## Финальное время выполнения
+Финальное время выполнения алгоритма суммарно увеличилось в 4 раза.
+
 ![image](https://user-images.githubusercontent.com/60771708/213117514-932f3197-87ec-4e5e-ad84-4ce4ce9f487c.png)
 
 
