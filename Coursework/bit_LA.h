@@ -3,8 +3,6 @@
 
 #include "_log_.h"
 
-void _log_tm();
-
 #define NUMBER_SYSTEM_BASE 2
 #define MILLERS_METHOD_ITERATIONS_NUMBER 20
 

@@ -47,11 +47,6 @@ int main(int argc, char *argv[])
 {
 	setlocale(LC_ALL, "rus");
 	_log_start();
-#ifdef DEBUG
-	_log("Ellapsed time (furie): ");
-#else
-	_log("Ellapsed time (karat): ");
-#endif
 	if (argc == 1)
 	{
 		printf(ERROR_NO_PARAMETERS);
@@ -135,6 +130,5 @@ int main(int argc, char *argv[])
 		_log("User typed wrong number of parameters");
 		exit(WRONG_ARGUMENT_FAILURE);
 	}
-	_log_tm();
 	return 1;
 }
