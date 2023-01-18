@@ -318,15 +318,27 @@ void read_key(char *filename, number *mod, number *subkey, char log)
 	{
 		c = (int)(buff[i] - 'a');
 		// TODO Оптимизировать цикл - избавиться от цикла
-		for (j = 0; j < 4; j++)
-		{
-			ms[j] = c % 2;
-			c >>= 1;
-		}
-		for (j = 0; j < 4; j++)
-		{
-			add_digit(subkey, ms[j]);
-		}
+		ms[0] = c % 2;
+		c >>= 1;
+		ms[1] = c % 2;
+		c >>= 1;
+		ms[2] = c % 2;
+		c >>= 1;
+		ms[3] = c % 2;
+		c >>= 1;
+		//for (j = 0; j < 4; j++)
+		//{
+		//	ms[j] = c % 2;
+		//	c >>= 1;
+		//}
+		add_digit(subeky, ms[0]);
+		add_digit(subeky, ms[1]);
+		add_digit(subeky, ms[2]);
+		add_digit(subeky, ms[3]);
+		// for (j = 0; j < 4; j++)
+		// {
+		// 	add_digit(subkey, ms[j]);
+		// }
 		i++;
 	}
 
