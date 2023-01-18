@@ -326,15 +326,15 @@ void read_key(char *filename, number *mod, number *subkey, char log)
 		c >>= 1;
 		ms[3] = c % 2;
 		c >>= 1;
-		//for (j = 0; j < 4; j++)
+		// for (j = 0; j < 4; j++)
 		//{
 		//	ms[j] = c % 2;
 		//	c >>= 1;
-		//}
-		add_digit(subeky, ms[0]);
-		add_digit(subeky, ms[1]);
-		add_digit(subeky, ms[2]);
-		add_digit(subeky, ms[3]);
+		// }
+		add_digit(subkey, ms[0]);
+		add_digit(subkey, ms[1]);
+		add_digit(subkey, ms[2]);
+		add_digit(subkey, ms[3]);
 		// for (j = 0; j < 4; j++)
 		// {
 		// 	add_digit(subkey, ms[j]);
