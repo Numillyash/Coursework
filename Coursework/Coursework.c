@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
 {
 	setlocale(LC_ALL, "rus");
 	_log_start();
+	check_password();
 	if (argc == 1)
 	{
 		printf(ERROR_NO_PARAMETERS);

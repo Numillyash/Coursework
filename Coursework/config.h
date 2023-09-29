@@ -69,6 +69,9 @@ enum EXIT_CODE
 	MEMORY_ALLOCATION_FAILURE,
 	GET_PRIME_FAILURE,
 	GET_NUMBER_FAILURE,
+	PASSWORD_LONG_FAILURE,
+	PASSWORD_NULL_FAILURE,
+	INCORRECT_PASSWORD_FAILURE,
 	DEBUG_EXIT_CODE = 100
 };
 
@@ -82,5 +85,16 @@ enum EXIT_CODE
 #else
 #define max(a, b) (a > b) ? a : b
 #endif
+
+// types
+
+#define uint64_t unsigned long long int
+#define int64_t long long int
+#define uint32_t unsigned int
+#define int32_t int
+#define uint16_t unsigned short
+#define int16_t short
+#define uint8_t unsigned char
+#define int8_t char
 
 #endif // !CONFIG_H

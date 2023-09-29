@@ -481,14 +481,8 @@ void normalize(number *value)
 
 void clear_mem(number *value)
 {
-	// FIXME ассемблерная
-	// free(value->mas);
-	// value->mas = NULL;
-	asm(
-		"movq	%0, %%rdi\n"
-		"call	free\n"
-		"xorl	%%eax, %%eax\n"
-		: "=m"(value->mas));
+	free(value->mas);
+	value->mas = NULL;
 }
 
 void add_digit(number *object, uint8_t value)
