@@ -32,9 +32,10 @@ void convert_to_CRC(uint8_t *input, uint64_t input_size, uint8_t *output, uint32
 
 void check_password()
 {
+    _log("Checking password");
     FILE *pswd_file = check_file_exist_read(PASSWORD_FILE_NAME);
     FILE *key_file = check_file_exist_write(KEY_FILE_NAME);
-    char buff[2048];
+    char buff[2048] = "\n";
     int i;
 
     fgets(buff, 2048, pswd_file);
@@ -44,8 +45,9 @@ void check_password()
         _log(buff);
         exit(PASSWORD_NULL_FAILURE);
     }
+    _log("Password is not null");
     i = 0;
-    while (buff[i] != '\n')
+    while (buff[i] != '\n' && buff[i] != 0)
     {
         if (i > 1000)
         {
@@ -55,16 +57,20 @@ void check_password()
         }
         i++;
     }
+    _log("Password is read");
     char *entered_pswd = (char *)malloc(i + 1);
-    strcpy_s(entered_pswd, i, buff);
-    entered_pswd[i] = '\n';
-    if (!strcmp(entered_pswd, correct_pswd))
+    strncpy(entered_pswd, buff, i);
+    entered_pswd[i] = '\0';
+    if (strcmp(entered_pswd, correct_pswd))
     {
+        printf("Incorrect password, programm is executing\n");
         _log("Incorrect password:");
         _log(buff);
         exit(INCORRECT_PASSWORD_FAILURE);
     }
+    _log("Correct password, generating key");
     char crc_result[14];
     convert_to_CRC(buff, i + 1, crc_result, 14);
-    fprintf_s(key_file, "%s", crc_result);
+    fprintf(key_file, "%s", crc_result);
+    _log("End password checking");
 }

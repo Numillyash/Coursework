@@ -17,7 +17,6 @@ void _log_start()
 	strftime(date, 18, "%H.%M.%S %d.%m.%y", u);
 
 	snprintf(filename, 29, "./logs/%s.log", date);
-	printf("%s\n", filename);
 	file = fopen(filename, "w");
 	if (file == NULL)
 	{
