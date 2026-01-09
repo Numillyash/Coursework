@@ -481,14 +481,13 @@ void normalize(number *value)
 
 void clear_mem(number *value)
 {
-	// FIXME ассемблерная
-	// free(value->mas);
-	// value->mas = NULL;
-	asm(
-		"movq	%0, %%rdi\n"
-		"call	free\n"
-		"xorl	%%eax, %%eax\n"
-		: "=m"(value->mas));
+	if (value == NULL)
+		return;
+	if (value->mas != NULL)
+	{
+		free(value->mas);
+		value->mas = NULL;
+	}
 }
 
 void add_digit(number *object, uint8_t value)
@@ -561,17 +560,11 @@ void offset_left(number *value)
 void reverse(number *value)
 {
 	number prom = init();
-	char *i; // iterator
-	// FIXME машинно-зависимая
-	// uint8_t *iter; // iterator
-	for (i = value->mas + value->current_count - 2; i >= value->mas; i--)
+	uint8_t *iter; // iterator
+	for (iter = value->mas + value->current_count - 2; iter >= value->mas; iter--)
 	{
-		add_digit(&prom, *i);
+		add_digit(&prom, *iter);
 	}
-	// for (iter = value->mas + value->current_count - 2; iter >= value->mas; iter--)
-	// {
-	// 	add_digit(&prom, *iter);
-	// }
 	// FIXME машинно-независимая
 	memcpy(value->mas, prom.mas, prom.current_count - 1);
 	clear_mem(&prom);
@@ -1043,12 +1036,12 @@ number division_with_module(number *value1, number *value2, number *ost)
 		clear_mem(&buff);
 		buff = difference(&sub, &rem);
 		// FIXME ассемблерная
-		// shifts++;
-		asm(
-			"movl %0, %%eax\n"
-			"addl $1, %%eax\n"
-			"movl %%eax, %0\n"
-			: "=m"(shifts));
+		shifts++;
+		// asm(
+		// 	"movl %0, %%eax\n"
+		// 	"addl $1, %%eax\n"
+		// 	"movl %%eax, %0\n"
+		// 	: "=m"(shifts));
 	}
 	clear_mem(&buff);
 	while (shifts)

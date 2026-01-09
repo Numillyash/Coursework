@@ -1,5 +1,7 @@
 #include "_log_.h"
 
+#ifndef NO_LOG
+
 char date[18];
 char filename[29];
 
@@ -54,3 +56,5 @@ void _log_ull(unsigned long long value)
 	snprintf(message, 30, "%llu", value);
 	_log(message);
 }
+
+#endif // NO_LOG
