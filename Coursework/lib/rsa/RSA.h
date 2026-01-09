@@ -1,7 +1,7 @@
 #ifndef RSA_H
 #define RSA_H
 
-#include "_file_.h"
+#include "../util/_file_.h"
 
 /// <summary>
 /// Function, checking sign of file

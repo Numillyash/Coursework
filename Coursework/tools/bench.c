@@ -1,6 +1,6 @@
 #define _POSIX_C_SOURCE 200112L
-#include "bit_LA.h"
-#include "config.h"
+#include "../lib/bigint/bit_LA.h"
+#include "../include/config.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

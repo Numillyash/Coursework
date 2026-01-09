@@ -1,7 +1,7 @@
 #ifndef BIT_LA_H
 #define BIT_LA_H
 
-#include "_log_.h"
+#include "../util/_log_.h"
 
 #define NUMBER_SYSTEM_BASE 2
 #define MILLERS_METHOD_ITERATIONS_NUMBER 20

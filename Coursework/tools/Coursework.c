@@ -1,4 +1,4 @@
-﻿#include "RSA.h"
+﻿#include "../lib/rsa/RSA.h"
 
 /// <summary>
 /// Function that is checking for parameters for work mode

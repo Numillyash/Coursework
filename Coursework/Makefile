@@ -13,20 +13,28 @@ ifeq ($(MODE),prof)
 CFLAGS = -O2 -g -fno-omit-frame-pointer $(COMMON_WARN)
 endif
 
-CPPFLAGS ?=
+CPPFLAGS ?= -I./include -I./lib/bigint -I./lib/rsa -I./lib/util
 LDFLAGS ?=
 
+# Library object files
+LIB_BIGINT = lib/bigint/bit_LA.o
+LIB_RSA = lib/rsa/RSA.o
+LIB_UTIL = lib/util/_file_.o lib/util/_log_.o
+
+# All library objects
+LIB_OBJECTS = $(LIB_BIGINT) $(LIB_RSA) $(LIB_UTIL)
+
 # Main executable sources
-WORK_SOURCES = Coursework.c RSA.c bit_LA.c _file_.c _log_.c
-WORK_OBJECTS = $(WORK_SOURCES:.c=.o)
+WORK_SOURCES = tools/Coursework.c
+WORK_OBJECTS = $(WORK_SOURCES:.c=.o) $(LIB_OBJECTS)
 WORK_EXEC = work1
 
 # Benchmark executable
-BENCH_SOURCES = bench.c bit_LA.c _log_.c
-BENCH_OBJECTS = $(BENCH_SOURCES:.c=.o)
+BENCH_SOURCES = tools/bench.c
+BENCH_OBJECTS = $(BENCH_SOURCES:.c=.o) $(LIB_BIGINT) lib/util/_log_.o
 BENCH_EXEC = bench_rsa
 
-PHONY += all work1 bench prof release clean
+.PHONY: all work1 bench prof release clean
 
 all: work1
 
@@ -36,6 +44,14 @@ work1: $(WORK_OBJECTS)
 bench: CPPFLAGS += -DNO_LOG
 bench: $(BENCH_OBJECTS)
 	$(CC) $(LDFLAGS) $(BENCH_OBJECTS) -o $(BENCH_EXEC)
+
+lib/%.o: lib/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CSTD) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+tools/%.o: tools/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CSTD) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 %.o: %.c
 	$(CC) $(CSTD) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
@@ -49,4 +65,5 @@ release:
 	$(MAKE) MODE=release all
 
 clean:
+	rm -f lib/**/*.o tools/*.o $(WORK_EXEC) $(BENCH_EXEC)clean:
 	rm -f *.o $(WORK_EXEC) $(BENCH_EXEC)

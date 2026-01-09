@@ -1,7 +1,7 @@
 #ifndef _FILE__H
 #define _FILE__H
 
-#include "bit_LA.h"
+#include "../bigint/bit_LA.h"
 
 #define PREFIX_SIZE 3
 #define PRIME_PREFIX_SIZE 5
