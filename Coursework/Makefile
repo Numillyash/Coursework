@@ -1,62 +1,63 @@
 CC ?= gcc
 MODE ?= debug
-COMMON_WARN = -Wall -Wextra
-CSTD = -std=c11
+
+CSTD := -std=c11
+WARN := -Wall -Wextra
+
+INCS := -I./include -I./lib/bigint -I./lib/rsa -I./lib/util
+CPPFLAGS_COMMON := $(INCS)
 
 ifeq ($(MODE),debug)
-CFLAGS = -O0 -g $(COMMON_WARN)
+  CFLAGS := -O0 -g $(WARN)
+else ifeq ($(MODE),release)
+  CFLAGS := -O2 -DNDEBUG $(WARN)
+else ifeq ($(MODE),prof)
+  CFLAGS := -O2 -g -fno-omit-frame-pointer $(WARN)
+else
+  $(error Unknown MODE=$(MODE))
 endif
-ifeq ($(MODE),release)
-CFLAGS = -O2 -DNDEBUG $(COMMON_WARN)
-endif
-ifeq ($(MODE),prof)
-CFLAGS = -O2 -g -fno-omit-frame-pointer $(COMMON_WARN)
-endif
 
-CPPFLAGS ?= -I./include -I./lib/bigint -I./lib/rsa -I./lib/util
-LDFLAGS ?=
+BUILD := build/$(MODE)
 
-# Library object files
-LIB_BIGINT = lib/bigint/bit_LA.o
-LIB_RSA = lib/rsa/RSA.o
-LIB_UTIL = lib/util/_file_.o lib/util/_log_.o
+WORK_EXEC  := work1
+BENCH_EXEC := bench_rsa
 
-# All library objects
-LIB_OBJECTS = $(LIB_BIGINT) $(LIB_RSA) $(LIB_UTIL)
+WORK_SOURCES := \
+  tools/Coursework.c \
+  lib/bigint/bit_LA.c \
+  lib/rsa/RSA.c \
+  lib/util/_file_.c \
+  lib/util/_log_.c
 
-# Main executable sources
-WORK_SOURCES = tools/Coursework.c
-WORK_OBJECTS = $(WORK_SOURCES:.c=.o) $(LIB_OBJECTS)
-WORK_EXEC = work1
+BENCH_SOURCES := \
+  tools/bench.c \
+  lib/bigint/bit_LA.c \
+  lib/util/_log_.c
 
-# Benchmark executable
-BENCH_SOURCES = tools/bench.c
-BENCH_OBJECTS = $(BENCH_SOURCES:.c=.o) $(LIB_BIGINT) lib/util/_log_.o
-BENCH_EXEC = bench_rsa
+WORK_OBJECTS  := $(patsubst %.c,$(BUILD)/%.o,$(WORK_SOURCES))
+BENCH_OBJECTS := $(patsubst %.c,$(BUILD)/%.o,$(BENCH_SOURCES))
 
-.PHONY: all work1 bench prof release clean
+DEPS := $(WORK_OBJECTS:.o=.d) $(BENCH_OBJECTS:.o=.d)
+-include $(DEPS)
 
-all: work1
+.PHONY: all work1 bench clean prof release
 
-work1: $(WORK_OBJECTS)
-	$(CC) $(LDFLAGS) $(WORK_OBJECTS) -o $@
+all: work1 bench
 
-bench: CPPFLAGS += -DNO_LOG
-bench: $(BENCH_OBJECTS)
-	$(CC) $(LDFLAGS) $(BENCH_OBJECTS) -o $(BENCH_EXEC)
+work1: $(WORK_EXEC)
 
-lib/%.o: lib/%.c
+bench: $(BENCH_EXEC)
+
+$(WORK_EXEC): $(WORK_OBJECTS)
+	$(CC) $^ -o $@
+
+$(BENCH_EXEC): CPPFLAGS := $(CPPFLAGS_COMMON) -DNO_LOG
+$(BENCH_EXEC): $(BENCH_OBJECTS)
+	$(CC) $^ -o $@
+
+$(BUILD)/%.o: %.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CSTD) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
-
-tools/%.o: tools/%.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CSTD) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
-
-%.o: %.c
-	$(CC) $(CSTD) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
-
-.PHONY: all work1 bench prof release clean
+	$(CC) $(CSTD) $(CFLAGS) $(CPPFLAGS) -MMD -MP -c $< -o $@
 
 prof:
 	$(MAKE) MODE=prof bench
@@ -65,5 +66,5 @@ release:
 	$(MAKE) MODE=release all
 
 clean:
-	rm -f lib/**/*.o tools/*.o $(WORK_EXEC) $(BENCH_EXEC)clean:
-	rm -f *.o $(WORK_EXEC) $(BENCH_EXEC)
+	rm -rf build
+	rm -f $(WORK_EXEC) $(BENCH_EXEC)

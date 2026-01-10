@@ -1,0 +1,25 @@
+# Build artifacts
+build/
+*.o
+*.d
+
+# Executables
+work1
+bench_rsa
+
+# Test outputs
+test_results/tmp/
+
+# Logs
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
