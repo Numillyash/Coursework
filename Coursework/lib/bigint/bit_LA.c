@@ -436,11 +436,8 @@ void normalize(number *value)
 {
 	int i; // iterator
 	int end = value->current_count - 2;
-	uint8_t sign_bit = value->mas[value->current_count - 1];
-	
-	if (sign_bit)
+	if (value->mas[value->current_count - 1])
 	{
-		// Sign bit is 1: find the last 0 or break condition
 		for (i = value->current_count - 2; i > 0; i--)
 		{
 			end = i;
@@ -452,7 +449,6 @@ void normalize(number *value)
 	}
 	else
 	{
-		// Sign bit is 0: find the last 1
 		for (i = value->current_count - 2; i >= 0; i--)
 		{
 			end = i;
@@ -463,10 +459,23 @@ void normalize(number *value)
 		}
 	}
 
-	// Move sign bit to new position without malloc/free
-	value->mas[end + 1] = sign_bit;
+	uint8_t *buff = (uint8_t *)malloc(end + 2);
+	if (buff == NULL)
+	{
+		_log("Memory allocation failure in normalize() function");
+		exit(MEMORY_ALLOCATION_FAILURE);
+	}
+	memcpy(buff, value->mas, end + 1);
+	buff[end + 1] = value->mas[value->current_count - 1];
+	free(value->mas);
+	value->mas = buff;
+	if (value->mas == NULL)
+	{
+		_log("Memory allocation failure in normalize() function");
+		exit(MEMORY_ALLOCATION_FAILURE);
+	}
+	value->size = end + 2;
 	value->current_count = end + 2;
-	// size (capacity) remains unchanged
 }
 
 void clear_mem(number *value)
