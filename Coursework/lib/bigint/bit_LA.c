@@ -127,28 +127,35 @@ BOOL FFT(float *Rdat, float *Idat, int N, int LogN, int Ft_Flag)
 
 int convert_number(number *value, char **input, int *count, int *ln_count)
 {
-	int num = 1;
-	*ln_count = 0;
+    int num = 1;
+    *ln_count = 0;
 
-	*input = (char *)malloc(value->current_count);
-	if (*input == NULL) return MEMORY_ALLOCATION_FAILURE;
+    *input = (char *)malloc((size_t)value->current_count);
+    if (*input == NULL)
+        return MEMORY_ALLOCATION_FAILURE;
 
-	memcpy(*input, value->mas, value->current_count);
-	*count = value->current_count;
+    memcpy(*input, value->mas, (size_t)value->current_count);
+    *count = value->current_count;
 
-	do {
-		num <<= 1;
-		*ln_count += 1;
-	} while (*count > num);
+    do {
+        num <<= 1;
+        *ln_count += 1;
+    } while (*count > num);
 
-	*input = (char *)realloc(*input, num);
-	if (*input == NULL) return MEMORY_ALLOCATION_FAILURE;
+    char *tmp = (char *)realloc(*input, (size_t)num);
+    if (tmp == NULL) {
+        free(*input);
+        *input = NULL;
+        return MEMORY_ALLOCATION_FAILURE;
+    }
+    *input = tmp;
 
-	for (; *count < num; (*count)++)
-		(*input)[(*count)] = 0;
+    for (; *count < num; (*count)++)
+        (*input)[(*count)] = 0;
 
-	return SUCCESS;
+    return SUCCESS;
 }
+
 
 number multiply_furie(number *value_1, number *value_2)
 {
@@ -319,7 +326,7 @@ void additional_code(number *value)
 	if (!is_zero(value))
 	{
 		uint8_t addit_digit = 1;
-		char *iter;
+		uint8_t *iter;
 
 		// FIXME машинно-зависимая
 		// FIXME машинно-независимая (цикл)
@@ -558,16 +565,19 @@ void offset_left(number *value)
 
 void reverse(number *value)
 {
-	number prom = init();
-	uint8_t *iter; // iterator
-	for (iter = value->mas + value->current_count - 2; iter >= value->mas; iter--)
-	{
-		add_digit(&prom, *iter);
-	}
-	// FIXME машинно-независимая
-	memcpy(value->mas, prom.mas, prom.current_count - 1);
-	clear_mem(&prom);
+    if (value == NULL || value->mas == NULL || value->current_count <= 1)
+        return;
+
+    number prom = init();
+
+    for (int idx = value->current_count - 2; idx >= 0; --idx)
+        add_digit(&prom, value->mas[idx]);
+
+    // как и раньше, копируем только данные (без знакового бита)
+    memcpy(value->mas, prom.mas, (size_t)(prom.current_count - 1));
+    clear_mem(&prom);
 }
+
 
 void print_number_as_is(number *value)
 {
