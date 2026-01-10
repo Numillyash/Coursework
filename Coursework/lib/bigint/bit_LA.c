@@ -3,6 +3,9 @@
 //
 #include "bit_LA.h"
 
+#ifdef max
+#undef max
+#endif
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
 #define XOR(a, b) a ^ b
@@ -125,12 +128,12 @@ BOOL FFT(float *Rdat, float *Idat, int N, int LogN, int Ft_Flag)
 	return TRUE;
 }
 
-int convert_number(number *value, char **input, int *count, int *ln_count)
+int convert_number(number *value, uint8_t **input, int *count, int *ln_count)
 {
     int num = 1;
     *ln_count = 0;
 
-    *input = (char *)malloc((size_t)value->current_count);
+    *input = (uint8_t *)malloc((size_t)value->current_count);
     if (*input == NULL)
         return MEMORY_ALLOCATION_FAILURE;
 
@@ -142,7 +145,7 @@ int convert_number(number *value, char **input, int *count, int *ln_count)
         *ln_count += 1;
     } while (*count > num);
 
-    char *tmp = (char *)realloc(*input, (size_t)num);
+    uint8_t *tmp = (uint8_t *)realloc(*input, (size_t)num);
     if (tmp == NULL) {
         free(*input);
         *input = NULL;
@@ -212,19 +215,19 @@ number multiply_furie(number *value_1, number *value_2)
 		return result;
 	}
 	int len, ln_count, len_1, ln_count_1, len_2, ln_count_2;
-	char *mas_1, *mas_2;
-	//  Convert number to char arrays
+	uint8_t *mas_1, *mas_2;
+	//  Convert number to uint8_t arrays
 	convert_number(value_1, &mas_1, &len_1, &ln_count_1);
 	convert_number(value_2, &mas_2, &len_2, &ln_count_2);
 	// Alignment
 	if (len_1 > len_2)
 	{
-		mas_1 = (char *)realloc(mas_1, len_1 * 2);
+		mas_1 = (uint8_t *)realloc(mas_1, (size_t)len_1 * 2);
 		for (i = len_1; i < len_1 * 2; i++)
 		{
 			mas_1[i] = 0;
 		}
-		mas_2 = (char *)realloc(mas_2, len_1 * 2);
+		mas_2 = (uint8_t *)realloc(mas_2, (size_t)len_1 * 2);
 		for (i = len_2; i < len_1 * 2; i++)
 		{
 			mas_2[i] = 0;
@@ -234,12 +237,12 @@ number multiply_furie(number *value_1, number *value_2)
 	}
 	else
 	{
-		mas_1 = (char *)realloc(mas_1, len_2 * 2);
+		mas_1 = (uint8_t *)realloc(mas_1, (size_t)len_2 * 2);
 		for (i = len_1; i < len_2 * 2; i++)
 		{
 			mas_1[i] = 0;
 		}
-		mas_2 = (char *)realloc(mas_2, len_2 * 2);
+		mas_2 = (uint8_t *)realloc(mas_2, (size_t)len_2 * 2);
 		for (i = len_2; i < len_2 * 2; i++)
 		{
 			mas_2[i] = 0;
@@ -296,8 +299,8 @@ number multiply_furie(number *value_1, number *value_2)
 	result.current_count = len;
 	free(result.mas);
 	free(Im_3);
-	result.mas = (char *)malloc(len);
-	memset(result.mas, 0, len);
+	result.mas = (uint8_t *)malloc((size_t)len);
+	memset(result.mas, 0, (size_t)len);
 	for (i = 0; i < len; i++)
 	{
 		result.mas[i] += (int)(Re_3[i] < 0 ? (Re_3[i] - 0.5) : (Re_3[i] + 0.5));
@@ -310,7 +313,7 @@ number multiply_furie(number *value_1, number *value_2)
 	free(Re_3);
 	for (i = len - 1; i > 0 && result.mas[i - 1] == 0; i--)
 		;
-	result.mas = (char *)realloc(result.mas, i + 1);
+	result.mas = (uint8_t *)realloc(result.mas, (size_t)(i + 1));
 	result.current_count = i;
 	add_digit(&result, 0);
 	swap(result.mas[result.current_count - 1], result.mas[result.current_count - 2]);
@@ -349,7 +352,7 @@ void additional_code(number *value)
 
 number init()
 {
-	number result = {1, 1};
+	number result = {.size = 1, .current_count = 1, .mas = NULL};
 	result.mas = (uint8_t *)malloc(sizeof(uint8_t));
 	if (result.mas == NULL)
 	{
@@ -367,11 +370,11 @@ number copy(number *value)
 	result.mas = (uint8_t *)malloc(sizeof(uint8_t) * (value->size));
 	if (result.mas == NULL)
 	{
-		_log("Memory allocation failure in add_digit() function (buffer)");
+		_log("Memory allocation failure in copy() function");
 		exit(MEMORY_ALLOCATION_FAILURE);
 	}
-	// FIXME машинно-независимая + алгоритм?
-	memcpy(result.mas, value->mas, value->size);
+	// Copy only the used part (current_count), not the full capacity (size)
+	memcpy(result.mas, value->mas, (size_t)value->current_count);
 	result.current_count = value->current_count;
 	result.size = value->size;
 	return result;
@@ -498,7 +501,6 @@ void clear_mem(number *value)
 
 void add_digit(number *object, uint8_t value)
 {
-	int iter;
 	uint8_t *buff;
 
 	if (object->current_count < object->size)
