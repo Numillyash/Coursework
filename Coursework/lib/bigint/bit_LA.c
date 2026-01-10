@@ -127,27 +127,27 @@ BOOL FFT(float *Rdat, float *Idat, int N, int LogN, int Ft_Flag)
 
 int convert_number(number *value, char **input, int *count, int *ln_count)
 {
-	int num = 1, i;
+	int num = 1;
 	*ln_count = 0;
+
 	*input = (char *)malloc(value->current_count);
-	if (*input == NULL)
-	{
-		return MEMORY_ALLOCATION_FAILURE;
-	}
+	if (*input == NULL) return MEMORY_ALLOCATION_FAILURE;
+
 	memcpy(*input, value->mas, value->current_count);
 	*count = value->current_count;
-	do
-	{
+
+	do {
 		num <<= 1;
 		*ln_count += 1;
 	} while (*count > num);
+
 	*input = (char *)realloc(*input, num);
-	if (*input == NULL)
-	{
-		return MEMORY_ALLOCATION_FAILURE;
-	}
+	if (*input == NULL) return MEMORY_ALLOCATION_FAILURE;
+
 	for (; *count < num; (*count)++)
 		(*input)[(*count)] = 0;
+
+	return SUCCESS;
 }
 
 number multiply_furie(number *value_1, number *value_2)
