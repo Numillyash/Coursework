@@ -2,16 +2,24 @@
 build/
 *.o
 *.d
+*.out
 
 # Executables
 work1
 bench_rsa
+test_tc_vs_legacy
+test_bitbigint
+
+# Debug artifacts
+debug_*
+debug_reverse*
 
 # Test outputs
 test_results/tmp/
 
 # Logs
 logs/
+*.log
 
 # IDE
 .vscode/
@@ -23,5 +31,3 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
-test_bitbigint
-build/
