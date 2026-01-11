@@ -27,6 +27,12 @@ namespace bigint {
  * - RAII: std::vector for automatic memory management
  * - Copy/move semantics: default (provided by std::vector)
  * - No exceptions: use assertions for invariants
+ *
+ * Architecture roadmap: see docs/ROADMAP_bigint.md
+ * - Phase 1 (now): BitBigInt basic arithmetic
+ * - Phase 2 (near): RSA-specific fixed-width engines (U2048, U4096)
+ * - Phase 3: Windowed storage optimization
+ * - Phase 4: Two's complement backend unification
  */
 class BitBigInt final {
 public:
@@ -111,3 +117,12 @@ private:
 };
 
 } // namespace bigint
+
+// TODO(perf/storage): Consider "windowed storage" for fast shifts.
+// Idea: Keep limbs in a preallocated buffer (e.g., 2–8 KB) with [start, len] window.
+// Shifts by whole limbs can be implemented by moving 'start' (O(1)) instead of memmove.
+// When headroom is insufficient (growth/2N intermediates), recenter window or fallback to resize.
+// Notes:
+// - RSA/modarith frequently uses shifts; legacy code spends lots of time in offset/normalize-like ops.
+// - Must support intermediates up to ~2*N limbs for mul/sqr before reduction.
+// - Provide debug asserts and a safe fallback path to avoid silent corruption.
