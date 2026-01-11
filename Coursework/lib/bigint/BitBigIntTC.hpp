@@ -118,7 +118,10 @@ public:
     /// Returns the sum of this and other
     BitBigIntTC add(const BitBigIntTC& other) const;
 
-    // TODO: BitBigIntTC operator-(const BitBigIntTC& other) const;
+    /// Subtract other from this (port of difference(number*, number*) from bit_LA.c)
+    /// Returns this - other
+    BitBigIntTC sub(const BitBigIntTC& other) const;
+
     // TODO: BitBigIntTC operator*(const BitBigIntTC& other) const;
     // TODO: BitBigIntTC operator/(const BitBigIntTC& divisor) const;
     // TODO: BitBigIntTC operator%(const BitBigIntTC& modulus) const;

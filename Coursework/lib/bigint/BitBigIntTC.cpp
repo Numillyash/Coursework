@@ -338,6 +338,26 @@ BitBigIntTC BitBigIntTC::add(const BitBigIntTC& other) const {
     return summand;
 }
 
+// === Subtraction (ported from bit_LA.c difference) ===
+
+BitBigIntTC BitBigIntTC::sub(const BitBigIntTC& other) const {
+    // Port of difference(value1, value2):
+    // 1. Copy value2
+    // 2. Apply additional_code to the copy
+    // 3. Add value1 to the modified copy
+    // 4. Return result
+    
+    BitBigIntTC b = other;
+    
+    // Apply two's complement to b (regardless of sign)
+    b.additional_code();
+    
+    // Add this to the modified b
+    BitBigIntTC result = this->add(b);
+    
+    return result;
+}
+
 // === Private: Two's complement (additional code) ===
 
 void BitBigIntTC::additional_code() {
