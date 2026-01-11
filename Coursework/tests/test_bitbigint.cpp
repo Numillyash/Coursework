@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cassert>
 #include <iomanip>
+#include <string_view>
 #include "../lib/bigint/BitBigInt.hpp"
 
 using namespace bigint;
@@ -11,16 +12,12 @@ void test_section(const char* name) {
     std::cout << "\n=== " << name << " ===" << std::endl;
 }
 
-void assert_true(bool condition, const char* message) {
+void assert_true(bool condition, std::string_view message) {
     if (!condition) {
         std::cerr << "FAIL: " << message << std::endl;
         exit(1);
     }
     std::cout << "PASS: " << message << std::endl;
-}
-
-void assert_true_str(bool condition, const std::string& message) {
-    assert_true(condition, message.c_str());
 }
 
 // === Tests ===
@@ -105,18 +102,17 @@ void test_invariants() {
         const auto& bits = num.raw_bits();
 
         // Minimum size
-        std::string msg_size = "Size >= 2 for " + std::to_string(val);
-        assert_true_str(bits.size() >= 2, msg_size);
+        assert_true(bits.size() >= 2, "Size >= 2 for " + std::to_string(val));
 
         // All bits are 0 or 1
         for (size_t i = 0; i < bits.size(); ++i) {
-            std::string msg_bit = "Bit " + std::to_string(i) + " is 0 or 1 for " + std::to_string(val);
-            assert_true_str(bits[i] == 0 || bits[i] == 1, msg_bit);
+            assert_true(bits[i] == 0 || bits[i] == 1,
+                        "Bit " + std::to_string(i) + " is 0 or 1 for " + std::to_string(val));
         }
 
         // Sign bit (last) must be 0 for positive values
-        std::string msg_sign = "Sign bit = 0 for positive value " + std::to_string(val);
-        assert_true_str(bits.back() == 0, msg_sign);
+        assert_true(bits.back() == 0,
+                    "Sign bit = 0 for positive value " + std::to_string(val));
     }
 }
 
@@ -134,6 +130,34 @@ void test_copy_move() {
     assert_true(!moved.is_zero(), "Moved object is not zero");
 }
 
+void test_compare_and_equality() {
+    test_section("Comparison and Equality");
+
+    BitBigInt a(42);
+    BitBigInt b(42);
+    BitBigInt c(43);
+    BitBigInt zero(0);
+
+    // Test equality
+    assert_true(a == b, "BitBigInt(42) == BitBigInt(42)");
+    assert_true(!(a == c), "BitBigInt(42) != BitBigInt(43)");
+    assert_true(zero == BitBigInt::zero(), "zero == BitBigInt::zero()");
+
+    // Test compare
+    assert_true(a.compare(b) == 0, "compare(42, 42) == 0");
+    assert_true(a.compare(c) < 0, "compare(42, 43) < 0");
+    assert_true(c.compare(a) > 0, "compare(43, 42) > 0");
+    assert_true(zero.compare(a) < 0, "compare(0, 42) < 0");
+    assert_true(a.compare(zero) > 0, "compare(42, 0) > 0");
+
+    // Test with various values
+    for (uint64_t val : {0UL, 1UL, 5UL, 100UL, 1000000UL}) {
+        BitBigInt x(val);
+        BitBigInt y(val);
+        assert_true(x == y, "BitBigInt(" + std::to_string(val) + ") == copy");
+    }
+}
+
 // === Main ===
 
 int main() {
@@ -148,6 +172,7 @@ int main() {
         test_normalize();
         test_invariants();
         test_copy_move();
+        test_compare_and_equality();
 
         std::cout << "\n============================================" << std::endl;
         std::cout << "All tests PASSED!" << std::endl;

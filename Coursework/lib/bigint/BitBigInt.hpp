@@ -86,9 +86,19 @@ public:
 
     // === Comparison operations (TODO) ===
 
-    // TODO: bool operator==(const BitBigInt& other) const;
+    /// Compare with another BigInt
+    /// Returns: -1 if this < other, 0 if equal, +1 if this > other
+    /// Currently only handles non-negative numbers (sign_bit == 0)
+    int compare(const BitBigInt& other) const;
+
+    /// Equality operator
+    bool operator==(const BitBigInt& other) const;
+
+    // TODO: bool operator!=(const BitBigInt& other) const;
     // TODO: bool operator<(const BitBigInt& other) const;
     // TODO: bool operator<=(const BitBigInt& other) const;
+    // TODO: bool operator>(const BitBigInt& other) const;
+    // TODO: bool operator>=(const BitBigInt& other) const;
 
 private:
     std::vector<uint8_t> bits_; ///< Bit storage: LSB first, sign bit last

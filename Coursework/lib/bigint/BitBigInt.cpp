@@ -117,4 +117,38 @@ void BitBigInt::ensure_min_size() {
     }
 }
 
+// === Comparison ===
+
+int BitBigInt::compare(const BitBigInt& other) const {
+    if (bits_.size() < 2 || other.bits_.size() < 2) {
+        return 0; // Both invalid, treat as equal
+    }
+
+    // Get actual lengths (excluding sign bit) after removing leading zeros
+    int my_len = static_cast<int>(bits_.size()) - 2;
+    int other_len = static_cast<int>(other.bits_.size()) - 2;
+
+    // Remove leading zeros
+    while (my_len > 0 && bits_[my_len] == 0) --my_len;
+    while (other_len > 0 && other.bits_[other_len] == 0) --other_len;
+
+    // Compare lengths first
+    if (my_len != other_len) {
+        return (my_len < other_len) ? -1 : 1;
+    }
+
+    // Same length: compare bit by bit from MSB to LSB
+    for (int i = my_len; i >= 0; --i) {
+        if (bits_[i] != other.bits_[i]) {
+            return (bits_[i] < other.bits_[i]) ? -1 : 1;
+        }
+    }
+
+    return 0; // Equal
+}
+
+bool BitBigInt::operator==(const BitBigInt& other) const {
+    return compare(other) == 0;
+}
+
 } // namespace bigint
