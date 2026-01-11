@@ -239,6 +239,122 @@ void BitBigIntTC::offset_right() {
     }
 }
 
+// === Addition (ported from bit_LA.c addition) ===
+
+BitBigIntTC BitBigIntTC::add(const BitBigIntTC& other) const {
+    // Create copies to work with (normalize on entry)
+    BitBigIntTC summand = *this;
+    BitBigIntTC addend = other;
+    
+    summand.normalize();
+    addend.normalize();
+    
+    // Ensure summand is the larger one (or equal)
+    if (summand.mas_.size() < addend.mas_.size()) {
+        std::swap(summand, addend);
+    }
+    
+    BitBigIntTC carry;
+    carry.mas_.assign(1, 0);  // init() equivalent
+    int oper_sign = 0;
+    int real_symb = 0;
+    int max_symb = 0;
+    
+    // Both negative: convert to two's complement and recurse
+    if (summand.mas_.back() && addend.mas_.back()) {
+        summand.additional_code();
+        addend.additional_code();
+        carry = summand.add(addend);
+        carry.additional_code();
+        
+        carry.normalize();
+        return carry;
+    }
+    
+    // Mixed signs or both positive: bit-level addition
+    oper_sign = (int)summand.mas_.back() + (int)addend.mas_.back();
+    real_symb = static_cast<int>(summand.mas_.size());
+    
+    while (!addend.is_zero()) {
+        max_symb = std::max({static_cast<int>(summand.mas_.size()),
+                              static_cast<int>(addend.mas_.size()),
+                              static_cast<int>(carry.mas_.size())});
+        
+        if (max_symb == 2) {
+            max_symb++;
+            real_symb++;
+        }
+        
+        // Sign-extend summand
+        for (int i = max_symb - (int)summand.mas_.size(); i > 0; i--) {
+            if (summand.mas_.back()) {
+                summand.add_digit(1);
+            } else {
+                summand.add_digit(0);
+            }
+        }
+        
+        // Sign-extend addend
+        for (int i = max_symb - (int)addend.mas_.size(); i > 0; i--) {
+            if (addend.mas_.back()) {
+                addend.add_digit(1);
+            } else {
+                addend.add_digit(0);
+            }
+        }
+        
+        // Sign-extend carry
+        for (int i = max_symb - (int)carry.mas_.size(); i > 0; i--) {
+            if (carry.mas_.back()) {
+                carry.add_digit(1);
+            } else {
+                carry.add_digit(0);
+            }
+        }
+        
+        // carry = summand & addend (bitwise AND)
+        for (int i = 0; i < max_symb; i++) {
+            carry.mas_[i] = summand.mas_[i] & addend.mas_[i];
+        }
+        
+        // summand = summand ^ addend (bitwise XOR)
+        for (int i = 0; i < max_symb; i++) {
+            summand.mas_[i] = summand.mas_[i] ^ addend.mas_[i];
+        }
+        
+        // addend = carry << 1 (left shift of carry)
+        addend = carry;
+        addend.offset_left();
+        
+        // Truncate result if needed for mixed signs
+        if (oper_sign == 1) {
+            if ((int)summand.mas_.size() > real_symb) {
+                summand.mas_[real_symb] = 0;
+            }
+        }
+    }
+    
+    summand.normalize();
+    return summand;
+}
+
+// === Private: Two's complement (additional code) ===
+
+void BitBigIntTC::additional_code() {
+    if (!is_zero()) {
+        uint8_t addit_digit = 1;
+        
+        // Invert all bits and add 1
+        for (size_t i = 0; i < mas_.size(); i++) {
+            mas_[i] = !mas_[i];  // NOT
+            mas_[i] = mas_[i] ^ addit_digit;  // XOR with carry
+            if (mas_[i]) {
+                addit_digit = 0;
+            }
+        }
+    }
+}
+
 // === Private helpers ===
 
 void BitBigIntTC::verify_invariants() const {

@@ -317,6 +317,74 @@ void test_add_digit_equivalence() {
     std::cout << "PASS: 100 random add_digit() tests" << std::endl;
 }
 
+void test_addition_equivalence() {
+    test_section("addition() vs legacy");
+
+    for (int seed = 0; seed < 200; ++seed) {
+        // Generate two random numbers
+        size_t bits_a = (rng() % 300) + 1;
+        size_t bits_b = (rng() % 300) + 1;
+        
+        auto bits_a_vec = random_bits(bits_a, rng);
+        auto bits_b_vec = random_bits(bits_b, rng);
+
+        // Create legacy numbers
+        number legacy_a = init();
+        clear_mem(&legacy_a);
+        legacy_a.mas = (uint8_t *)malloc(bits_a_vec.size());
+        std::copy(bits_a_vec.begin(), bits_a_vec.end(), legacy_a.mas);
+        legacy_a.current_count = (int)bits_a_vec.size();
+        legacy_a.size = (int)bits_a_vec.size();
+
+        number legacy_b = init();
+        clear_mem(&legacy_b);
+        legacy_b.mas = (uint8_t *)malloc(bits_b_vec.size());
+        std::copy(bits_b_vec.begin(), bits_b_vec.end(), legacy_b.mas);
+        legacy_b.current_count = (int)bits_b_vec.size();
+        legacy_b.size = (int)bits_b_vec.size();
+
+        // Normalize to canonical form
+        normalize(&legacy_a);
+        normalize(&legacy_b);
+
+        // Create TC numbers
+        BitBigIntTC tc_a = BitBigIntTC::from_binary_bits(bits_a_vec);
+        BitBigIntTC tc_b = BitBigIntTC::from_binary_bits(bits_b_vec);
+
+        // Compute legacy result
+        number legacy_result = addition(&legacy_a, &legacy_b);
+        // addition() in legacy calls normalize() internally, but let's be safe
+
+        // Compute TC result
+        BitBigIntTC tc_result = tc_a.add(tc_b);
+        // add() doesn't normalize on return, so we normalize here to match legacy behavior
+        // Actually, let's check: addition() in legacy does call normalize on return
+        // So both should normalize
+
+        // Compare results
+        std::string legacy_str = legacy_to_binary(legacy_result);
+        std::string tc_str = tc_to_binary(tc_result);
+
+        if (legacy_str != tc_str) {
+            std::cerr << "FAIL addition_equivalence seed=" << seed << std::endl;
+            std::cerr << "  A:      " << legacy_to_binary(legacy_a) << std::endl;
+            std::cerr << "  B:      " << legacy_to_binary(legacy_b) << std::endl;
+            std::cerr << "  Legacy: " << legacy_str << std::endl;
+            std::cerr << "  TC:     " << tc_str << std::endl;
+            clear_mem(&legacy_a);
+            clear_mem(&legacy_b);
+            clear_mem(&legacy_result);
+            exit(1);
+        }
+
+        clear_mem(&legacy_a);
+        clear_mem(&legacy_b);
+        clear_mem(&legacy_result);
+    }
+
+    std::cout << "PASS: 200 random addition() tests" << std::endl;
+}
+
 // === Main ===
 
 int main() {
@@ -330,6 +398,7 @@ int main() {
         test_offset_right_equivalence();
         test_combined_operations();
         test_add_digit_equivalence();
+        test_addition_equivalence();
 
         std::cout << "\n============================================" << std::endl;
         std::cout << "All tests PASSED!" << std::endl;

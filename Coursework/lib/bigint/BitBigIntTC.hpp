@@ -112,9 +112,12 @@ public:
     /// Port of offset_right(number*) from bit_LA.c
     void offset_right();
 
-    // === Arithmetic operations (TODO - future ports) ===
+    // === Arithmetic operations ===
 
-    // TODO: BitBigIntTC operator+(const BitBigIntTC& other) const;
+    /// Add two numbers (port of addition(number*, number*) from bit_LA.c)
+    /// Returns the sum of this and other
+    BitBigIntTC add(const BitBigIntTC& other) const;
+
     // TODO: BitBigIntTC operator-(const BitBigIntTC& other) const;
     // TODO: BitBigIntTC operator*(const BitBigIntTC& other) const;
     // TODO: BitBigIntTC operator/(const BitBigIntTC& divisor) const;
@@ -127,6 +130,10 @@ public:
 
 private:
     std::vector<uint8_t> mas_; ///< Bit storage: LSB first, sign bit last
+
+    /// Two's complement (invert all bits and add 1)
+    /// Port of additional_code(number*) from bit_LA.c
+    void additional_code();
 
     /// Verify invariants (debug only)
     void verify_invariants() const;
