@@ -260,6 +260,63 @@ void test_combined_operations() {
     std::cout << "PASS: 30 random combined operation tests" << std::endl;
 }
 
+void test_add_digit_equivalence() {
+    test_section("add_digit() vs legacy");
+
+    std::uniform_int_distribution<int> digit_dist(0, 1);
+
+    for (int seed = 0; seed < 100; ++seed) {
+        // Generate random bits (1..200 data bits + sign)
+        size_t num_bits = (rng() % 200) + 1;
+        auto bits = random_bits(num_bits, rng);
+
+        // Create legacy number
+        number legacy_num = init();
+        clear_mem(&legacy_num);
+        legacy_num.mas = (uint8_t *)malloc(bits.size());
+        std::copy(bits.begin(), bits.end(), legacy_num.mas);
+        legacy_num.current_count = (int)bits.size();
+        legacy_num.size = (int)bits.size();
+
+        // Normalize to canonical form
+        normalize(&legacy_num);
+
+        // Create TC number
+        BitBigIntTC tc_num = BitBigIntTC::from_binary_bits(bits);
+
+        // Choose random digit
+        uint8_t digit = static_cast<uint8_t>(digit_dist(rng));
+
+        // Store original state for error reporting
+        std::string original_legacy_str = legacy_to_binary(legacy_num);
+
+        // Apply add_digit to legacy
+        add_digit(&legacy_num, digit);
+        normalize(&legacy_num);
+
+        // Apply add_digit to TC
+        tc_num.add_digit(digit);
+        tc_num.normalize();
+
+        std::string legacy_str = legacy_to_binary(legacy_num);
+        std::string tc_str = tc_to_binary(tc_num);
+
+        if (legacy_str != tc_str) {
+            std::cerr << "FAIL add_digit_equivalence seed=" << seed << std::endl;
+            std::cerr << "  Original: " << original_legacy_str << std::endl;
+            std::cerr << "  Digit:    " << (int)digit << std::endl;
+            std::cerr << "  Legacy:   " << legacy_str << std::endl;
+            std::cerr << "  TC:       " << tc_str << std::endl;
+            clear_mem(&legacy_num);
+            exit(1);
+        }
+
+        clear_mem(&legacy_num);
+    }
+
+    std::cout << "PASS: 100 random add_digit() tests" << std::endl;
+}
+
 // === Main ===
 
 int main() {
@@ -272,6 +329,7 @@ int main() {
         test_offset_left_equivalence();
         test_offset_right_equivalence();
         test_combined_operations();
+        test_add_digit_equivalence();
 
         std::cout << "\n============================================" << std::endl;
         std::cout << "All tests PASSED!" << std::endl;

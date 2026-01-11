@@ -121,6 +121,10 @@ public:
     // TODO: BitBigIntTC operator%(const BitBigIntTC& modulus) const;
     // TODO: BitBigIntTC powmod(const BitBigIntTC& exponent, const BitBigIntTC& modulus) const;
 
+    /// Helper: add a digit before the sign bit (used during operations, exposed for testing)
+    /// Similar to add_digit(number*, uint8_t) in legacy bit_LA.c
+    void add_digit(uint8_t value);
+
 private:
     std::vector<uint8_t> mas_; ///< Bit storage: LSB first, sign bit last
 
@@ -129,10 +133,7 @@ private:
 
     /// Ensure minimum size (at least 2 elements)
     void ensure_min_size();
-
-    /// Helper: add a digit at the end (used during operations)
-    /// Similar to add_digit(number*, uint8_t) in legacy
-    void add_digit(uint8_t value);
 };
 
 } // namespace bigint
+
