@@ -73,6 +73,13 @@ $(BUILD)/%.o: %.cpp
 test_bitbigint: $(BUILD)/lib/bigint/BitBigInt.o tests/test_bitbigint.cpp
 	$(CXX) $(CXXSTD) $(CFLAGS) -I./lib/bigint -I./include tests/test_bitbigint.cpp $(BUILD)/lib/bigint/BitBigInt.o -o test_bitbigint
 
+# BitBigIntTC legacy equivalence test
+tc_test: test_tc_vs_legacy
+	./test_tc_vs_legacy
+
+test_tc_vs_legacy: $(BUILD)/lib/bigint/BitBigIntTC.o tests/test_tc_vs_legacy.cpp $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o
+	$(CXX) $(CXXSTD) $(CFLAGS) -I./lib/bigint -I./include -I./lib/util tests/test_tc_vs_legacy.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o -o test_tc_vs_legacy
+
 prof:
 	$(MAKE) MODE=prof bench
 
@@ -81,4 +88,4 @@ release:
 
 clean:
 	rm -rf build
-	rm -f $(WORK_EXEC) $(BENCH_EXEC) test_bitbigint
+	rm -f $(WORK_EXEC) $(BENCH_EXEC) test_bitbigint test_tc_vs_legacy
