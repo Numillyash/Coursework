@@ -7,6 +7,9 @@
 
 namespace bigint {
 
+// Forward declaration of DivModTC (defined after BitBigIntTC class)
+struct DivModTC;
+
 /**
  * BitBigIntTC - Two's Complement BigInt backend
  *
@@ -37,6 +40,7 @@ namespace bigint {
  * - Testing equivalence with legacy bit_LA.c
  * - Foundation for RSA fast-path (Phase 2 in ROADMAP_bigint.md)
  */
+
 class BitBigIntTC final {
 public:
     // === Constructors ===
@@ -122,9 +126,12 @@ public:
     /// Returns this - other
     BitBigIntTC sub(const BitBigIntTC& other) const;
 
+    /// Divide this by divisor, returning quotient and remainder
+    /// Port of division_with_module(number*, number*, number*) from bit_LA.c
+    /// Throws if divisor is zero
+    DivModTC divmod(const BitBigIntTC& divisor) const;
+
     // TODO: BitBigIntTC operator*(const BitBigIntTC& other) const;
-    // TODO: BitBigIntTC operator/(const BitBigIntTC& divisor) const;
-    // TODO: BitBigIntTC operator%(const BitBigIntTC& modulus) const;
     // TODO: BitBigIntTC powmod(const BitBigIntTC& exponent, const BitBigIntTC& modulus) const;
 
     /// Helper: add a digit before the sign bit (used during operations, exposed for testing)
@@ -143,6 +150,15 @@ private:
 
     /// Ensure minimum size (at least 2 elements)
     void ensure_min_size();
+
+    /// Check if value is negative (sign bit == 1)
+    bool is_negative() const;
+};
+
+/// Result of division with remainder (divmod operation)
+struct DivModTC {
+    BitBigIntTC q;  // quotient
+    BitBigIntTC r;  // remainder
 };
 
 } // namespace bigint

@@ -358,6 +358,112 @@ BitBigIntTC BitBigIntTC::sub(const BitBigIntTC& other) const {
     return result;
 }
 
+// === Division with remainder (ported from bit_LA.c division_with_module) ===
+
+DivModTC BitBigIntTC::divmod(const BitBigIntTC& divisor) const {
+    if (divisor.is_zero()) {
+        throw std::runtime_error("Division by zero");
+    }
+
+    // Work on mutable copies to avoid modifying originals
+    BitBigIntTC dividend = *this;
+    BitBigIntTC divisor_arg = divisor;
+    
+    BitBigIntTC mod = BitBigIntTC(0);
+    BitBigIntTC rem = dividend;
+    BitBigIntTC sub = divisor_arg;
+    BitBigIntTC add = BitBigIntTC(1);
+    BitBigIntTC buff;
+    int shifts = 1;
+    int guard_outer = 0, guard_inner = 0;
+
+    // Case 1: divisor is negative
+    if (divisor_arg.is_negative()) {
+        sub.additional_code();  // Convert divisor to positive
+        sub.normalize();
+        
+        // Recursively divide by positive divisor
+        DivModTC dm = dividend.divmod(sub);
+        
+        // Negate quotient
+        dm.q.additional_code();
+        dm.q.normalize();
+        dm.r.normalize();
+        return dm;
+    }
+
+    // At this point, divisor is positive.
+    // Case 2: dividend is negative
+    if (dividend.is_negative()) {
+        rem.additional_code();  // Convert dividend to positive
+        rem.normalize();
+        
+        // Recursively divide positive dividend by positive divisor
+        DivModTC dm = rem.divmod(sub);  // sub is already positive
+        
+        // Adjust: if remainder is not zero, adjust quotient and remainder
+        if (!dm.r.is_zero()) {
+            dm.r = sub.sub(dm.r);  // r = divisor - remainder
+            dm.q = dm.q.add(BitBigIntTC(1));  // q = q + 1
+        }
+        
+        // Negate quotient
+        dm.q.additional_code();
+        dm.q.normalize();
+        dm.r.normalize();
+        return dm;
+    }
+
+    // Case 3: both are positive
+    // Long division algorithm (iterative, no more recursion)
+    
+    rem = dividend;
+    sub = divisor_arg;
+    mod = BitBigIntTC(0);
+    add = BitBigIntTC(1);
+    shifts = 1;
+
+    // Find initial shift amount: while sub <= rem, shift left
+    buff = sub.sub(rem);  // buff = sub - rem
+    while (buff.is_negative()) {  // While sub > rem (buff is negative)
+        sub.offset_left();
+        add.offset_left();
+        buff = sub.sub(rem);
+        shifts++;
+        
+        guard_outer++;
+        if (guard_outer > 100000) {
+            throw std::runtime_error("divmod: shift phase overflow");
+        }
+    }
+
+    // Main division loop
+    while (shifts > 0) {
+        buff = rem.sub(sub);  // buff = rem - sub
+        
+        // Inner loop: while rem >= sub, subtract and accumulate
+        while (!buff.is_negative()) {  // While rem >= sub (buff is non-negative)
+            rem = buff;
+            mod = mod.add(add);
+            buff = rem.sub(sub);
+            
+            guard_inner++;
+            if (guard_inner > 200000) {
+                throw std::runtime_error("divmod: division phase overflow");
+            }
+        }
+        
+        sub.offset_right();
+        add.offset_right();
+        shifts--;
+    }
+
+    rem.normalize();
+    mod.normalize();
+
+    return DivModTC{mod, rem};
+}
+
 // === Private: Two's complement (additional code) ===
 
 void BitBigIntTC::additional_code() {
@@ -392,6 +498,11 @@ void BitBigIntTC::ensure_min_size() {
     while (mas_.size() < 2) {
         mas_.push_back(0);
     }
+}
+
+bool BitBigIntTC::is_negative() const {
+    // Sign bit is the last element; returns 0 if empty (shouldn't happen in normalized state)
+    return mas_.empty() ? 0 : mas_.back() == 1;
 }
 
 } // namespace bigint
