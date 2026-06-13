@@ -23,10 +23,60 @@ std::vector<uint8_t> random_bits(size_t data_bits, std::mt19937_64& rng) {
     return bits;
 }
 
+bool is_zero_like_bits(const std::vector<uint8_t>& bits) {
+    if (bits.size() < 2)
+        return true;
+    for (size_t i = 0; i + 1 < bits.size(); ++i) {
+        if (bits[i] != 0)
+            return false;
+    }
+    return true;
+}
+
+bool is_malformed_zero_like_bits(const std::vector<uint8_t>& bits) {
+    return is_zero_like_bits(bits) && !bits.empty() && bits.back() != 0;
+}
+
 number normalized_legacy_from_bits(const std::vector<uint8_t>& bits) {
     number n = legacy_from_bits(bits);
     normalize(&n);
     return n;
+}
+
+std::vector<uint8_t> legacy_raw_bits(const number& value) {
+    return std::vector<uint8_t>(value.mas, value.mas + value.current_count);
+}
+
+void require_diagnostic(bool condition, const std::string& message) {
+    if (!condition) {
+        std::cerr << "FAIL: malformed divisor diagnostic: " << message << std::endl;
+        std::exit(1);
+    }
+}
+
+void run_malformed_zero_like_diagnostic() {
+    const std::vector<uint8_t> divisor = {0, 1};
+    number legacy_b = legacy_from_bits(divisor);
+
+    normalize(&legacy_b);
+    const auto normalized = legacy_raw_bits(legacy_b);
+    const bool legacy_zero = is_zero(&legacy_b);
+    const bool malformed_zero_like = is_malformed_zero_like_bits(divisor);
+
+    std::cout << "diagnostic malformed-zero-like divisor_raw="
+              << bits_to_debug(divisor)
+              << " normalized=" << bits_to_debug(normalized)
+              << " legacy_is_zero=" << (legacy_zero ? 1 : 0)
+              << " classified_malformed_zero_like="
+              << (malformed_zero_like ? 1 : 0)
+              << " excluded_from_divmod_oracle"
+              << std::endl;
+
+    require_diagnostic(normalized == divisor, "legacy normalize did not preserve [0,1]");
+    require_diagnostic(!legacy_zero, "legacy is_zero unexpectedly accepted [0,1]");
+    require_diagnostic(malformed_zero_like, "[0,1] was not classified as malformed zero-like");
+
+    clear_mem(&legacy_b);
 }
 
 void fail_case(const std::string& label, const number& legacy_q,
@@ -85,6 +135,28 @@ void run_int_case(int seed, int index, int dividend, int divisor) {
 
 void run_bit_case(int seed, int index, const std::vector<uint8_t>& dividend,
         const std::vector<uint8_t>& divisor) {
+    if (is_malformed_zero_like_bits(dividend)) {
+        std::cout << "seed=" << seed
+                  << " index=" << index
+                  << " bits dividend_raw=" << bits_to_debug(dividend)
+                  << " divisor_raw=" << bits_to_debug(divisor)
+                  << " skip-malformed-zero-like-dividend"
+                  << std::endl;
+        return;
+    }
+
+    if (is_zero_like_bits(divisor)) {
+        std::cout << "seed=" << seed
+                  << " index=" << index
+                  << " bits dividend_raw=" << bits_to_debug(dividend)
+                  << " divisor_raw=" << bits_to_debug(divisor)
+                  << (is_malformed_zero_like_bits(divisor)
+                      ? " skip-malformed-zero-like-divisor"
+                      : " skip-zero-like-divisor")
+                  << std::endl;
+        return;
+    }
+
     number legacy_a = normalized_legacy_from_bits(dividend);
     number legacy_b = normalized_legacy_from_bits(divisor);
     BitBigIntTC tc_a = BitBigIntTC::from_binary_bits(dividend);
@@ -103,6 +175,8 @@ void run_bit_case(int seed, int index, const std::vector<uint8_t>& dividend,
 } // namespace
 
 int main() {
+    run_malformed_zero_like_diagnostic();
+
     std::vector<std::pair<int, int>> edge_cases = {
         {0, 1}, {0, -1},
         {1, 1}, {1, -1}, {-1, 1}, {-1, -1},
