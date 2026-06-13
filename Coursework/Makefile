@@ -26,6 +26,7 @@ BENCH_EXEC := bench_rsa
 TEST_BITBIGINT_EXEC := $(BUILD)/test_bitbigint
 TEST_TC_EXEC := $(BUILD)/test_tc_vs_legacy
 TEST_DIVMOD_RANDOM_EXEC := $(BUILD)/test_divmod_random
+TEST_DIVMOD_STRESS_EXEC := $(BUILD)/test_divmod_stress
 TEST_SEEDS_0TO49_EXEC := $(BUILD)/test_seeds_0to49
 
 WORK_SOURCES := \
@@ -46,7 +47,7 @@ BENCH_OBJECTS := $(patsubst %.c,$(BUILD)/%.o,$(BENCH_SOURCES))
 DEPS := $(WORK_OBJECTS:.o=.d) $(BENCH_OBJECTS:.o=.d)
 -include $(DEPS)
 
-.PHONY: all bench test test-rsa test-stress test_bitbigint test_tc_vs_legacy test_divmod_random test_seeds_0to49 tc_test clean prof release
+.PHONY: all bench test test-rsa test-stress test_bitbigint test_tc_vs_legacy test_divmod_random test-divmod-stress test_seeds_0to49 tc_test clean prof release
 
 all: $(WORK_EXEC) bench
 
@@ -98,6 +99,16 @@ test_divmod_random: $(TEST_DIVMOD_RANDOM_EXEC)
 $(TEST_DIVMOD_RANDOM_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o test_divmod_random.cpp
 	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) test_divmod_random.cpp $(BUILD)/lib/bigint/BitBigIntTC.o -o $@
 
+test-divmod-stress: $(TEST_DIVMOD_STRESS_EXEC)
+	@if command -v timeout >/dev/null 2>&1; then \
+		timeout 60s ./$(TEST_DIVMOD_STRESS_EXEC); \
+	else \
+		./$(TEST_DIVMOD_STRESS_EXEC); \
+	fi
+
+$(TEST_DIVMOD_STRESS_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o tests/test_divmod_stress.cpp $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_divmod_stress.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o -o $@
+
 test_seeds_0to49: $(TEST_SEEDS_0TO49_EXEC)
 	./$(TEST_SEEDS_0TO49_EXEC)
 
@@ -112,4 +123,4 @@ release:
 
 clean:
 	rm -rf build
-	rm -f $(WORK_EXEC) $(BENCH_EXEC) test_bitbigint test_tc_vs_legacy test_divmod_random test_seeds_0to49
+	rm -f $(WORK_EXEC) $(BENCH_EXEC) test_bitbigint test_tc_vs_legacy test_divmod_random test_divmod_stress test_seeds_0to49
