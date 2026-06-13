@@ -1,580 +1,535 @@
+#include <algorithm>
+#include <csignal>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <random>
-#include <cstring>
-#include <cassert>
-#include <iomanip>
+#include <string>
+#include <type_traits>
+#include <vector>
+#include <unistd.h>
 
 #include "legacy_bridge.hpp"
+
+#ifdef max
+#undef max
+#endif
 
 using namespace bigint;
 using namespace bigint::test;
 
-// Random number generator
-std::mt19937_64 rng(0xdeadbeef); // Fixed seed for reproducibility
+namespace {
 
-// === Test helpers ===
+std::mt19937_64 rng(0xdeadbeef);
+char current_case[256] = "startup";
 
-void test_section(const char* name) {
+template <typename T, typename = void>
+struct has_mul_method : std::false_type {};
+
+template <typename T>
+struct has_mul_method<T,
+        std::void_t<decltype(std::declval<T>().mul(std::declval<const T&>()))>>
+    : std::true_type {};
+
+template <typename T, typename = void>
+struct has_mul_operator : std::false_type {};
+
+template <typename T>
+struct has_mul_operator<T,
+        std::void_t<decltype(std::declval<T>() * std::declval<T>())>>
+    : std::true_type {};
+
+void test_section(const char *name) {
     std::cout << "\n=== " << name << " ===" << std::endl;
 }
 
-void assert_true(bool condition, const std::string& message) {
-    if (!condition) {
-        std::cerr << "FAIL: " << message << std::endl;
-        exit(1);
-    }
-    std::cout << "PASS: " << message << std::endl;
+void set_current_case(const std::string& label) {
+    std::snprintf(current_case, sizeof(current_case), "%s", label.c_str());
 }
 
-/// Generate random bits for a number (LSB first, sign bit separate)
-std::vector<uint8_t> random_bits(size_t num_bits, std::mt19937_64& rng) {
+void crash_handler(int signal_number) {
+    char buffer[384];
+    int len = std::snprintf(buffer, sizeof(buffer),
+            "\nSignal %d while running: %s\n", signal_number, current_case);
+    if (len > 0)
+        write(2, buffer, static_cast<size_t>(len));
+    std::_Exit(128 + signal_number);
+}
+
+void assert_same_binary(const std::string& label, const number& legacy,
+        const BitBigIntTC& tc) {
+    std::string legacy_str = legacy_to_binary(legacy);
+    std::string tc_str = tc_to_binary(tc);
+
+    if (legacy_str != tc_str) {
+        std::cerr << "FAIL: " << label << std::endl;
+        std::cerr << "  Legacy: " << legacy_str << std::endl;
+        std::cerr << "  TC:     " << tc_str << std::endl;
+        std::exit(1);
+    }
+}
+
+std::vector<int> deterministic_int_cases() {
+    std::vector<int> values = {
+        0, 1, -1, 2, -2, 3, -3, 5, -5, 7, -7, 10, -10, 31, -31,
+        63, -63, 127, -127, 255, -255, 1024, -1024
+    };
+
+    for (int n = 0; n <= 20; ++n) {
+        int p2 = 1 << n;
+        values.push_back(p2);
+        values.push_back(-p2);
+        values.push_back(p2 - 1);
+        values.push_back(-(p2 - 1));
+    }
+    std::sort(values.begin(), values.end());
+    values.erase(std::unique(values.begin(), values.end()), values.end());
+    return values;
+}
+
+std::vector<std::pair<int, int>> deterministic_pairs() {
+    std::vector<std::pair<int, int>> pairs = {
+        {0, 0}, {0, 1}, {0, -1}, {1, 0}, {-1, 0},
+        {1, 1}, {-1, -1}, {1, -1}, {-1, 1},
+        {2, 1}, {2, -1}, {-2, 1}, {-2, -1},
+        {10, 3}, {10, -3}, {-10, 3}, {-10, -3},
+        {12, 3}, {-12, 3}, {12, -3}, {-12, -3},
+        {3, 10}, {-3, 10}, {3, -10}, {-3, -10},
+        {1801, 2241},
+        {64, 8}, {-64, 8}, {64, -8}, {-64, -8},
+        {127, 7}, {-127, 7}, {127, -7}, {-127, -7},
+        {255, 255}, {-255, -255}, {255, -255}, {-255, 255}
+    };
+
+    for (int n = 0; n <= 12; ++n) {
+        int p2 = 1 << n;
+        pairs.push_back({p2, p2});
+        pairs.push_back({p2, 1});
+        pairs.push_back({p2, -1});
+        pairs.push_back({p2 - 1, p2});
+        pairs.push_back({-p2, p2});
+        pairs.push_back({p2, -p2});
+        pairs.push_back({-p2, -p2});
+    }
+    return pairs;
+}
+
+std::vector<uint8_t> random_bits(size_t data_bits, std::mt19937_64& gen) {
     std::uniform_int_distribution<int> bit_dist(0, 1);
     std::vector<uint8_t> bits;
-    
-    for (size_t i = 0; i < num_bits; ++i) {
-        bits.push_back(bit_dist(rng));
-    }
-    
-    // Add sign bit
-    std::uniform_int_distribution<int> sign_dist(0, 1);
-    bits.push_back(sign_dist(rng));
-    
+
+    for (size_t i = 0; i < data_bits; ++i)
+        bits.push_back(static_cast<uint8_t>(bit_dist(gen)));
+    bits.push_back(static_cast<uint8_t>(bit_dist(gen)));
     return bits;
 }
 
-// === Tests ===
+number normalized_legacy_from_bits(const std::vector<uint8_t>& bits) {
+    number n = legacy_from_bits(bits);
+    normalize(&n);
+    return n;
+}
+
+int legacy_compare(number *a, number *b) {
+    number diff = difference(a, b);
+    normalize(&diff);
+
+    int result = 0;
+    if (!is_zero(&diff))
+        result = diff.mas[diff.current_count - 1] ? -1 : 1;
+    clear_mem(&diff);
+    return result;
+}
+
+void test_construction_conversion_equivalence() {
+    test_section("construction/conversion vs legacy");
+
+    for (int value : deterministic_int_cases()) {
+        number legacy_num = int_to_number(value);
+        BitBigIntTC tc_num(static_cast<int64_t>(value));
+        assert_same_binary("int constructor " + std::to_string(value),
+                legacy_num, tc_num);
+
+        BitBigIntTC from_legacy = tc_from_legacy(legacy_num);
+        assert_same_binary("tc_from_legacy " + std::to_string(value),
+                legacy_num, from_legacy);
+
+        number roundtrip = legacy_from_tc(tc_num);
+        normalize(&roundtrip);
+        assert_same_binary("legacy_from_tc " + std::to_string(value),
+                roundtrip, tc_num);
+
+        clear_mem(&roundtrip);
+        clear_mem(&legacy_num);
+    }
+
+    std::vector<std::vector<uint8_t>> raw_cases = {
+        {0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 0, 0}, {1, 0, 0},
+        {1, 1, 0}, {0, 1, 1}, {1, 0, 1}, {0, 0, 1, 1},
+        {1, 1, 1, 0}, {1, 1, 1, 1}, {0, 1, 0, 1, 1}
+    };
+    for (const auto& bits : raw_cases) {
+        number legacy_num = normalized_legacy_from_bits(bits);
+        BitBigIntTC tc_num = BitBigIntTC::from_binary_bits(bits);
+        assert_same_binary("raw construction " + bits_to_debug(bits),
+                legacy_num, tc_num);
+        clear_mem(&legacy_num);
+    }
+
+    std::cout << "PASS: construction/conversion deterministic cases" << std::endl;
+}
 
 void test_normalize_equivalence() {
     test_section("normalize() vs legacy");
 
+    for (int value : deterministic_int_cases()) {
+        number legacy_num = int_to_number(value);
+        normalize(&legacy_num);
+        BitBigIntTC tc_num(static_cast<int64_t>(value));
+        tc_num.normalize();
+        assert_same_binary("normalize int " + std::to_string(value),
+                legacy_num, tc_num);
+        clear_mem(&legacy_num);
+    }
+
+    for (int seed = 0; seed < 200; ++seed) {
+        auto bits = random_bits((rng() % 80) + 1, rng);
+        number legacy_num = normalized_legacy_from_bits(bits);
+        BitBigIntTC tc_num = BitBigIntTC::from_binary_bits(bits);
+        assert_same_binary("normalize random seed " + std::to_string(seed)
+                + " bits=" + bits_to_debug(bits), legacy_num, tc_num);
+        clear_mem(&legacy_num);
+    }
+
+    std::cout << "PASS: normalize deterministic and random cases" << std::endl;
+}
+
+void test_unary_mutation_equivalence() {
+    test_section("reverse/add_digit/offset vs legacy");
+
+    for (int value : deterministic_int_cases()) {
+        number legacy_rev = int_to_number(value);
+        BitBigIntTC tc_rev(static_cast<int64_t>(value));
+        reverse(&legacy_rev);
+        tc_rev.reverse();
+        assert_same_binary("reverse " + std::to_string(value), legacy_rev, tc_rev);
+        clear_mem(&legacy_rev);
+
+        for (uint8_t digit : {uint8_t{0}, uint8_t{1}}) {
+            number legacy_add = int_to_number(value);
+            BitBigIntTC tc_add(static_cast<int64_t>(value));
+            add_digit(&legacy_add, digit);
+            normalize(&legacy_add);
+            tc_add.add_digit(digit);
+            tc_add.normalize();
+            assert_same_binary("add_digit " + std::to_string(value)
+                    + " digit=" + std::to_string(digit), legacy_add, tc_add);
+            clear_mem(&legacy_add);
+        }
+
+        number legacy_left = int_to_number(value);
+        BitBigIntTC tc_left(static_cast<int64_t>(value));
+        offset_left(&legacy_left);
+        tc_left.offset_left();
+        assert_same_binary("offset_left " + std::to_string(value),
+                legacy_left, tc_left);
+        clear_mem(&legacy_left);
+
+        number legacy_right = int_to_number(value);
+        BitBigIntTC tc_right(static_cast<int64_t>(value));
+        offset_right(&legacy_right);
+        tc_right.offset_right();
+        assert_same_binary("offset_right " + std::to_string(value),
+                legacy_right, tc_right);
+        clear_mem(&legacy_right);
+    }
+
     for (int seed = 0; seed < 100; ++seed) {
-        // Generate random bits
-        size_t num_bits = (rng() % 30) + 5; // 5-35 bits
-        auto bits = random_bits(num_bits, rng);
-
-        // Create legacy number
-        number legacy_num = init();
-        clear_mem(&legacy_num);
-        legacy_num.mas = (uint8_t *)malloc(bits.size());
-        std::copy(bits.begin(), bits.end(), legacy_num.mas);
-        legacy_num.current_count = (int)bits.size();
-        legacy_num.size = (int)bits.size();
-
-        // Create TC number
+        auto bits = random_bits((rng() % 96) + 1, rng);
+        number legacy_num = normalized_legacy_from_bits(bits);
         BitBigIntTC tc_num = BitBigIntTC::from_binary_bits(bits);
-
-        // Apply legacy normalize
-        normalize(&legacy_num);
-
-        // TC already normalized in from_binary_bits, so just compare
-        std::string legacy_str = legacy_to_binary(legacy_num);
-        std::string tc_str = tc_to_binary(tc_num);
-
-        if (legacy_str != tc_str) {
-            std::cerr << "FAIL normalize_equivalence seed=" << seed << std::endl;
-            std::cerr << "  Input bits: ";
-            for (auto b : bits) std::cerr << (int)b;
-            std::cerr << std::endl;
-            std::cerr << "  Legacy: " << legacy_str << std::endl;
-            std::cerr << "  TC:     " << tc_str << std::endl;
-            clear_mem(&legacy_num);
-            exit(1);
-        }
-
-        clear_mem(&legacy_num);
-    }
-
-    std::cout << "PASS: 100 random normalize() tests" << std::endl;
-}
-
-void test_reverse_equivalence() {
-    test_section("reverse() vs legacy");
-
-    for (int seed = 0; seed < 50; ++seed) {
-        // Generate random bits
-        size_t num_bits = (rng() % 30) + 5;
-        auto bits = random_bits(num_bits, rng);
-
-        // Create legacy number
-        number legacy_num = init();
-        clear_mem(&legacy_num);
-        legacy_num.mas = (uint8_t *)malloc(bits.size());
-        std::copy(bits.begin(), bits.end(), legacy_num.mas);
-        legacy_num.current_count = (int)bits.size();
-        legacy_num.size = (int)bits.size();
-
-        // Create TC number
-        BitBigIntTC tc_num = BitBigIntTC::from_binary_bits(bits);
-
-        // Apply operations
-        normalize(&legacy_num);
-        // TC already normalized
-
-        reverse(&legacy_num);
-        tc_num.reverse();
-
-        std::string legacy_str = legacy_to_binary(legacy_num);
-        std::string tc_str = tc_to_binary(tc_num);
-
-        if (legacy_str != tc_str) {
-            std::cerr << "FAIL reverse_equivalence seed=" << seed << std::endl;
-            std::cerr << "  Legacy: " << legacy_str << std::endl;
-            std::cerr << "  TC:     " << tc_str << std::endl;
-            clear_mem(&legacy_num);
-            exit(1);
-        }
-
-        clear_mem(&legacy_num);
-    }
-
-    std::cout << "PASS: 50 random reverse() tests" << std::endl;
-}
-
-void test_offset_left_equivalence() {
-    test_section("offset_left() vs legacy");
-
-    for (int seed = 0; seed < 50; ++seed) {
-        // Generate random bits
-        size_t num_bits = (rng() % 30) + 5;
-        auto bits = random_bits(num_bits, rng);
-
-        // Create legacy number
-        number legacy_num = init();
-        clear_mem(&legacy_num);
-        legacy_num.mas = (uint8_t *)malloc(bits.size());
-        std::copy(bits.begin(), bits.end(), legacy_num.mas);
-        legacy_num.current_count = (int)bits.size();
-        legacy_num.size = (int)bits.size();
-
-        // Create TC number
-        BitBigIntTC tc_num = BitBigIntTC::from_binary_bits(bits);
-
-        // Apply operations
-        normalize(&legacy_num);
-        // TC already normalized
 
         offset_left(&legacy_num);
         tc_num.offset_left();
-
-        std::string legacy_str = legacy_to_binary(legacy_num);
-        std::string tc_str = tc_to_binary(tc_num);
-
-        if (legacy_str != tc_str) {
-            std::cerr << "FAIL offset_left_equivalence seed=" << seed << std::endl;
-            std::cerr << "  Legacy: " << legacy_str << std::endl;
-            std::cerr << "  TC:     " << tc_str << std::endl;
-            clear_mem(&legacy_num);
-            exit(1);
-        }
-
-        clear_mem(&legacy_num);
-    }
-
-    std::cout << "PASS: 50 random offset_left() tests" << std::endl;
-}
-
-void test_offset_right_equivalence() {
-    test_section("offset_right() vs legacy");
-
-    for (int seed = 0; seed < 50; ++seed) {
-        // Generate random bits
-        size_t num_bits = (rng() % 30) + 5;
-        auto bits = random_bits(num_bits, rng);
-
-        // Create legacy number
-        number legacy_num = init();
-        clear_mem(&legacy_num);
-        legacy_num.mas = (uint8_t *)malloc(bits.size());
-        std::copy(bits.begin(), bits.end(), legacy_num.mas);
-        legacy_num.current_count = (int)bits.size();
-        legacy_num.size = (int)bits.size();
-
-        // Create TC number
-        BitBigIntTC tc_num = BitBigIntTC::from_binary_bits(bits);
-
-        // Apply operations
-        normalize(&legacy_num);
-        // TC already normalized
-
+        add_digit(&legacy_num, static_cast<uint8_t>(seed & 1));
+        tc_num.add_digit(static_cast<uint8_t>(seed & 1));
         offset_right(&legacy_num);
         tc_num.offset_right();
-
-        std::string legacy_str = legacy_to_binary(legacy_num);
-        std::string tc_str = tc_to_binary(tc_num);
-
-        if (legacy_str != tc_str) {
-            std::cerr << "FAIL offset_right_equivalence seed=" << seed << std::endl;
-            std::cerr << "  Legacy: " << legacy_str << std::endl;
-            std::cerr << "  TC:     " << tc_str << std::endl;
-            clear_mem(&legacy_num);
-            exit(1);
-        }
-
-        clear_mem(&legacy_num);
-    }
-
-    std::cout << "PASS: 50 random offset_right() tests" << std::endl;
-}
-
-void test_combined_operations() {
-    test_section("Combined operations (normalize → offset → reverse)");
-
-    for (int seed = 0; seed < 30; ++seed) {
-        // Generate random bits
-        size_t num_bits = (rng() % 30) + 5;
-        auto bits = random_bits(num_bits, rng);
-
-        // Create legacy number
-        number legacy_num = init();
-        clear_mem(&legacy_num);
-        legacy_num.mas = (uint8_t *)malloc(bits.size());
-        std::copy(bits.begin(), bits.end(), legacy_num.mas);
-        legacy_num.current_count = (int)bits.size();
-        legacy_num.size = (int)bits.size();
-
-        // Create TC number
-        BitBigIntTC tc_num = BitBigIntTC::from_binary_bits(bits);
-
-        // Apply sequence of operations
-        normalize(&legacy_num);
-        offset_left(&legacy_num);
         reverse(&legacy_num);
-
-        tc_num.offset_left();
         tc_num.reverse();
-
-        std::string legacy_str = legacy_to_binary(legacy_num);
-        std::string tc_str = tc_to_binary(tc_num);
-
-        if (legacy_str != tc_str) {
-            std::cerr << "FAIL combined_operations seed=" << seed << std::endl;
-            std::cerr << "  Legacy: " << legacy_str << std::endl;
-            std::cerr << "  TC:     " << tc_str << std::endl;
-            clear_mem(&legacy_num);
-            exit(1);
-        }
-
-        clear_mem(&legacy_num);
-    }
-
-    std::cout << "PASS: 30 random combined operation tests" << std::endl;
-}
-
-void test_add_digit_equivalence() {
-    test_section("add_digit() vs legacy");
-
-    std::uniform_int_distribution<int> digit_dist(0, 1);
-
-    for (int seed = 0; seed < 100; ++seed) {
-        // Generate random bits (1..200 data bits + sign)
-        size_t num_bits = (rng() % 200) + 1;
-        auto bits = random_bits(num_bits, rng);
-
-        // Create legacy number
-        number legacy_num = init();
-        clear_mem(&legacy_num);
-        legacy_num.mas = (uint8_t *)malloc(bits.size());
-        std::copy(bits.begin(), bits.end(), legacy_num.mas);
-        legacy_num.current_count = (int)bits.size();
-        legacy_num.size = (int)bits.size();
-
-        // Normalize to canonical form
         normalize(&legacy_num);
-
-        // Create TC number
-        BitBigIntTC tc_num = BitBigIntTC::from_binary_bits(bits);
-
-        // Choose random digit
-        uint8_t digit = static_cast<uint8_t>(digit_dist(rng));
-
-        // Store original state for error reporting
-        std::string original_legacy_str = legacy_to_binary(legacy_num);
-
-        // Apply add_digit to legacy
-        add_digit(&legacy_num, digit);
-        normalize(&legacy_num);
-
-        // Apply add_digit to TC
-        tc_num.add_digit(digit);
         tc_num.normalize();
 
-        std::string legacy_str = legacy_to_binary(legacy_num);
-        std::string tc_str = tc_to_binary(tc_num);
-
-        if (legacy_str != tc_str) {
-            std::cerr << "FAIL add_digit_equivalence seed=" << seed << std::endl;
-            std::cerr << "  Original: " << original_legacy_str << std::endl;
-            std::cerr << "  Digit:    " << (int)digit << std::endl;
-            std::cerr << "  Legacy:   " << legacy_str << std::endl;
-            std::cerr << "  TC:       " << tc_str << std::endl;
-            clear_mem(&legacy_num);
-            exit(1);
-        }
-
+        assert_same_binary("random unary chain seed " + std::to_string(seed),
+                legacy_num, tc_num);
         clear_mem(&legacy_num);
     }
 
-    std::cout << "PASS: 100 random add_digit() tests" << std::endl;
+    std::cout << "PASS: reverse/add_digit/offset deterministic and random cases"
+              << std::endl;
 }
 
-void test_addition_equivalence() {
-    test_section("addition() vs legacy");
+void test_comparison_equivalence() {
+    test_section("comparison vs legacy");
 
-    for (int seed = 0; seed < 200; ++seed) {
-        // Generate two random numbers
-        size_t bits_a = (rng() % 300) + 1;
-        size_t bits_b = (rng() % 300) + 1;
-        
-        auto bits_a_vec = random_bits(bits_a, rng);
-        auto bits_b_vec = random_bits(bits_b, rng);
+    auto pairs = deterministic_pairs();
+    for (const auto& pair : pairs) {
+        number legacy_a = int_to_number(pair.first);
+        number legacy_b = int_to_number(pair.second);
+        BitBigIntTC tc_a(static_cast<int64_t>(pair.first));
+        BitBigIntTC tc_b(static_cast<int64_t>(pair.second));
 
-        // Create legacy numbers
-        number legacy_a = init();
-        clear_mem(&legacy_a);
-        legacy_a.mas = (uint8_t *)malloc(bits_a_vec.size());
-        std::copy(bits_a_vec.begin(), bits_a_vec.end(), legacy_a.mas);
-        legacy_a.current_count = (int)bits_a_vec.size();
-        legacy_a.size = (int)bits_a_vec.size();
-
-        number legacy_b = init();
-        clear_mem(&legacy_b);
-        legacy_b.mas = (uint8_t *)malloc(bits_b_vec.size());
-        std::copy(bits_b_vec.begin(), bits_b_vec.end(), legacy_b.mas);
-        legacy_b.current_count = (int)bits_b_vec.size();
-        legacy_b.size = (int)bits_b_vec.size();
-
-        // Normalize to canonical form
-        normalize(&legacy_a);
-        normalize(&legacy_b);
-
-        // Create TC numbers
-        BitBigIntTC tc_a = BitBigIntTC::from_binary_bits(bits_a_vec);
-        BitBigIntTC tc_b = BitBigIntTC::from_binary_bits(bits_b_vec);
-
-        // Compute legacy result
-        number legacy_result = addition(&legacy_a, &legacy_b);
-        // addition() in legacy calls normalize() internally, but let's be safe
-
-        // Compute TC result
-        BitBigIntTC tc_result = tc_a.add(tc_b);
-        // add() doesn't normalize on return, so we normalize here to match legacy behavior
-        // Actually, let's check: addition() in legacy does call normalize on return
-        // So both should normalize
-
-        // Compare results
-        std::string legacy_str = legacy_to_binary(legacy_result);
-        std::string tc_str = tc_to_binary(tc_result);
-
-        if (legacy_str != tc_str) {
-            std::cerr << "FAIL addition_equivalence seed=" << seed << std::endl;
-            std::cerr << "  A:      " << legacy_to_binary(legacy_a) << std::endl;
-            std::cerr << "  B:      " << legacy_to_binary(legacy_b) << std::endl;
-            std::cerr << "  Legacy: " << legacy_str << std::endl;
-            std::cerr << "  TC:     " << tc_str << std::endl;
-            clear_mem(&legacy_a);
-            clear_mem(&legacy_b);
-            clear_mem(&legacy_result);
-            exit(1);
+        number legacy_a_for_equal = copy(&legacy_a);
+        number legacy_b_for_equal = copy(&legacy_b);
+        bool legacy_equal = is_equal(&legacy_a_for_equal, &legacy_b_for_equal);
+        bool tc_equal = (tc_a == tc_b);
+        if (legacy_equal != tc_equal) {
+            std::cerr << "FAIL: equality " << pair.first << " vs "
+                      << pair.second << std::endl;
+            std::cerr << "  Legacy equal: " << legacy_equal << std::endl;
+            std::cerr << "  TC equal:     " << tc_equal << std::endl;
+            std::exit(1);
         }
+        clear_mem(&legacy_a_for_equal);
+        clear_mem(&legacy_b_for_equal);
 
+        number legacy_a_for_cmp = copy(&legacy_a);
+        number legacy_b_for_cmp = copy(&legacy_b);
+        int legacy_cmp = legacy_compare(&legacy_a_for_cmp, &legacy_b_for_cmp);
+        int tc_cmp = tc_a.compare(tc_b);
+        tc_cmp = (tc_cmp > 0) - (tc_cmp < 0);
+        if (legacy_cmp != tc_cmp) {
+            std::cerr << "FAIL: compare " << pair.first << " vs "
+                      << pair.second << std::endl;
+            std::cerr << "  Legacy compare: " << legacy_cmp << std::endl;
+            std::cerr << "  TC compare:     " << tc_cmp << std::endl;
+            std::cerr << "  A legacy: " << legacy_to_binary(legacy_a) << std::endl;
+            std::cerr << "  B legacy: " << legacy_to_binary(legacy_b) << std::endl;
+            std::exit(1);
+        }
+        clear_mem(&legacy_a_for_cmp);
+        clear_mem(&legacy_b_for_cmp);
         clear_mem(&legacy_a);
         clear_mem(&legacy_b);
-        clear_mem(&legacy_result);
     }
 
-    std::cout << "PASS: 200 random addition() tests" << std::endl;
+    std::cout << "PASS: comparison deterministic cases" << std::endl;
 }
 
-void test_difference_equivalence() {
-    test_section("difference() vs legacy");
+void test_addition_difference_equivalence() {
+    test_section("addition/difference vs legacy");
 
-    for (int seed = 0; seed < 200; ++seed) {
-        // Generate two random numbers
-        size_t bits_a = (rng() % 300) + 1;
-        size_t bits_b = (rng() % 300) + 1;
-        
-        auto bits_a_vec = random_bits(bits_a, rng);
-        auto bits_b_vec = random_bits(bits_b, rng);
+    auto pairs = deterministic_pairs();
+    std::uniform_int_distribution<int> small_dist(-4096, 4096);
+    std::uniform_int_distribution<int> int32_dist(
+            std::numeric_limits<int>::min() + 1,
+            std::numeric_limits<int>::max());
 
-        // Create legacy numbers
-        number legacy_a = init();
-        clear_mem(&legacy_a);
-        legacy_a.mas = (uint8_t *)malloc(bits_a_vec.size());
-        std::copy(bits_a_vec.begin(), bits_a_vec.end(), legacy_a.mas);
-        legacy_a.current_count = (int)bits_a_vec.size();
-        legacy_a.size = (int)bits_a_vec.size();
+    for (int i = 0; i < 200; ++i)
+        pairs.push_back({small_dist(rng), small_dist(rng)});
+    for (int i = 0; i < 100; ++i)
+        pairs.push_back({int32_dist(rng), int32_dist(rng)});
 
-        number legacy_b = init();
-        clear_mem(&legacy_b);
-        legacy_b.mas = (uint8_t *)malloc(bits_b_vec.size());
-        std::copy(bits_b_vec.begin(), bits_b_vec.end(), legacy_b.mas);
-        legacy_b.current_count = (int)bits_b_vec.size();
-        legacy_b.size = (int)bits_b_vec.size();
+    for (const auto& pair : pairs) {
+        number legacy_a = int_to_number(pair.first);
+        number legacy_b = int_to_number(pair.second);
+        BitBigIntTC tc_a(static_cast<int64_t>(pair.first));
+        BitBigIntTC tc_b(static_cast<int64_t>(pair.second));
 
-        // Normalize to canonical form
-        normalize(&legacy_a);
-        normalize(&legacy_b);
+        number legacy_sum = addition(&legacy_a, &legacy_b);
+        BitBigIntTC tc_sum = tc_a.add(tc_b);
+        assert_same_binary("addition " + std::to_string(pair.first) + " + "
+                + std::to_string(pair.second), legacy_sum, tc_sum);
+        clear_mem(&legacy_sum);
 
-        // Create TC numbers
-        BitBigIntTC tc_a = BitBigIntTC::from_binary_bits(bits_a_vec);
-        BitBigIntTC tc_b = BitBigIntTC::from_binary_bits(bits_b_vec);
-
-        // Compute legacy result
-        number legacy_result = difference(&legacy_a, &legacy_b);
-        // difference() does not call normalize internally, so we normalize here
-        normalize(&legacy_result);
-
-        // Compute TC result
-        BitBigIntTC tc_result = tc_a.sub(tc_b);
-        // sub() uses add() which normalizes, but let's be explicit
-        tc_result.normalize();
-
-        // Compare results
-        std::string legacy_str = legacy_to_binary(legacy_result);
-        std::string tc_str = tc_to_binary(tc_result);
-
-        if (legacy_str != tc_str) {
-            std::cerr << "FAIL difference_equivalence seed=" << seed << std::endl;
-            std::cerr << "  A:      " << legacy_to_binary(legacy_a) << std::endl;
-            std::cerr << "  B:      " << legacy_to_binary(legacy_b) << std::endl;
-            std::cerr << "  Legacy: " << legacy_str << std::endl;
-            std::cerr << "  TC:     " << tc_str << std::endl;
-            clear_mem(&legacy_a);
-            clear_mem(&legacy_b);
-            clear_mem(&legacy_result);
-            exit(1);
-        }
+        number legacy_diff = difference(&legacy_a, &legacy_b);
+        normalize(&legacy_diff);
+        BitBigIntTC tc_diff = tc_a.sub(tc_b);
+        tc_diff.normalize();
+        assert_same_binary("difference " + std::to_string(pair.first) + " - "
+                + std::to_string(pair.second), legacy_diff, tc_diff);
+        clear_mem(&legacy_diff);
 
         clear_mem(&legacy_a);
         clear_mem(&legacy_b);
-        clear_mem(&legacy_result);
     }
 
-    std::cout << "PASS: 200 random difference() tests" << std::endl;
+    for (int seed = 0; seed < 100; ++seed) {
+        auto bits_a = random_bits((rng() % 160) + 1, rng);
+        auto bits_b = random_bits((rng() % 160) + 1, rng);
+        number legacy_a = normalized_legacy_from_bits(bits_a);
+        number legacy_b = normalized_legacy_from_bits(bits_b);
+        BitBigIntTC tc_a = BitBigIntTC::from_binary_bits(bits_a);
+        BitBigIntTC tc_b = BitBigIntTC::from_binary_bits(bits_b);
+
+        number legacy_sum = addition(&legacy_a, &legacy_b);
+        BitBigIntTC tc_sum = tc_a.add(tc_b);
+        assert_same_binary("random-bit addition seed " + std::to_string(seed),
+                legacy_sum, tc_sum);
+        clear_mem(&legacy_sum);
+
+        number legacy_diff = difference(&legacy_a, &legacy_b);
+        normalize(&legacy_diff);
+        BitBigIntTC tc_diff = tc_a.sub(tc_b);
+        tc_diff.normalize();
+        assert_same_binary("random-bit difference seed " + std::to_string(seed),
+                legacy_diff, tc_diff);
+        clear_mem(&legacy_diff);
+
+        clear_mem(&legacy_a);
+        clear_mem(&legacy_b);
+    }
+
+    std::cout << "PASS: addition/difference deterministic and random cases"
+              << std::endl;
+}
+
+template <typename T>
+void test_multiplication_for_type() {
+    if constexpr (!has_mul_method<T>::value && !has_mul_operator<T>::value) {
+        std::cout << "SKIP: BitBigIntTC has no multiplication API yet"
+                  << std::endl;
+        return;
+    } else {
+        for (const auto& pair : deterministic_pairs()) {
+            number legacy_a = int_to_number(pair.first);
+            number legacy_b = int_to_number(pair.second);
+            number legacy_product = multiplication(&legacy_a, &legacy_b);
+            T tc_a(static_cast<int64_t>(pair.first));
+            T tc_b(static_cast<int64_t>(pair.second));
+
+            if constexpr (has_mul_method<T>::value) {
+                T tc_product = tc_a.mul(tc_b);
+                assert_same_binary("multiplication " + std::to_string(pair.first)
+                        + " * " + std::to_string(pair.second),
+                        legacy_product, tc_product);
+            } else if constexpr (has_mul_operator<T>::value) {
+                T tc_product = tc_a * tc_b;
+                assert_same_binary("multiplication " + std::to_string(pair.first)
+                        + " * " + std::to_string(pair.second),
+                        legacy_product, tc_product);
+            }
+
+            clear_mem(&legacy_product);
+            clear_mem(&legacy_a);
+            clear_mem(&legacy_b);
+        }
+        std::cout << "PASS: multiplication deterministic cases" << std::endl;
+    }
+}
+
+void test_multiplication_equivalence_if_available() {
+    test_section("multiplication vs legacy");
+    test_multiplication_for_type<BitBigIntTC>();
 }
 
 void test_divmod_equivalence() {
-    test_section("divmod() vs legacy");
-    
-    // TODO: divmod() has infinite recursion in sign handling cases
-    // Need to debug: additional_code() might not properly flip is_negative() status
-    // Or recursion termination condition is flawed
-    std::cout << "SKIP: divmod() tests (recursion handling needs review)" << std::endl;
-    return;
-    
-    /*
-    for (int seed = 0; seed < 100; ++seed) {
-        // Generate two random numbers (smaller sizes to debug)
-        size_t bits_a = (rng() % 128) + 1;
-        size_t bits_b = (rng() % 64) + 1;
-        
-        auto bits_a_vec = random_bits(bits_a, rng);
-        auto bits_b_vec = random_bits(bits_b, rng);
+    test_section("divmod/modulo vs legacy");
 
-        // Create legacy numbers
-        number legacy_a = init();
+    std::vector<std::pair<int, int>> pairs = {
+        {1801, 2241},
+        {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1},
+        {2, 1}, {2, -1}, {-2, 1}, {-2, -1},
+        {10, 3}, {10, -3}, {-10, 3}, {-10, -3},
+        {12, 3}, {-12, 3}, {12, -3}, {-12, -3},
+        {3, 10}, {-3, 10}, {3, -10}, {-3, -10},
+        {64, 8}, {-64, 8}, {64, -8}, {-64, -8},
+        {255, 255}, {-255, -255}, {255, -255}, {-255, 255}
+    };
+
+    std::uniform_int_distribution<int> small_dist(-4096, 4096);
+    for (int i = 0; i < 5; ++i) {
+        int divisor = 0;
+        while (divisor == 0)
+            divisor = small_dist(rng);
+        pairs.push_back({small_dist(rng), divisor});
+    }
+
+    for (const auto& pair : pairs) {
+        set_current_case("divmod int " + std::to_string(pair.first) + " / "
+                + std::to_string(pair.second));
+        number legacy_a = int_to_number(pair.first);
+        number legacy_b = int_to_number(pair.second);
+        number legacy_r = init();
+        number legacy_q = division_with_module(&legacy_a, &legacy_b, &legacy_r);
+        normalize(&legacy_q);
+        normalize(&legacy_r);
+
+        BitBigIntTC tc_a(static_cast<int64_t>(pair.first));
+        BitBigIntTC tc_b(static_cast<int64_t>(pair.second));
+        auto dm = tc_a.divmod(tc_b);
+
+        assert_same_binary("divmod quotient " + std::to_string(pair.first)
+                + " / " + std::to_string(pair.second), legacy_q, dm.q);
+        assert_same_binary("divmod remainder/modulo " + std::to_string(pair.first)
+                + " % " + std::to_string(pair.second), legacy_r, dm.r);
+
+        clear_mem(&legacy_q);
+        clear_mem(&legacy_r);
         clear_mem(&legacy_a);
-        legacy_a.mas = (uint8_t *)malloc(bits_a_vec.size());
-        std::copy(bits_a_vec.begin(), bits_a_vec.end(), legacy_a.mas);
-        legacy_a.current_count = (int)bits_a_vec.size();
-        legacy_a.size = (int)bits_a_vec.size();
-
-        number legacy_b = init();
         clear_mem(&legacy_b);
-        legacy_b.mas = (uint8_t *)malloc(bits_b_vec.size());
-        std::copy(bits_b_vec.begin(), bits_b_vec.end(), legacy_b.mas);
-        legacy_b.current_count = (int)bits_b_vec.size();
-        legacy_b.size = (int)bits_b_vec.size();
+    }
 
-        // Normalize to canonical form
-        normalize(&legacy_a);
-        normalize(&legacy_b);
-
-        // Ensure B is not zero (skip if it is)
+    for (int seed = 0; seed < 5; ++seed) {
+        set_current_case("divmod random-bit seed " + std::to_string(seed));
+        auto bits_a = random_bits((rng() % 64) + 1, rng);
+        auto bits_b = random_bits((rng() % 32) + 1, rng);
+        number legacy_a = normalized_legacy_from_bits(bits_a);
+        number legacy_b = normalized_legacy_from_bits(bits_b);
         if (is_zero(&legacy_b)) {
             clear_mem(&legacy_a);
             clear_mem(&legacy_b);
             continue;
         }
 
-        // Create TC numbers
-        BitBigIntTC tc_a = BitBigIntTC::from_binary_bits(bits_a_vec);
-        BitBigIntTC tc_b = BitBigIntTC::from_binary_bits(bits_b_vec);
-
-        // Compute legacy result
-        number legacy_ost = init();
-        number legacy_q = division_with_module(&legacy_a, &legacy_b, &legacy_ost);
+        number legacy_r = init();
+        number legacy_q = division_with_module(&legacy_a, &legacy_b, &legacy_r);
         normalize(&legacy_q);
-        normalize(&legacy_ost);
+        normalize(&legacy_r);
 
-        // Compute TC result
-        try {
-            auto dm = tc_a.divmod(tc_b);
-            
-            // Compare results
-            std::string legacy_q_str = legacy_to_binary(legacy_q);
-            std::string legacy_r_str = legacy_to_binary(legacy_ost);
-            std::string tc_q_str = tc_to_binary(dm.q);
-            std::string tc_r_str = tc_to_binary(dm.r);
+        BitBigIntTC tc_a = BitBigIntTC::from_binary_bits(bits_a);
+        BitBigIntTC tc_b = BitBigIntTC::from_binary_bits(bits_b);
+        auto dm = tc_a.divmod(tc_b);
 
-            if (legacy_q_str != tc_q_str || legacy_r_str != tc_r_str) {
-                std::cerr << "FAIL divmod_equivalence seed=" << seed << std::endl;
-                std::cerr << "  A:        " << legacy_to_binary(legacy_a) << std::endl;
-                std::cerr << "  B:        " << legacy_to_binary(legacy_b) << std::endl;
-                std::cerr << "  Legacy Q: " << legacy_q_str << std::endl;
-                std::cerr << "  TC Q:     " << tc_q_str << std::endl;
-                std::cerr << "  Legacy R: " << legacy_r_str << std::endl;
-                std::cerr << "  TC R:     " << tc_r_str << std::endl;
-                clear_mem(&legacy_a);
-                clear_mem(&legacy_b);
-                clear_mem(&legacy_q);
-                clear_mem(&legacy_ost);
-                exit(1);
-            }
-        } catch (const std::exception& e) {
-            std::cerr << "EXCEPTION in divmod() at seed=" << seed << ": " << e.what() << std::endl;
-            std::cerr << "  A: " << legacy_to_binary(legacy_a) << std::endl;
-            std::cerr << "  B: " << legacy_to_binary(legacy_b) << std::endl;
-            clear_mem(&legacy_a);
-            clear_mem(&legacy_b);
-            clear_mem(&legacy_q);
-            clear_mem(&legacy_ost);
-            exit(1);
-        }
+        assert_same_binary("random-bit divmod quotient seed "
+                + std::to_string(seed), legacy_q, dm.q);
+        assert_same_binary("random-bit divmod remainder seed "
+                + std::to_string(seed), legacy_r, dm.r);
 
+        clear_mem(&legacy_q);
+        clear_mem(&legacy_r);
         clear_mem(&legacy_a);
         clear_mem(&legacy_b);
-        clear_mem(&legacy_q);
-        clear_mem(&legacy_ost);
     }
 
-    std::cout << "PASS: 100 random divmod() tests" << std::endl;
-    */
+    std::cout << "PASS: divmod/modulo deterministic and random cases"
+              << std::endl;
 }
 
-// === Main ===
+} // namespace
 
 int main() {
+    std::signal(SIGABRT, crash_handler);
+    std::signal(SIGBUS, crash_handler);
+    std::signal(SIGFPE, crash_handler);
+    std::signal(SIGILL, crash_handler);
+    std::signal(SIGSEGV, crash_handler);
+
     std::cout << "BitBigIntTC vs Legacy Tests" << std::endl;
     std::cout << "===========================\n" << std::endl;
 
-    try {
-        test_normalize_equivalence();
-        test_reverse_equivalence();
-        test_offset_left_equivalence();
-        test_offset_right_equivalence();
-        test_combined_operations();
-        test_add_digit_equivalence();
-        test_addition_equivalence();
-        test_difference_equivalence();
-        test_divmod_equivalence();
+    test_construction_conversion_equivalence();
+    test_normalize_equivalence();
+    test_unary_mutation_equivalence();
+    test_addition_difference_equivalence();
+    test_multiplication_equivalence_if_available();
+    test_divmod_equivalence();
+    test_comparison_equivalence();
 
-        std::cout << "\n============================================" << std::endl;
-        std::cout << "All tests PASSED!" << std::endl;
-        std::cout << "============================================" << std::endl;
-        return 0;
-    } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
-        return 1;
-    }
+    std::cout << "\n============================================" << std::endl;
+    std::cout << "All tests PASSED!" << std::endl;
+    std::cout << "============================================" << std::endl;
+    return 0;
 }
