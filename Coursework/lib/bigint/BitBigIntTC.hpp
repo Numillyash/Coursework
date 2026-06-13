@@ -49,7 +49,10 @@ public:
     BitBigIntTC();
 
     /// Construct from unsigned 64-bit integer
-    explicit BitBigIntTC(uint64_t value);
+    BitBigIntTC(uint64_t value);
+
+    /// Construct from signed 64-bit integer
+    BitBigIntTC(int64_t value);
 
     // Copy/move: use default
     BitBigIntTC(const BitBigIntTC&) = default;
