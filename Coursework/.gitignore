@@ -13,8 +13,25 @@ test_bitbigint
 # Debug artifacts
 debug_*
 debug_reverse*
+core.*
+vgcore.*
+_*.diff
+test_debug_seed*
+test_divmod_debug*
+test_divmod_random*
+test_divmod_simple*
+test_divmod_steps*
+test_divmod_verbose*
+test_seed*
+test_seeds_*
+test_simple_large_div*
+test_legacy_divmod3.c
+test_additional_code.cpp
 
 # Test outputs
+test_results/keys/
+test_results/logs/
+test_results/test_outputs/
 test_results/tmp/
 
 # Logs
