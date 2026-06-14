@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <vector>
 #include <cstdint>
 #include <string>
@@ -157,6 +158,12 @@ public:
     BitBigIntTC module_pow_compat_for_testing(
             const BitBigIntTC& exponent,
             const BitBigIntTC& modulus) const;
+
+    /// Compatibility helper for legacy euclide_algorithm_modifyed(); intended for tests/internal porting only.
+    /// Mutates the supplied coefficient matrix exactly like the legacy function.
+    BitBigIntTC euclide_algorithm_modifyed_compat_for_testing(
+            const BitBigIntTC& other,
+            std::array<BitBigIntTC, 4>& values) const;
 
     /// Divide this by divisor, returning quotient and remainder
     /// Port of division_with_module(number*, number*, number*) from bit_LA.c

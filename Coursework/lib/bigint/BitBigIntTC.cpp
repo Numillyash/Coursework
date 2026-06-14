@@ -940,6 +940,62 @@ BitBigIntTC BitBigIntTC::module_pow_compat_for_testing(
 	return (ost);
 }
 
+// === modified Euclidean algorithm compatibility helper (ported from bit_LA.c) ===
+
+BitBigIntTC BitBigIntTC::euclide_algorithm_modifyed_compat_for_testing(
+		const BitBigIntTC &other,
+		std::array<BitBigIntTC, 4> &values) const
+{
+	BitBigIntTC a = *this;
+	BitBigIntTC b = other;
+	BitBigIntTC buff = a.sub(b);
+
+	if (buff.is_negative())
+	{
+		a = other;
+		b = *this;
+	}
+	else
+	{
+		a = *this;
+		b = other;
+	}
+
+	DivModTC dm = a.divmod(b);
+	BitBigIntTC div = dm.q;
+	BitBigIntTC mod = dm.r;
+	BitBigIntTC GCD;
+
+	if (!mod.is_zero())
+	{
+		BitBigIntTC rec = b.euclide_algorithm_modifyed_compat_for_testing(
+				mod, values);
+		GCD = rec;
+	}
+	else
+	{
+		GCD = b;
+	}
+
+	BitBigIntTC old_a = values[0];
+	BitBigIntTC old_b = values[1];
+	BitBigIntTC old_c = values[2];
+	BitBigIntTC old_d = values[3];
+
+	values[0] = old_b;
+
+	buff = old_b.multiplication_compat_for_testing(div);
+	values[1] = old_a.sub(buff);
+
+	values[2] = old_d;
+
+	buff = old_d.multiplication_compat_for_testing(div);
+	values[3] = old_c.sub(buff);
+
+	GCD.normalize();
+	return (GCD);
+}
+
 // === Division with remainder (fixed: handles MIN negative, no recursion) ===
 
 DivModTC BitBigIntTC::divmod(const BitBigIntTC &divisor) const

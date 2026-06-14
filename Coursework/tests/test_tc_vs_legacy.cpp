@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <csignal>
 #include <cstdint>
 #include <cstdio>
@@ -18,6 +19,7 @@ number easy_mult(number *value1, number *value2);
 number multiply_furie(number *value1, number *value2);
 number karatsuba(number *value1, number *value2);
 number module_pow(number *a, number *t, number *b);
+number euclide_algorithm_modifyed(number *value1, number *value2, number *values);
 }
 
 #ifdef max
@@ -84,6 +86,17 @@ struct has_module_pow_compat<T,
                 .module_pow_compat_for_testing(
                     std::declval<const T&>(),
                     std::declval<const T&>()))>>
+    : std::true_type {};
+
+template <typename T, typename = void>
+struct has_modified_euclid_compat : std::false_type {};
+
+template <typename T>
+struct has_modified_euclid_compat<T,
+        std::void_t<decltype(std::declval<T>()
+                .euclide_algorithm_modifyed_compat_for_testing(
+                    std::declval<const T&>(),
+                    std::declval<std::array<T, 4>&>()))>>
     : std::true_type {};
 
 void test_section(const char *name) {
@@ -1225,6 +1238,123 @@ void test_module_pow_equivalence_if_available() {
     test_module_pow_for_type<BitBigIntTC>();
 }
 
+template <typename T>
+void test_modified_euclid_for_type() {
+    struct EuclidCase {
+        std::string group;
+        int lhs;
+        int rhs;
+    };
+
+    std::vector<EuclidCase> cases = {
+        {"deterministic coprime pairs", 7, 3},
+        {"deterministic coprime pairs", 17, 5},
+        {"deterministic coprime pairs", 40, 7},
+        {"deterministic non-coprime pairs", 12, 8},
+        {"deterministic non-coprime pairs", 21, 14},
+        {"RSA-like pairs", 3120, 17},
+        {"RSA-like pairs", 2773, 17}
+    };
+
+    std::mt19937_64 euclid_rng(0x6575636c6964ULL);
+    std::uniform_int_distribution<int> positive_dist(2, 500);
+    for (int i = 0; i < 20; ++i) {
+        cases.push_back({"fixed-seed random positive pairs",
+                positive_dist(euclid_rng), positive_dist(euclid_rng)});
+    }
+
+    if constexpr (!has_modified_euclid_compat<T>::value) {
+        std::cout
+            << "SKIP/TODO: BitBigIntTC has no modified Euclid compatibility "
+            << "helper yet; tests are prepared for legacy parity."
+            << std::endl;
+        std::cout << "  Prepared cases: " << cases.size() << std::endl;
+        return;
+    } else {
+        bool saw_negative_inverse = false;
+
+        for (const auto& test : cases) {
+            set_current_case("modified Euclid " + std::to_string(test.lhs)
+                    + ", " + std::to_string(test.rhs));
+
+            number legacy_lhs = int_to_number(test.lhs);
+            number legacy_rhs = int_to_number(test.rhs);
+            number legacy_values[4] = {
+                int_to_number(1),
+                int_to_number(0),
+                int_to_number(0),
+                int_to_number(1)
+            };
+            number legacy_gcd = euclide_algorithm_modifyed(
+                    &legacy_lhs, &legacy_rhs, legacy_values);
+
+            T tc_lhs(static_cast<int64_t>(test.lhs));
+            T tc_rhs(static_cast<int64_t>(test.rhs));
+            std::array<T, 4> tc_values = {
+                T(static_cast<int64_t>(1)),
+                T(static_cast<int64_t>(0)),
+                T(static_cast<int64_t>(0)),
+                T(static_cast<int64_t>(1))
+            };
+            T tc_gcd = tc_lhs.euclide_algorithm_modifyed_compat_for_testing(
+                    tc_rhs, tc_values);
+
+            assert_same_binary(test.group + " modified Euclid gcd "
+                    + std::to_string(test.lhs) + ", "
+                    + std::to_string(test.rhs),
+                    legacy_gcd, tc_gcd);
+
+            for (size_t i = 0; i < 4; ++i) {
+                assert_same_binary(test.group + " modified Euclid values["
+                        + std::to_string(i) + "] "
+                        + std::to_string(test.lhs) + ", "
+                        + std::to_string(test.rhs),
+                        legacy_values[i], tc_values[i]);
+            }
+
+            if (tc_values[1].raw().back() != 0)
+                saw_negative_inverse = true;
+
+            if (legacy_to_binary(legacy_gcd) == "1 (positive)"
+                    && test.lhs > test.rhs) {
+                T d = tc_values[1];
+                if (d.raw().back() != 0)
+                    d = d.add(tc_lhs);
+
+                T check = tc_rhs.multiplication_compat_for_testing(d)
+                        .divmod(tc_lhs).r;
+                T one(static_cast<int64_t>(1));
+                number legacy_one = int_to_number(1);
+                assert_same_binary(test.group + " RSA-style inverse check "
+                        + std::to_string(test.lhs) + ", "
+                        + std::to_string(test.rhs),
+                        legacy_one, check);
+                clear_mem(&legacy_one);
+            }
+
+            clear_mem(&legacy_gcd);
+            clear_mem(&legacy_lhs);
+            clear_mem(&legacy_rhs);
+            for (number& value : legacy_values)
+                clear_mem(&value);
+        }
+
+        if (!saw_negative_inverse) {
+            std::cerr << "FAIL: modified Euclid tests did not include a "
+                      << "negative values[1] inverse case" << std::endl;
+            std::exit(1);
+        }
+
+        std::cout << "PASS: modified Euclid deterministic and fixed-seed cases"
+                  << std::endl;
+    }
+}
+
+void test_modified_euclid_equivalence_if_available() {
+    test_section("euclide_algorithm_modifyed vs legacy");
+    test_modified_euclid_for_type<BitBigIntTC>();
+}
+
 void test_divmod_equivalence() {
     test_section("divmod/modulo vs legacy");
 
@@ -1331,6 +1461,7 @@ int main() {
     test_karatsuba_equivalence_if_available<BitBigIntTC>();
     test_multiplication_equivalence_if_available();
     test_module_pow_equivalence_if_available();
+    test_modified_euclid_equivalence_if_available();
     test_divmod_equivalence();
     test_comparison_equivalence();
 
