@@ -92,7 +92,14 @@ public:
     /// Check if value is zero
     bool is_zero() const;
 
+    /// Convert to int, matching legacy number_to_int() return value.
+    /// Unlike legacy number_to_int(), this method does not mutate negative values.
+    int to_int() const;
+
     // === Comparison operations ===
+
+    /// Equality check matching legacy is_equal() normalization semantics.
+    bool is_equal(const BitBigIntTC& other) const;
 
     /// Compare with another number: -1 if this < other, 0 if equal, +1 if greater
     int compare(const BitBigIntTC& other) const;
@@ -165,4 +172,3 @@ struct DivModTC {
 };
 
 } // namespace bigint
-

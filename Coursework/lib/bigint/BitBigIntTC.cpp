@@ -141,7 +141,37 @@ bool BitBigIntTC::is_zero() const
 	return (true);
 }
 
+int BitBigIntTC::to_int() const
+{
+	BitBigIntTC	value = *this;
+	int			res = 0;
+	int			zn = 1;
+	int			x = 1;
+
+	if (value.mas_.back())
+	{
+		zn = -1;
+		value.additional_code();
+	}
+	for (size_t i = 0; i + 1 < value.mas_.size(); ++i)
+	{
+		res += value.mas_[i] * x;
+		x <<= 1;
+	}
+	return (res * zn);
+}
+
 // === Comparison ===
+
+bool BitBigIntTC::is_equal(const BitBigIntTC &other) const
+{
+	BitBigIntTC lhs = *this;
+	BitBigIntTC rhs = other;
+
+	lhs.normalize();
+	rhs.normalize();
+	return (lhs.mas_ == rhs.mas_);
+}
 
 int BitBigIntTC::compare(const BitBigIntTC &other) const
 {

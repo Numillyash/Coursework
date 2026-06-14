@@ -132,6 +132,10 @@ number normalized_legacy_from_bits(const std::vector<uint8_t>& bits) {
     return n;
 }
 
+std::vector<uint8_t> legacy_raw_bits(const number& n) {
+    return std::vector<uint8_t>(n.mas, n.mas + n.current_count);
+}
+
 int legacy_compare(number *a, number *b) {
     number diff = difference(a, b);
     normalize(&diff);
@@ -206,6 +210,93 @@ void test_normalize_equivalence() {
     std::cout << "PASS: normalize deterministic and random cases" << std::endl;
 }
 
+void assert_same_int(const std::string& label, int legacy_value, int tc_value) {
+    if (legacy_value != tc_value) {
+        std::cerr << "FAIL: " << label << std::endl;
+        std::cerr << "  Legacy int: " << legacy_value << std::endl;
+        std::cerr << "  TC int:     " << tc_value << std::endl;
+        std::exit(1);
+    }
+}
+
+void test_number_to_int_equivalence() {
+    test_section("number_to_int() vs legacy");
+
+    std::vector<int> values = {
+        0, 1, -1, 2, -2, 7, -7, 127, -127, 255, -255
+    };
+    for (int n = 0; n <= 29; ++n) {
+        int p2 = 1 << n;
+        values.push_back(p2);
+        values.push_back(-p2);
+        values.push_back(p2 - 1);
+        values.push_back(-(p2 - 1));
+    }
+    std::sort(values.begin(), values.end());
+    values.erase(std::unique(values.begin(), values.end()), values.end());
+
+    for (int value : values) {
+        number legacy_num = int_to_number(value);
+        BitBigIntTC tc_num(static_cast<int64_t>(value));
+
+        int legacy_value = number_to_int(&legacy_num);
+        int tc_value = tc_num.to_int();
+        assert_same_int("number_to_int " + std::to_string(value),
+                legacy_value, tc_value);
+
+        clear_mem(&legacy_num);
+    }
+
+    std::mt19937_64 local_rng(0x51a7e5eedULL);
+    std::uniform_int_distribution<int> small_dist(-1000000, 1000000);
+    for (int i = 0; i < 500; ++i) {
+        int value = small_dist(local_rng);
+        number legacy_num = int_to_number(value);
+        BitBigIntTC tc_num(static_cast<int64_t>(value));
+
+        int legacy_value = number_to_int(&legacy_num);
+        int tc_value = tc_num.to_int();
+        assert_same_int("number_to_int random " + std::to_string(i),
+                legacy_value, tc_value);
+
+        clear_mem(&legacy_num);
+    }
+
+    number legacy_negative = int_to_number(-7);
+    const auto before_negative = legacy_raw_bits(legacy_negative);
+    (void)number_to_int(&legacy_negative);
+    const auto after_negative = legacy_raw_bits(legacy_negative);
+    if (before_negative == after_negative) {
+        std::cerr << "FAIL: legacy number_to_int did not mutate negative input"
+                  << std::endl;
+        std::exit(1);
+    }
+    clear_mem(&legacy_negative);
+
+    number legacy_positive = int_to_number(7);
+    const auto before_positive = legacy_raw_bits(legacy_positive);
+    (void)number_to_int(&legacy_positive);
+    const auto after_positive = legacy_raw_bits(legacy_positive);
+    if (before_positive != after_positive) {
+        std::cerr << "FAIL: legacy number_to_int mutated positive input"
+                  << std::endl;
+        std::exit(1);
+    }
+    clear_mem(&legacy_positive);
+
+    BitBigIntTC tc_negative(static_cast<int64_t>(-7));
+    const auto tc_before = tc_negative.raw();
+    (void)tc_negative.to_int();
+    if (tc_before != tc_negative.raw()) {
+        std::cerr << "FAIL: BitBigIntTC::to_int mutated input" << std::endl;
+        std::exit(1);
+    }
+
+    std::cout << "PASS: number_to_int deterministic and random cases"
+              << " (legacy mutates negative inputs; BitBigIntTC::to_int does not)"
+              << std::endl;
+}
+
 void test_unary_mutation_equivalence() {
     test_section("reverse/add_digit/offset vs legacy");
 
@@ -269,6 +360,75 @@ void test_unary_mutation_equivalence() {
 
     std::cout << "PASS: reverse/add_digit/offset deterministic and random cases"
               << std::endl;
+}
+
+void assert_same_equal(const std::string& label, bool legacy_equal,
+        bool tc_equal) {
+    if (legacy_equal != tc_equal) {
+        std::cerr << "FAIL: " << label << std::endl;
+        std::cerr << "  Legacy equal: " << legacy_equal << std::endl;
+        std::cerr << "  TC equal:     " << tc_equal << std::endl;
+        std::exit(1);
+    }
+}
+
+void test_is_equal_equivalence() {
+    test_section("is_equal() vs legacy");
+
+    std::vector<std::pair<int, int>> pairs = {
+        {7, 7}, {7, 8},
+        {-7, -7}, {-7, -8},
+        {0, 0}, {0, -7},
+        {127, 127}, {127, -127},
+        {-255, -255}, {-255, 255}
+    };
+
+    std::mt19937_64 local_rng(0xe9a1ULL);
+    std::uniform_int_distribution<int> small_dist(-4096, 4096);
+    for (int i = 0; i < 300; ++i)
+        pairs.push_back({small_dist(local_rng), small_dist(local_rng)});
+
+    for (const auto& pair : pairs) {
+        number legacy_a = int_to_number(pair.first);
+        number legacy_b = int_to_number(pair.second);
+        BitBigIntTC tc_a(static_cast<int64_t>(pair.first));
+        BitBigIntTC tc_b(static_cast<int64_t>(pair.second));
+
+        bool legacy_equal = is_equal(&legacy_a, &legacy_b);
+        bool tc_equal = tc_a.is_equal(tc_b);
+        assert_same_equal("is_equal " + std::to_string(pair.first)
+                + " vs " + std::to_string(pair.second),
+                legacy_equal, tc_equal);
+
+        clear_mem(&legacy_a);
+        clear_mem(&legacy_b);
+    }
+
+    std::vector<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>> raw_pairs = {
+        {{0, 0, 0}, {0, 0}},
+        {{1, 0, 0}, {1, 0}},
+        {{0, 1, 0, 0}, {0, 1, 0}},
+        {{1, 1, 0, 0}, {1, 1, 0}},
+        {{0, 0, 0, 0, 0}, {0, 0}}
+    };
+
+    for (const auto& pair : raw_pairs) {
+        number legacy_a = legacy_from_bits(pair.first);
+        number legacy_b = legacy_from_bits(pair.second);
+        BitBigIntTC tc_a = BitBigIntTC::from_binary_bits(pair.first);
+        BitBigIntTC tc_b = BitBigIntTC::from_binary_bits(pair.second);
+
+        bool legacy_equal = is_equal(&legacy_a, &legacy_b);
+        bool tc_equal = tc_a.is_equal(tc_b);
+        assert_same_equal("is_equal raw " + bits_to_debug(pair.first)
+                + " vs " + bits_to_debug(pair.second),
+                legacy_equal, tc_equal);
+
+        clear_mem(&legacy_a);
+        clear_mem(&legacy_b);
+    }
+
+    std::cout << "PASS: is_equal deterministic and random cases" << std::endl;
 }
 
 void test_comparison_equivalence() {
@@ -522,7 +682,9 @@ int main() {
 
     test_construction_conversion_equivalence();
     test_normalize_equivalence();
+    test_number_to_int_equivalence();
     test_unary_mutation_equivalence();
+    test_is_equal_equivalence();
     test_addition_difference_equivalence();
     test_multiplication_equivalence_if_available();
     test_divmod_equivalence();
