@@ -148,6 +148,10 @@ public:
     /// This is not public multiplication() and assumes normalized non-negative magnitudes.
     BitBigIntTC karatsuba_compat_for_testing(const BitBigIntTC& other) const;
 
+    /// Compatibility helper for legacy public multiplication(); intended for tests/internal porting only.
+    /// This preserves legacy sign handling but is not the project-level multiplication API.
+    BitBigIntTC multiplication_compat_for_testing(const BitBigIntTC& other) const;
+
     /// Divide this by divisor, returning quotient and remainder
     /// Port of division_with_module(number*, number*, number*) from bit_LA.c
     /// Throws if divisor is zero

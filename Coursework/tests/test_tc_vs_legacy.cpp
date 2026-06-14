@@ -65,6 +65,15 @@ struct has_karatsuba_compat<T,
                 .karatsuba_compat_for_testing(std::declval<const T&>()))>>
     : std::true_type {};
 
+template <typename T, typename = void>
+struct has_multiplication_compat : std::false_type {};
+
+template <typename T>
+struct has_multiplication_compat<T,
+        std::void_t<decltype(std::declval<T>()
+                .multiplication_compat_for_testing(std::declval<const T&>()))>>
+    : std::true_type {};
+
 void test_section(const char *name) {
     std::cout << "\n=== " << name << " ===" << std::endl;
 }
@@ -964,13 +973,17 @@ void test_multiplication_for_type() {
 
     std::vector<IntMulCase> int_cases = {
         {"easy_mult-sized cases", 0, 0},
-        {"easy_mult-sized cases", 0, 7},
-        {"easy_mult-sized cases", 1, 7},
-        {"easy_mult-sized cases", -1, 7},
+        {"easy_mult-sized cases", 0, 1},
+        {"easy_mult-sized cases", 0, -1},
+        {"easy_mult-sized cases", 1, 0},
+        {"easy_mult-sized cases", 1, 1},
+        {"easy_mult-sized cases", 1, -1},
+        {"easy_mult-sized cases", -1, 1},
+        {"easy_mult-sized cases", -1, -1},
         {"easy_mult-sized cases", 3, 2},
-        {"easy_mult-sized cases", -3, 2},
-        {"easy_mult-sized cases", 3, -2},
-        {"easy_mult-sized cases", -3, -2},
+        {"easy_mult-sized cases", -2, 3},
+        {"easy_mult-sized cases", 2, -3},
+        {"easy_mult-sized cases", -2, -3},
 
         {"sign matrix cases", 12, 7},
         {"sign matrix cases", 12, -7},
@@ -978,6 +991,10 @@ void test_multiplication_for_type() {
         {"sign matrix cases", -12, -7},
         {"sign matrix cases", 0, -127},
         {"sign matrix cases", -1, -127},
+        {"sign matrix cases", 127, 255},
+        {"sign matrix cases", -127, 255},
+        {"sign matrix cases", 255, -127},
+        {"sign matrix cases", -127, -255},
 
         {"powers of two", 1, 1},
         {"powers of two", 2, 2},
@@ -1020,10 +1037,13 @@ void test_multiplication_for_type() {
                 positive_bits_with_count(256)}
     };
 
-    if constexpr (!has_mul_method<T>::value && !has_mul_operator<T>::value) {
+    if constexpr (!has_multiplication_compat<T>::value
+            && !has_mul_method<T>::value
+            && !has_mul_operator<T>::value) {
         std::cout
-            << "SKIP/TODO: BitBigIntTC has no public multiplication API yet; "
-            << "full legacy dispatch must be ported before enabling this test."
+            << "SKIP/TODO: BitBigIntTC has no multiplication compatibility "
+            << "API yet; full legacy dispatch must be ported before enabling "
+            << "this test."
             << std::endl;
         std::cout << "  Prepared groups:" << std::endl;
         std::cout << "  - easy_mult-sized cases: both current_count < 5" << std::endl;
@@ -1044,7 +1064,13 @@ void test_multiplication_for_type() {
             T tc_a(static_cast<int64_t>(test.lhs));
             T tc_b(static_cast<int64_t>(test.rhs));
 
-            if constexpr (has_mul_method<T>::value) {
+            if constexpr (has_multiplication_compat<T>::value) {
+                T tc_product = tc_a.multiplication_compat_for_testing(tc_b);
+                assert_same_binary(test.group + " multiplication "
+                        + std::to_string(test.lhs) + " * "
+                        + std::to_string(test.rhs),
+                        legacy_product, tc_product);
+            } else if constexpr (has_mul_method<T>::value) {
                 T tc_product = tc_a.mul(tc_b);
                 assert_same_binary(test.group + " multiplication "
                         + std::to_string(test.lhs) + " * "
@@ -1070,7 +1096,13 @@ void test_multiplication_for_type() {
             T tc_a = T::from_binary_bits(test.lhs);
             T tc_b = T::from_binary_bits(test.rhs);
 
-            if constexpr (has_mul_method<T>::value) {
+            if constexpr (has_multiplication_compat<T>::value) {
+                T tc_product = tc_a.multiplication_compat_for_testing(tc_b);
+                assert_same_binary(test.group + " raw multiplication "
+                        + bits_to_debug(test.lhs) + " * "
+                        + bits_to_debug(test.rhs),
+                        legacy_product, tc_product);
+            } else if constexpr (has_mul_method<T>::value) {
                 T tc_product = tc_a.mul(tc_b);
                 assert_same_binary(test.group + " raw multiplication "
                         + bits_to_debug(test.lhs) + " * "

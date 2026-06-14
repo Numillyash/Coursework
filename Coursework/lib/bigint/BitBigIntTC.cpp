@@ -870,6 +870,38 @@ BitBigIntTC BitBigIntTC::karatsuba_compat_for_testing(
 	}
 }
 
+// === public multiplication compatibility helper (ported from bit_LA.c multiplication) ===
+
+BitBigIntTC BitBigIntTC::multiplication_compat_for_testing(
+		const BitBigIntTC &other) const
+{
+	if (is_zero() || other.is_zero())
+		return (BitBigIntTC(static_cast<int64_t>(0)));
+
+	BitBigIntTC a = *this;
+	BitBigIntTC b = other;
+	int sign = (a.mas_[a.mas_.size() - 1] != 0)
+		+ (b.mas_[b.mas_.size() - 1] != 0);
+
+	if (a.mas_[a.mas_.size() - 1])
+	{
+		a.additional_code();
+	}
+	if (b.mas_[b.mas_.size() - 1])
+	{
+		b.additional_code();
+	}
+
+	BitBigIntTC result = a.karatsuba_compat_for_testing(b);
+
+	if (sign == 1)
+	{
+		result.additional_code();
+	}
+	result.normalize();
+	return (result);
+}
+
 // === Division with remainder (fixed: handles MIN negative, no recursion) ===
 
 DivModTC BitBigIntTC::divmod(const BitBigIntTC &divisor) const
