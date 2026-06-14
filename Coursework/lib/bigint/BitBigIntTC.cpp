@@ -767,6 +767,109 @@ BitBigIntTC BitBigIntTC::multiply_furie_compat_for_testing(
 	return (result);
 }
 
+// === karatsuba compatibility helper (ported from bit_LA.c karatsuba) ===
+
+BitBigIntTC BitBigIntTC::karatsuba_compat_for_testing(
+		const BitBigIntTC &other) const
+{
+	BitBigIntTC value1 = *this;
+	BitBigIntTC value2 = other;
+
+	if (value1.current_count() < 5 && value2.current_count() < 5)
+	{
+		if (value1.is_zero() || value2.is_zero())
+			return (BitBigIntTC(static_cast<int64_t>(0)));
+		return (value1.easy_mult_compat_for_testing(value2));
+	}
+
+	BitBigIntTC res;
+	int n;
+	int k;
+	int iter;
+
+	if (value1.current_count() < 256 && value2.current_count() < 256)
+	{
+		if (value1.is_zero() || value2.is_zero())
+			return (BitBigIntTC(static_cast<int64_t>(0)));
+		res = value1.multiply_furie_compat_for_testing(value2);
+		return (res);
+	}
+
+	n = std::max(value1.current_count(), value2.current_count()) - 1;
+	k = n / 2;
+
+	if (n <= 5)
+	{
+		return (value1.easy_mult_compat_for_testing(value2));
+	}
+	else
+	{
+		BitBigIntTC v1 = value1;
+		BitBigIntTC v2 = value2;
+		BitBigIntTC a;
+		BitBigIntTC b;
+		BitBigIntTC c;
+		BitBigIntTC d;
+
+		a.mas_.assign(1, 0);
+		b.mas_.assign(1, 0);
+		c.mas_.assign(1, 0);
+		d.mas_.assign(1, 0);
+
+		for (iter = n - v1.current_count(); iter > 0; iter--)
+		{
+			v1.add_digit(0);
+		}
+		for (iter = n - v2.current_count(); iter > 0; iter--)
+		{
+			v2.add_digit(0);
+		}
+
+		for (iter = 0; iter < k; iter++)
+		{
+			b.add_digit(v1.mas_[static_cast<size_t>(iter)]);
+			d.add_digit(v2.mas_[static_cast<size_t>(iter)]);
+		}
+
+		for (iter = k; iter < n; iter++)
+		{
+			a.add_digit(v1.mas_[static_cast<size_t>(iter)]);
+			c.add_digit(v2.mas_[static_cast<size_t>(iter)]);
+		}
+
+		BitBigIntTC p1 = b.karatsuba_compat_for_testing(d);
+		BitBigIntTC p2 = a.karatsuba_compat_for_testing(c);
+		BitBigIntTC buff1 = a.add(b);
+		BitBigIntTC buff2 = c.add(d);
+		BitBigIntTC t = buff1.karatsuba_compat_for_testing(buff2);
+
+		buff1 = t;
+		t = buff1.sub(p1);
+
+		buff1 = t;
+		t = buff1.sub(p2);
+
+		for (iter = 0; iter < 2 * k; iter++)
+		{
+			p2.offset_left();
+		}
+		for (iter = 0; iter < k; iter++)
+		{
+			t.offset_left();
+		}
+
+		buff1 = res;
+		res = buff1.add(p2);
+
+		buff1 = res;
+		res = buff1.add(p1);
+
+		buff1 = res;
+		res = buff1.add(t);
+		return (res);
+	}
+}
+
 // === Division with remainder (fixed: handles MIN negative, no recursion) ===
 
 DivModTC BitBigIntTC::divmod(const BitBigIntTC &divisor) const
