@@ -13,6 +13,10 @@
 
 #include "legacy_bridge.hpp"
 
+extern "C" {
+number easy_mult(number *value1, number *value2);
+}
+
 #ifdef max
 #undef max
 #endif
@@ -546,6 +550,53 @@ void test_addition_difference_equivalence() {
               << std::endl;
 }
 
+void test_easy_mult_equivalence() {
+    test_section("easy_mult() vs BitBigIntTC compatibility helper");
+
+    std::vector<std::pair<int, int>> pairs = {
+        {0, 0}, {0, 1}, {1, 1}, {1, -1}, {-1, -1},
+        {2, 3}, {-2, 3}, {2, -3}, {-2, -3},
+        {7, 7}, {-7, 7}, {7, -7}, {-7, -7}
+    };
+
+    std::mt19937_64 local_rng(0xea57ULL);
+    std::uniform_int_distribution<int> tiny_dist(-7, 7);
+    for (int i = 0; i < 50; ++i)
+        pairs.push_back({tiny_dist(local_rng), tiny_dist(local_rng)});
+
+    for (const auto& pair : pairs) {
+        number legacy_a = int_to_number(pair.first);
+        number legacy_b = int_to_number(pair.second);
+
+        if (legacy_a.current_count >= 5 || legacy_b.current_count >= 5) {
+            std::cerr << "FAIL: easy_mult test operand outside legacy "
+                      << "current_count < 5 precondition: "
+                      << pair.first << " * " << pair.second << std::endl;
+            std::exit(1);
+        }
+
+        number legacy_product = easy_mult(&legacy_a, &legacy_b);
+        normalize(&legacy_product);
+
+        BitBigIntTC tc_a(static_cast<int64_t>(pair.first));
+        BitBigIntTC tc_b(static_cast<int64_t>(pair.second));
+        BitBigIntTC tc_product = tc_a.easy_mult_compat_for_testing(tc_b);
+        tc_product.normalize();
+
+        assert_same_binary("easy_mult " + std::to_string(pair.first)
+                + " * " + std::to_string(pair.second),
+                legacy_product, tc_product);
+
+        clear_mem(&legacy_product);
+        clear_mem(&legacy_a);
+        clear_mem(&legacy_b);
+    }
+
+    std::cout << "PASS: easy_mult deterministic and fixed-seed cases"
+              << " (operands constrained to legacy current_count < 5)"
+              << std::endl;
+}
+
 template <typename T>
 void test_multiplication_for_type() {
     struct IntMulCase {
@@ -808,6 +859,7 @@ int main() {
     test_unary_mutation_equivalence();
     test_is_equal_equivalence();
     test_addition_difference_equivalence();
+    test_easy_mult_equivalence();
     test_multiplication_equivalence_if_available();
     test_divmod_equivalence();
     test_comparison_equivalence();

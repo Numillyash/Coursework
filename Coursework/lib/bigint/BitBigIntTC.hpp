@@ -136,6 +136,10 @@ public:
     /// Returns this - other
     BitBigIntTC sub(const BitBigIntTC& other) const;
 
+    /// Compatibility helper for legacy easy_mult(); intended for tests/internal porting only.
+    /// This is not public multiplication() and only matches easy_mult-sized operands.
+    BitBigIntTC easy_mult_compat_for_testing(const BitBigIntTC& other) const;
+
     /// Divide this by divisor, returning quotient and remainder
     /// Port of division_with_module(number*, number*, number*) from bit_LA.c
     /// Throws if divisor is zero

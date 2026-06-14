@@ -494,6 +494,18 @@ BitBigIntTC BitBigIntTC::sub(const BitBigIntTC &other) const
 	return result;
 }
 
+// === easy_mult compatibility helper (ported from bit_LA.c easy_mult) ===
+
+BitBigIntTC BitBigIntTC::easy_mult_compat_for_testing(
+		const BitBigIntTC &other) const
+{
+	int	a = this->to_int();
+	int	b = other.to_int();
+	int	product = a * b;
+
+	return (BitBigIntTC(static_cast<int64_t>(product)));
+}
+
 // === Division with remainder (fixed: handles MIN negative, no recursion) ===
 
 DivModTC BitBigIntTC::divmod(const BitBigIntTC &divisor) const
