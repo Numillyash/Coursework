@@ -902,6 +902,44 @@ BitBigIntTC BitBigIntTC::multiplication_compat_for_testing(
 	return (result);
 }
 
+// === module_pow compatibility helper (ported from bit_LA.c module_pow) ===
+
+BitBigIntTC BitBigIntTC::module_pow_compat_for_testing(
+		const BitBigIntTC &exponent,
+		const BitBigIntTC &modulus) const
+{
+	BitBigIntTC d = divmod(modulus).r;
+	BitBigIntTC ost = d;
+
+	if (d.is_zero())
+	{
+		return (ost);
+	}
+
+	BitBigIntTC iterator = exponent;
+	ost = BitBigIntTC(static_cast<int64_t>(1));
+	BitBigIntTC buff2 = *this;
+
+	while (!iterator.is_zero())
+	{
+		if (iterator.mas_[0] == 1)
+		{
+			BitBigIntTC buff = ost.multiplication_compat_for_testing(buff2);
+			ost = buff.divmod(modulus).r;
+		}
+
+		BitBigIntTC buff = buff2.multiplication_compat_for_testing(buff2);
+		buff2 = buff.divmod(modulus).r;
+
+		iterator.offset_right();
+	}
+
+	BitBigIntTC buff = ost;
+	ost = buff.divmod(modulus).r;
+	ost.normalize();
+	return (ost);
+}
+
 // === Division with remainder (fixed: handles MIN negative, no recursion) ===
 
 DivModTC BitBigIntTC::divmod(const BitBigIntTC &divisor) const

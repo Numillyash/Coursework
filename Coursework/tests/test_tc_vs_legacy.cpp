@@ -17,6 +17,7 @@ extern "C" {
 number easy_mult(number *value1, number *value2);
 number multiply_furie(number *value1, number *value2);
 number karatsuba(number *value1, number *value2);
+number module_pow(number *a, number *t, number *b);
 }
 
 #ifdef max
@@ -72,6 +73,17 @@ template <typename T>
 struct has_multiplication_compat<T,
         std::void_t<decltype(std::declval<T>()
                 .multiplication_compat_for_testing(std::declval<const T&>()))>>
+    : std::true_type {};
+
+template <typename T, typename = void>
+struct has_module_pow_compat : std::false_type {};
+
+template <typename T>
+struct has_module_pow_compat<T,
+        std::void_t<decltype(std::declval<T>()
+                .module_pow_compat_for_testing(
+                    std::declval<const T&>(),
+                    std::declval<const T&>()))>>
     : std::true_type {};
 
 void test_section(const char *name) {
@@ -1130,6 +1142,89 @@ void test_multiplication_equivalence_if_available() {
     test_multiplication_for_type<BitBigIntTC>();
 }
 
+template <typename T>
+void test_module_pow_for_type() {
+    struct ModulePowCase {
+        std::string group;
+        int base;
+        int exponent;
+        int modulus;
+    };
+
+    std::vector<ModulePowCase> cases = {
+        {"deterministic cases", 2, 0, 5},
+        {"deterministic cases", 5, 0, 5},
+        {"deterministic cases", 2, 1, 5},
+        {"deterministic cases", 2, 3, 5},
+        {"deterministic cases", 3, 4, 7},
+        {"deterministic cases", 5, 3, 13},
+        {"deterministic cases", 0, 1, 7},
+        {"deterministic cases", 1, 100, 7},
+
+        {"RSA-like small cases", 65, 17, 3233},
+        {"RSA-like small cases", 2790, 2753, 3233},
+        {"RSA-like small cases", 123, 17, 2773},
+        {"RSA-like small cases", 456, 353, 2773}
+    };
+
+    std::mt19937_64 modpow_rng(0x6d6f64706f77ULL);
+    std::uniform_int_distribution<int> base_dist(0, 500);
+    std::uniform_int_distribution<int> exponent_dist(0, 20);
+    std::uniform_int_distribution<int> modulus_dist(2, 997);
+    for (int i = 0; i < 25; ++i) {
+        cases.push_back({"fixed-seed random positive values",
+                base_dist(modpow_rng),
+                exponent_dist(modpow_rng),
+                modulus_dist(modpow_rng)});
+    }
+
+    if constexpr (!has_module_pow_compat<T>::value) {
+        std::cout
+            << "SKIP/TODO: BitBigIntTC has no module_pow compatibility "
+            << "helper yet; tests are prepared for legacy module_pow() parity."
+            << std::endl;
+        std::cout << "  Prepared cases: " << cases.size() << std::endl;
+        return;
+    } else {
+        for (const auto& test : cases) {
+            set_current_case("module_pow " + std::to_string(test.base)
+                    + "^" + std::to_string(test.exponent)
+                    + " mod " + std::to_string(test.modulus));
+
+            number legacy_base = int_to_number(test.base);
+            number legacy_exponent = int_to_number(test.exponent);
+            number legacy_modulus = int_to_number(test.modulus);
+            number legacy_result = module_pow(
+                    &legacy_base, &legacy_exponent, &legacy_modulus);
+
+            T tc_base(static_cast<int64_t>(test.base));
+            T tc_exponent(static_cast<int64_t>(test.exponent));
+            T tc_modulus(static_cast<int64_t>(test.modulus));
+            T tc_result = tc_base.module_pow_compat_for_testing(
+                    tc_exponent, tc_modulus);
+
+            assert_same_binary(test.group + " module_pow "
+                    + std::to_string(test.base) + "^"
+                    + std::to_string(test.exponent) + " mod "
+                    + std::to_string(test.modulus),
+                    legacy_result, tc_result);
+
+            clear_mem(&legacy_result);
+            clear_mem(&legacy_base);
+            clear_mem(&legacy_exponent);
+            clear_mem(&legacy_modulus);
+        }
+
+        std::cout << "PASS: module_pow deterministic and fixed-seed cases"
+                  << std::endl;
+    }
+}
+
+void test_module_pow_equivalence_if_available() {
+    test_section("module_pow vs legacy");
+    test_module_pow_for_type<BitBigIntTC>();
+}
+
 void test_divmod_equivalence() {
     test_section("divmod/modulo vs legacy");
 
@@ -1235,6 +1330,7 @@ int main() {
     test_multiply_furie_equivalence_if_available<BitBigIntTC>();
     test_karatsuba_equivalence_if_available<BitBigIntTC>();
     test_multiplication_equivalence_if_available();
+    test_module_pow_equivalence_if_available();
     test_divmod_equivalence();
     test_comparison_equivalence();
 

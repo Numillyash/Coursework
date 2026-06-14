@@ -152,6 +152,12 @@ public:
     /// This preserves legacy sign handling but is not the project-level multiplication API.
     BitBigIntTC multiplication_compat_for_testing(const BitBigIntTC& other) const;
 
+    /// Compatibility helper for legacy module_pow(); intended for tests/internal porting only.
+    /// This is not RSA integration and preserves legacy module_pow() quirks.
+    BitBigIntTC module_pow_compat_for_testing(
+            const BitBigIntTC& exponent,
+            const BitBigIntTC& modulus) const;
+
     /// Divide this by divisor, returning quotient and remainder
     /// Port of division_with_module(number*, number*, number*) from bit_LA.c
     /// Throws if divisor is zero
