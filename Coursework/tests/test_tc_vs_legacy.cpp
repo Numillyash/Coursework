@@ -15,6 +15,7 @@
 
 extern "C" {
 number easy_mult(number *value1, number *value2);
+number multiply_furie(number *value1, number *value2);
 }
 
 #ifdef max
@@ -43,6 +44,15 @@ struct has_mul_operator : std::false_type {};
 template <typename T>
 struct has_mul_operator<T,
         std::void_t<decltype(std::declval<T>() * std::declval<T>())>>
+    : std::true_type {};
+
+template <typename T, typename = void>
+struct has_multiply_furie_compat : std::false_type {};
+
+template <typename T>
+struct has_multiply_furie_compat<T,
+        std::void_t<decltype(std::declval<T>()
+                .multiply_furie_compat_for_testing(std::declval<const T&>()))>>
     : std::true_type {};
 
 void test_section(const char *name) {
@@ -597,6 +607,184 @@ void test_easy_mult_equivalence() {
               << std::endl;
 }
 
+std::vector<uint8_t> positive_bits_with_count(int current_count) {
+    std::vector<uint8_t> bits(static_cast<size_t>(current_count), 0);
+    bits[0] = 1;
+    bits[static_cast<size_t>(current_count) - 2] = 1;
+    return bits;
+}
+
+std::vector<uint8_t> positive_power_of_two_bits_with_count(int current_count) {
+    std::vector<uint8_t> bits(static_cast<size_t>(current_count), 0);
+    bits[static_cast<size_t>(current_count) - 2] = 1;
+    return bits;
+}
+
+std::vector<uint8_t> all_ones_positive_with_count(int current_count) {
+    std::vector<uint8_t> bits(static_cast<size_t>(current_count), 1);
+    bits.back() = 0;
+    return bits;
+}
+
+bool same_raw_bits(const number& lhs, const number& rhs) {
+    if (lhs.current_count != rhs.current_count)
+        return false;
+    for (int i = 0; i < lhs.current_count; ++i) {
+        if (lhs.mas[i] != rhs.mas[i])
+            return false;
+    }
+    return true;
+}
+
+void assert_valid_multiply_furie_operand(const std::string& label,
+        const number& value) {
+    if (value.mas[value.current_count - 1] != 0) {
+        std::cerr << "FAIL: multiply_furie prepared negative operand: "
+                  << label << std::endl;
+        std::exit(1);
+    }
+    if (value.current_count < 5 || value.current_count >= 256) {
+        std::cerr << "FAIL: multiply_furie prepared operand outside "
+                  << "5 <= current_count < 256: " << label
+                  << " current_count=" << value.current_count << std::endl;
+        std::exit(1);
+    }
+    if (is_zero(const_cast<number *>(&value))) {
+        std::cerr << "FAIL: multiply_furie prepared zero operand: "
+                  << label << std::endl;
+        std::exit(1);
+    }
+
+    number normalized = copy(const_cast<number *>(&value));
+    normalize(&normalized);
+    if (!same_raw_bits(value, normalized)) {
+        std::cerr << "FAIL: multiply_furie prepared non-normalized operand: "
+                  << label << std::endl;
+        clear_mem(&normalized);
+        std::exit(1);
+    }
+    clear_mem(&normalized);
+}
+
+[[maybe_unused]] number legacy_multiply_furie_expected(const std::vector<uint8_t>& lhs,
+        const std::vector<uint8_t>& rhs, const std::string& label) {
+    number legacy_lhs = normalized_legacy_from_bits(lhs);
+    number legacy_rhs = normalized_legacy_from_bits(rhs);
+
+    assert_valid_multiply_furie_operand(label + " lhs", legacy_lhs);
+    assert_valid_multiply_furie_operand(label + " rhs", legacy_rhs);
+
+    number legacy_product = multiply_furie(&legacy_lhs, &legacy_rhs);
+    normalize(&legacy_product);
+
+    clear_mem(&legacy_lhs);
+    clear_mem(&legacy_rhs);
+    return legacy_product;
+}
+
+template <typename T>
+void test_multiply_furie_equivalence_if_available() {
+    test_section("multiply_furie() vs BitBigIntTC compatibility helper");
+
+    struct RawFurieCase {
+        std::string group;
+        std::vector<uint8_t> lhs;
+        std::vector<uint8_t> rhs;
+    };
+
+    std::vector<RawFurieCase> cases = {
+        {"current_count == 5", positive_bits_with_count(5),
+                positive_power_of_two_bits_with_count(5)},
+
+        {"current_count around 6", positive_bits_with_count(6),
+                all_ones_positive_with_count(6)},
+        {"current_count around 8", positive_power_of_two_bits_with_count(8),
+                all_ones_positive_with_count(8)},
+        {"current_count around 16", positive_bits_with_count(16),
+                positive_power_of_two_bits_with_count(16)},
+        {"current_count around 32", all_ones_positive_with_count(32),
+                positive_bits_with_count(32)},
+        {"current_count around 64", positive_power_of_two_bits_with_count(64),
+                all_ones_positive_with_count(64)},
+        {"current_count around 128", positive_bits_with_count(128),
+                positive_power_of_two_bits_with_count(128)},
+        {"current_count == 255", positive_bits_with_count(255),
+                all_ones_positive_with_count(255)},
+
+        {"powers of two", positive_power_of_two_bits_with_count(5),
+                positive_power_of_two_bits_with_count(9)},
+        {"powers of two", positive_power_of_two_bits_with_count(33),
+                positive_power_of_two_bits_with_count(17)},
+        {"2^n - 1", all_ones_positive_with_count(5),
+                all_ones_positive_with_count(8)},
+        {"2^n - 1", all_ones_positive_with_count(65),
+                all_ones_positive_with_count(31)},
+
+        {"uneven sizes: first operand much larger", positive_bits_with_count(128),
+                all_ones_positive_with_count(8)},
+        {"uneven sizes: first operand much larger", all_ones_positive_with_count(255),
+                positive_power_of_two_bits_with_count(16)},
+        {"uneven sizes: second operand much larger (legacy second split condition is suspicious/dead)",
+                positive_bits_with_count(8), all_ones_positive_with_count(128)},
+        {"uneven sizes: second operand much larger (legacy second split condition is suspicious/dead)",
+                positive_power_of_two_bits_with_count(16), positive_bits_with_count(255)}
+    };
+
+    std::mt19937_64 local_rng(0xf00f00ULL);
+    for (int i = 0; i < 24; ++i) {
+        int lhs_count = 5 + static_cast<int>(local_rng() % 123);
+        int rhs_count = 5 + static_cast<int>(local_rng() % 123);
+        auto lhs = random_bits(static_cast<size_t>(lhs_count - 1), local_rng);
+        auto rhs = random_bits(static_cast<size_t>(rhs_count - 1), local_rng);
+        lhs.back() = 0;
+        rhs.back() = 0;
+        lhs[static_cast<size_t>(lhs_count) - 2] = 1;
+        rhs[static_cast<size_t>(rhs_count) - 2] = 1;
+        cases.push_back({"fixed-seed canonical positive raw inputs", lhs, rhs});
+    }
+
+    if constexpr (!has_multiply_furie_compat<T>::value) {
+        std::cout
+            << "SKIP/TODO: BitBigIntTC multiply_furie() compatibility helper "
+            << "is not ported yet; prepared tests target only that internal "
+            << "helper. Public multiplication remains intentionally "
+            << "unimplemented."
+            << std::endl;
+        std::cout << "  Prepared groups:" << std::endl;
+        std::cout << "  - current_count == 5" << std::endl;
+        std::cout << "  - current_count around 6, 8, 16, 32, 64, 128" << std::endl;
+        std::cout << "  - current_count == 255" << std::endl;
+        std::cout << "  - powers of two" << std::endl;
+        std::cout << "  - 2^n - 1" << std::endl;
+        std::cout << "  - uneven sizes where first operand is much larger" << std::endl;
+        std::cout << "  - uneven sizes where second operand is much larger" << std::endl;
+        std::cout << "    (documents the legacy suspicious/dead second split condition)" << std::endl;
+        std::cout << "  - fixed-seed canonical positive raw inputs" << std::endl;
+        std::cout << "  Prepared multiply_furie cases: " << cases.size()
+                  << std::endl;
+        return;
+    } else {
+        for (const auto& test : cases) {
+            number legacy_product = legacy_multiply_furie_expected(
+                    test.lhs, test.rhs, test.group);
+
+            T tc_lhs = T::from_binary_bits(test.lhs);
+            T tc_rhs = T::from_binary_bits(test.rhs);
+            T tc_product = tc_lhs.multiply_furie_compat_for_testing(tc_rhs);
+            tc_product.normalize();
+
+            assert_same_binary(test.group + " multiply_furie "
+                    + bits_to_debug(test.lhs) + " * "
+                    + bits_to_debug(test.rhs),
+                    legacy_product, tc_product);
+
+            clear_mem(&legacy_product);
+        }
+
+        std::cout << "PASS: multiply_furie compatibility cases" << std::endl;
+    }
+}
+
 template <typename T>
 void test_multiplication_for_type() {
     struct IntMulCase {
@@ -608,18 +796,6 @@ void test_multiplication_for_type() {
         std::string group;
         std::vector<uint8_t> lhs;
         std::vector<uint8_t> rhs;
-    };
-
-    auto positive_bits_with_count = [](int current_count) {
-        std::vector<uint8_t> bits(static_cast<size_t>(current_count), 0);
-        bits[0] = 1;
-        bits[static_cast<size_t>(current_count) - 2] = 1;
-        return bits;
-    };
-    auto all_ones_positive_with_count = [](int current_count) {
-        std::vector<uint8_t> bits(static_cast<size_t>(current_count), 1);
-        bits.back() = 0;
-        return bits;
     };
 
     std::vector<IntMulCase> int_cases = {
@@ -860,6 +1036,7 @@ int main() {
     test_is_equal_equivalence();
     test_addition_difference_equivalence();
     test_easy_mult_equivalence();
+    test_multiply_furie_equivalence_if_available<BitBigIntTC>();
     test_multiplication_equivalence_if_available();
     test_divmod_equivalence();
     test_comparison_equivalence();
