@@ -16,6 +16,7 @@
 extern "C" {
 number easy_mult(number *value1, number *value2);
 number multiply_furie(number *value1, number *value2);
+number karatsuba(number *value1, number *value2);
 }
 
 #ifdef max
@@ -53,6 +54,15 @@ template <typename T>
 struct has_multiply_furie_compat<T,
         std::void_t<decltype(std::declval<T>()
                 .multiply_furie_compat_for_testing(std::declval<const T&>()))>>
+    : std::true_type {};
+
+template <typename T, typename = void>
+struct has_karatsuba_compat : std::false_type {};
+
+template <typename T>
+struct has_karatsuba_compat<T,
+        std::void_t<decltype(std::declval<T>()
+                .karatsuba_compat_for_testing(std::declval<const T&>()))>>
     : std::true_type {};
 
 void test_section(const char *name) {
@@ -626,6 +636,15 @@ std::vector<uint8_t> all_ones_positive_with_count(int current_count) {
     return bits;
 }
 
+std::vector<uint8_t> positive_random_bits_with_count(
+        int current_count, std::mt19937_64& gen) {
+    std::vector<uint8_t> bits =
+            random_bits(static_cast<size_t>(current_count - 1), gen);
+    bits.back() = 0;
+    bits[static_cast<size_t>(current_count) - 2] = 1;
+    return bits;
+}
+
 bool same_raw_bits(const number& lhs, const number& rhs) {
     if (lhs.current_count != rhs.current_count)
         return false;
@@ -675,6 +694,47 @@ void assert_valid_multiply_furie_operand(const std::string& label,
     assert_valid_multiply_furie_operand(label + " rhs", legacy_rhs);
 
     number legacy_product = multiply_furie(&legacy_lhs, &legacy_rhs);
+    normalize(&legacy_product);
+
+    clear_mem(&legacy_lhs);
+    clear_mem(&legacy_rhs);
+    return legacy_product;
+}
+
+void assert_valid_karatsuba_operand(const std::string& label,
+        const number& value) {
+    if (value.mas[value.current_count - 1] != 0) {
+        std::cerr << "FAIL: karatsuba prepared negative operand: "
+                  << label << std::endl;
+        std::exit(1);
+    }
+    if (is_zero(const_cast<number *>(&value))) {
+        std::cerr << "FAIL: karatsuba prepared zero-like operand: "
+                  << label << std::endl;
+        std::exit(1);
+    }
+
+    number normalized = copy(const_cast<number *>(&value));
+    normalize(&normalized);
+    if (!same_raw_bits(value, normalized)) {
+        std::cerr << "FAIL: karatsuba prepared non-normalized operand: "
+                  << label << std::endl;
+        clear_mem(&normalized);
+        std::exit(1);
+    }
+    clear_mem(&normalized);
+}
+
+[[maybe_unused]] number legacy_karatsuba_expected(
+        const std::vector<uint8_t>& lhs, const std::vector<uint8_t>& rhs,
+        const std::string& label) {
+    number legacy_lhs = normalized_legacy_from_bits(lhs);
+    number legacy_rhs = normalized_legacy_from_bits(rhs);
+
+    assert_valid_karatsuba_operand(label + " lhs", legacy_lhs);
+    assert_valid_karatsuba_operand(label + " rhs", legacy_rhs);
+
+    number legacy_product = karatsuba(&legacy_lhs, &legacy_rhs);
     normalize(&legacy_product);
 
     clear_mem(&legacy_lhs);
@@ -734,12 +794,8 @@ void test_multiply_furie_equivalence_if_available() {
     for (int i = 0; i < 24; ++i) {
         int lhs_count = 5 + static_cast<int>(local_rng() % 123);
         int rhs_count = 5 + static_cast<int>(local_rng() % 123);
-        auto lhs = random_bits(static_cast<size_t>(lhs_count - 1), local_rng);
-        auto rhs = random_bits(static_cast<size_t>(rhs_count - 1), local_rng);
-        lhs.back() = 0;
-        rhs.back() = 0;
-        lhs[static_cast<size_t>(lhs_count) - 2] = 1;
-        rhs[static_cast<size_t>(rhs_count) - 2] = 1;
+        auto lhs = positive_random_bits_with_count(lhs_count, local_rng);
+        auto rhs = positive_random_bits_with_count(rhs_count, local_rng);
         cases.push_back({"fixed-seed canonical positive raw inputs", lhs, rhs});
     }
 
@@ -782,6 +838,114 @@ void test_multiply_furie_equivalence_if_available() {
         }
 
         std::cout << "PASS: multiply_furie compatibility cases" << std::endl;
+    }
+}
+
+template <typename T>
+void test_karatsuba_equivalence_if_available() {
+    test_section("karatsuba() vs BitBigIntTC compatibility helper");
+
+    struct RawKaratsubaCase {
+        std::string group;
+        std::vector<uint8_t> lhs;
+        std::vector<uint8_t> rhs;
+    };
+
+    std::vector<RawKaratsubaCase> cases = {
+        {"easy_mult path: both operands <5 bits", positive_bits_with_count(2),
+                positive_bits_with_count(2)},
+        {"easy_mult path: both operands <5 bits", positive_bits_with_count(4),
+                all_ones_positive_with_count(4)},
+
+        {"multiply_furie path: both operands <256 bits", positive_bits_with_count(5),
+                positive_bits_with_count(5)},
+        {"multiply_furie path: both operands <256 bits", positive_bits_with_count(128),
+                all_ones_positive_with_count(64)},
+        {"multiply_furie path: both operands <256 bits", all_ones_positive_with_count(255),
+                positive_power_of_two_bits_with_count(255)},
+
+        {"boundary current_count == 255", positive_bits_with_count(255),
+                all_ones_positive_with_count(255)},
+        {"boundary current_count == 256", positive_bits_with_count(256),
+                positive_power_of_two_bits_with_count(256)},
+        {"boundary current_count == 257", all_ones_positive_with_count(257),
+                positive_bits_with_count(257)},
+
+        {"one operand around 256, other small", positive_bits_with_count(256),
+                positive_bits_with_count(5)},
+        {"one operand around 256, other small", positive_bits_with_count(5),
+                all_ones_positive_with_count(257)},
+
+        {"both operands around 256", positive_bits_with_count(256),
+                all_ones_positive_with_count(256)},
+        {"both operands around 256", positive_power_of_two_bits_with_count(257),
+                positive_bits_with_count(256)},
+
+        {"uneven sizes: first operand much larger", all_ones_positive_with_count(320),
+                positive_bits_with_count(16)},
+        {"uneven sizes: second operand much larger", positive_bits_with_count(16),
+                all_ones_positive_with_count(320)},
+
+        {"powers of two", positive_power_of_two_bits_with_count(8),
+                positive_power_of_two_bits_with_count(260)},
+        {"powers of two", positive_power_of_two_bits_with_count(300),
+                positive_power_of_two_bits_with_count(256)},
+        {"2^n - 1", all_ones_positive_with_count(8),
+                all_ones_positive_with_count(260)},
+        {"2^n - 1", all_ones_positive_with_count(300),
+                all_ones_positive_with_count(256)}
+    };
+
+    std::mt19937_64 local_rng(0x4b415241ULL);
+    for (int i = 0; i < 16; ++i) {
+        int lhs_count = 256 + static_cast<int>(local_rng() % 80);
+        int rhs_count = 5 + static_cast<int>(local_rng() % 331);
+        auto lhs = positive_random_bits_with_count(lhs_count, local_rng);
+        auto rhs = positive_random_bits_with_count(rhs_count, local_rng);
+        cases.push_back({"fixed-seed canonical positive random operands",
+                lhs, rhs});
+    }
+
+    if constexpr (!has_karatsuba_compat<T>::value) {
+        std::cout
+            << "SKIP/TODO: BitBigIntTC karatsuba() compatibility helper "
+            << "is not ported yet; prepared tests target only that internal "
+            << "helper. Public multiplication remains intentionally "
+            << "unimplemented."
+            << std::endl;
+        std::cout << "  Prepared groups:" << std::endl;
+        std::cout << "  - both operands <5 bits -> easy_mult path" << std::endl;
+        std::cout << "  - both operands <256 bits -> multiply_furie path" << std::endl;
+        std::cout << "  - operands around current_count == 255, 256, 257" << std::endl;
+        std::cout << "  - one operand around 256, other small" << std::endl;
+        std::cout << "  - both operands around 256" << std::endl;
+        std::cout << "  - uneven sizes where first operand is much larger" << std::endl;
+        std::cout << "  - uneven sizes where second operand is much larger" << std::endl;
+        std::cout << "  - powers of two" << std::endl;
+        std::cout << "  - 2^n - 1" << std::endl;
+        std::cout << "  - fixed-seed canonical positive random operands" << std::endl;
+        std::cout << "  Prepared karatsuba cases: " << cases.size()
+                  << std::endl;
+        return;
+    } else {
+        for (const auto& test : cases) {
+            number legacy_product = legacy_karatsuba_expected(
+                    test.lhs, test.rhs, test.group);
+
+            T tc_lhs = T::from_binary_bits(test.lhs);
+            T tc_rhs = T::from_binary_bits(test.rhs);
+            T tc_product = tc_lhs.karatsuba_compat_for_testing(tc_rhs);
+            tc_product.normalize();
+
+            assert_same_binary(test.group + " karatsuba "
+                    + bits_to_debug(test.lhs) + " * "
+                    + bits_to_debug(test.rhs),
+                    legacy_product, tc_product);
+
+            clear_mem(&legacy_product);
+        }
+
+        std::cout << "PASS: karatsuba compatibility cases" << std::endl;
     }
 }
 
@@ -1037,6 +1201,7 @@ int main() {
     test_addition_difference_equivalence();
     test_easy_mult_equivalence();
     test_multiply_furie_equivalence_if_available<BitBigIntTC>();
+    test_karatsuba_equivalence_if_available<BitBigIntTC>();
     test_multiplication_equivalence_if_available();
     test_divmod_equivalence();
     test_comparison_equivalence();
