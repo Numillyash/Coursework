@@ -140,6 +140,10 @@ public:
     /// This is not public multiplication() and only matches easy_mult-sized operands.
     BitBigIntTC easy_mult_compat_for_testing(const BitBigIntTC& other) const;
 
+    /// Compatibility helper for legacy multiply_furie(); intended for tests/internal porting only.
+    /// This is not public multiplication() and assumes normalized non-negative operands.
+    BitBigIntTC multiply_furie_compat_for_testing(const BitBigIntTC& other) const;
+
     /// Divide this by divisor, returning quotient and remainder
     /// Port of division_with_module(number*, number*, number*) from bit_LA.c
     /// Throws if divisor is zero

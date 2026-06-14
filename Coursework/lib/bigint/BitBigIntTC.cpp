@@ -5,6 +5,132 @@
 
 namespace bigint
 {
+namespace
+{
+constexpr int FT_DIRECT = -1;
+constexpr int FT_INVERSE = 1;
+
+constexpr float Rcoef[14] =
+	{-1.0000000000000000F, 0.0000000000000000F, 0.7071067811865475F,
+	 0.9238795325112867F, 0.9807852804032304F, 0.9951847266721969F,
+	 0.9987954562051724F, 0.9996988186962042F, 0.9999247018391445F,
+	 0.9999811752826011F, 0.9999952938095761F, 0.9999988234517018F,
+	 0.9999997058628822F, 0.9999999264657178F};
+constexpr float Icoef[14] =
+	{0.0000000000000000F, -1.0000000000000000F, -0.7071067811865474F,
+	 -0.3826834323650897F, -0.1950903220161282F, -0.0980171403295606F,
+	 -0.0490676743274180F, -0.0245412285229122F, -0.0122715382857199F,
+	 -0.0061358846491544F, -0.0030679567629659F, -0.0015339801862847F,
+	 -0.0007669903187427F, -0.0003834951875714F};
+
+bool number_is_2_pow_k(int x)
+{
+	return ((!((x) & ((x) - 1))) && ((x) > 1));
+}
+
+bool fft_compat(float *Rdat, float *Idat, int N, int LogN, int Ft_Flag)
+{
+	if ((Rdat == nullptr) || (Idat == nullptr))
+		return false;
+	if ((N > 16384) || (N < 1))
+		return false;
+	if (!number_is_2_pow_k(N))
+		return false;
+	if ((LogN < 2) || (LogN > 14))
+		return false;
+	if ((Ft_Flag != FT_DIRECT) && (Ft_Flag != FT_INVERSE))
+		return false;
+
+	int i, j, n, k, io, ie, in, nn;
+	float ru, iu, rtp, itp, rtq, itq, rw, iw, sr;
+
+	nn = N >> 1;
+	ie = N;
+	for (n = 1; n <= LogN; n++)
+	{
+		rw = Rcoef[LogN - n];
+		iw = Icoef[LogN - n];
+		if (Ft_Flag == FT_INVERSE)
+			iw = -iw;
+		in = ie >> 1;
+		ru = 1.0F;
+		iu = 0.0F;
+		for (j = 0; j < in; j++)
+		{
+			for (i = j; i < N; i += ie)
+			{
+				io = i + in;
+				rtp = Rdat[i] + Rdat[io];
+				itp = Idat[i] + Idat[io];
+				rtq = Rdat[i] - Rdat[io];
+				itq = Idat[i] - Idat[io];
+				Rdat[io] = rtq * ru - itq * iu;
+				Idat[io] = itq * ru + rtq * iu;
+				Rdat[i] = rtp;
+				Idat[i] = itp;
+			}
+
+			sr = ru;
+			ru = ru * rw - iu * iw;
+			iu = iu * rw + sr * iw;
+		}
+
+		ie >>= 1;
+	}
+
+	for (j = i = 1; i < N; i++)
+	{
+		if (i < j)
+		{
+			io = i - 1;
+			in = j - 1;
+			rtp = Rdat[in];
+			itp = Idat[in];
+			Rdat[in] = Rdat[io];
+			Idat[in] = Idat[io];
+			Rdat[io] = rtp;
+			Idat[io] = itp;
+		}
+
+		k = nn;
+		while (k < j)
+		{
+			j = j - k;
+			k >>= 1;
+		}
+		j = j + k;
+	}
+
+	if (Ft_Flag == FT_DIRECT)
+		return true;
+
+	rw = 1.0F / N;
+	for (i = 0; i < N; i++)
+	{
+		Rdat[i] *= rw;
+		Idat[i] *= rw;
+	}
+	return true;
+}
+
+std::vector<uint8_t> convert_number_compat(const BitBigIntTC &value,
+		int &count, int &ln_count)
+{
+	int num = 1;
+	ln_count = 0;
+	std::vector<uint8_t> input = value.raw();
+
+	count = value.current_count();
+	do {
+		num <<= 1;
+		ln_count += 1;
+	} while (count > num);
+	input.resize(static_cast<size_t>(num), 0);
+	count = num;
+	return input;
+}
+}
+
 // === Constructors ===
 
 BitBigIntTC::BitBigIntTC() : mas_{0, 0}
@@ -504,6 +630,141 @@ BitBigIntTC BitBigIntTC::easy_mult_compat_for_testing(
 	int	product = a * b;
 
 	return (BitBigIntTC(static_cast<int64_t>(product)));
+}
+
+// === multiply_furie compatibility helper (ported from bit_LA.c multiply_furie) ===
+
+BitBigIntTC BitBigIntTC::multiply_furie_compat_for_testing(
+		const BitBigIntTC &other) const
+{
+	if (this->is_zero() || other.is_zero())
+		return (BitBigIntTC(static_cast<int64_t>(0)));
+
+	int i;
+	BitBigIntTC value_1 = *this;
+	BitBigIntTC value_2 = other;
+
+	if ((value_1.current_count() >> 1) >= value_2.current_count())
+	{
+		BitBigIntTC tmp1 = value_1;
+		BitBigIntTC tmp2 = value_1;
+		tmp2.mas_.resize(static_cast<size_t>(value_2.current_count()));
+		tmp2.mas_[tmp2.mas_.size() - 1] = 0;
+		for (i = 0; i < value_2.current_count() - 1; i++)
+		{
+			tmp1.offset_right();
+		}
+		BitBigIntTC result1 = tmp1.multiply_furie_compat_for_testing(value_2);
+		BitBigIntTC result2 = tmp2.multiply_furie_compat_for_testing(value_2);
+		for (i = 0; i < value_2.current_count() - 1; i++)
+		{
+			result1.offset_left();
+		}
+		BitBigIntTC result = result1.add(result2);
+		result.normalize();
+		return (result);
+	}
+	// Preserve legacy suspicious/dead condition exactly.
+	if ((value_2.current_count() >> 1) >= value_2.current_count())
+	{
+		BitBigIntTC tmp1 = value_2;
+		BitBigIntTC tmp2 = value_2;
+		tmp2.mas_.resize(static_cast<size_t>(value_1.current_count()));
+		tmp2.mas_[tmp2.mas_.size() - 1] = 0;
+		for (i = 0; i < value_1.current_count() - 1; i++)
+		{
+			tmp1.offset_right();
+		}
+		BitBigIntTC result1 = tmp1.multiply_furie_compat_for_testing(value_1);
+		BitBigIntTC result2 = tmp2.multiply_furie_compat_for_testing(value_1);
+		for (i = 0; i < value_1.current_count() - 1; i++)
+		{
+			result1.offset_left();
+		}
+		BitBigIntTC result = result1.add(result2);
+		result.normalize();
+		return (result);
+	}
+
+	int len, ln_count, len_1, ln_count_1, len_2, ln_count_2;
+	std::vector<uint8_t> mas_1 = convert_number_compat(value_1, len_1, ln_count_1);
+	std::vector<uint8_t> mas_2 = convert_number_compat(value_2, len_2, ln_count_2);
+
+	if (len_1 > len_2)
+	{
+		mas_1.resize(static_cast<size_t>(len_1 * 2), 0);
+		mas_2.resize(static_cast<size_t>(len_1 * 2), 0);
+		len = len_1 << 1;
+		ln_count = ++ln_count_1;
+	}
+	else
+	{
+		mas_1.resize(static_cast<size_t>(len_2 * 2), 0);
+		mas_2.resize(static_cast<size_t>(len_2 * 2), 0);
+		len = len_2 << 1;
+		ln_count = ++ln_count_2;
+	}
+
+	std::vector<float> Re_1(static_cast<size_t>(len));
+	std::vector<float> Im_1(static_cast<size_t>(len));
+	std::vector<float> Re_2(static_cast<size_t>(len));
+	std::vector<float> Im_2(static_cast<size_t>(len));
+	std::vector<float> Re_3(static_cast<size_t>(len));
+	std::vector<float> Im_3(static_cast<size_t>(len));
+
+	for (i = 0; i < len; i++)
+	{
+		Re_1[static_cast<size_t>(i)] = static_cast<float>(mas_1[static_cast<size_t>(i)]);
+		Im_1[static_cast<size_t>(i)] = 0.0F;
+	}
+	for (i = 0; i < len; i++)
+	{
+		Re_2[static_cast<size_t>(i)] = static_cast<float>(mas_2[static_cast<size_t>(i)]);
+		Im_2[static_cast<size_t>(i)] = 0.0F;
+	}
+	for (i = 0; i < len; i++)
+	{
+		Re_3[static_cast<size_t>(i)] = 0.0F;
+		Im_3[static_cast<size_t>(i)] = 0.0F;
+	}
+
+	(void)fft_compat(Re_1.data(), Im_1.data(), len, ln_count, FT_DIRECT);
+	(void)fft_compat(Re_2.data(), Im_2.data(), len, ln_count, FT_DIRECT);
+	for (i = 0; i < len; i++)
+	{
+		Re_3[static_cast<size_t>(i)] = Re_1[static_cast<size_t>(i)]
+			* Re_2[static_cast<size_t>(i)] - Im_1[static_cast<size_t>(i)]
+			* Im_2[static_cast<size_t>(i)];
+		Im_3[static_cast<size_t>(i)] = Im_1[static_cast<size_t>(i)]
+			* Re_2[static_cast<size_t>(i)] + Re_1[static_cast<size_t>(i)]
+			* Im_2[static_cast<size_t>(i)];
+	}
+	(void)fft_compat(Re_3.data(), Im_3.data(), len, ln_count, FT_INVERSE);
+
+	std::vector<uint8_t> result_bits(static_cast<size_t>(len + 1), 0);
+	for (i = 0; i < len; i++)
+	{
+		int rounded = static_cast<int>(Re_3[static_cast<size_t>(i)] < 0
+			? (Re_3[static_cast<size_t>(i)] - 0.5F)
+			: (Re_3[static_cast<size_t>(i)] + 0.5F));
+		result_bits[static_cast<size_t>(i)] =
+			static_cast<uint8_t>(result_bits[static_cast<size_t>(i)] + rounded);
+		if (result_bits[static_cast<size_t>(i)] >> 1)
+		{
+			result_bits[static_cast<size_t>(i + 1)] =
+				static_cast<uint8_t>(result_bits[static_cast<size_t>(i)] >> 1);
+			result_bits[static_cast<size_t>(i)] &= 1;
+		}
+	}
+
+	for (i = len - 1; i > 0 && result_bits[static_cast<size_t>(i - 1)] == 0; i--)
+		;
+
+	BitBigIntTC result;
+	result.mas_.assign(result_bits.begin(), result_bits.begin() + i);
+	result.mas_.push_back(0);
+	result.normalize();
+	return (result);
 }
 
 // === Division with remainder (fixed: handles MIN negative, no recursion) ===
