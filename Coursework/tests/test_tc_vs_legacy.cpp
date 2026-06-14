@@ -548,27 +548,122 @@ void test_addition_difference_equivalence() {
 
 template <typename T>
 void test_multiplication_for_type() {
+    struct IntMulCase {
+        std::string group;
+        int lhs;
+        int rhs;
+    };
+    struct RawMulCase {
+        std::string group;
+        std::vector<uint8_t> lhs;
+        std::vector<uint8_t> rhs;
+    };
+
+    auto positive_bits_with_count = [](int current_count) {
+        std::vector<uint8_t> bits(static_cast<size_t>(current_count), 0);
+        bits[0] = 1;
+        bits[static_cast<size_t>(current_count) - 2] = 1;
+        return bits;
+    };
+    auto all_ones_positive_with_count = [](int current_count) {
+        std::vector<uint8_t> bits(static_cast<size_t>(current_count), 1);
+        bits.back() = 0;
+        return bits;
+    };
+
+    std::vector<IntMulCase> int_cases = {
+        {"easy_mult-sized cases", 0, 0},
+        {"easy_mult-sized cases", 0, 7},
+        {"easy_mult-sized cases", 1, 7},
+        {"easy_mult-sized cases", -1, 7},
+        {"easy_mult-sized cases", 3, 2},
+        {"easy_mult-sized cases", -3, 2},
+        {"easy_mult-sized cases", 3, -2},
+        {"easy_mult-sized cases", -3, -2},
+
+        {"sign matrix cases", 12, 7},
+        {"sign matrix cases", 12, -7},
+        {"sign matrix cases", -12, 7},
+        {"sign matrix cases", -12, -7},
+        {"sign matrix cases", 0, -127},
+        {"sign matrix cases", -1, -127},
+
+        {"powers of two", 1, 1},
+        {"powers of two", 2, 2},
+        {"powers of two", 8, 16},
+        {"powers of two", -8, 16},
+        {"powers of two", 64, -128},
+        {"powers of two", -256, -512},
+
+        {"2^n - 1 cases", 3, 7},
+        {"2^n - 1 cases", 15, 31},
+        {"2^n - 1 cases", -15, 31},
+        {"2^n - 1 cases", 127, -255},
+        {"2^n - 1 cases", -511, -1023}
+    };
+
+    std::mt19937_64 mul_rng(0x6d756cULL);
+    std::uniform_int_distribution<int> small_dist(-4096, 4096);
+    for (int i = 0; i < 100; ++i) {
+        int_cases.push_back({"randomized fixed-seed valid canonical inputs",
+                small_dist(mul_rng), small_dist(mul_rng)});
+    }
+
+    std::vector<RawMulCase> raw_cases = {
+        {"multiply_furie-sized cases", positive_bits_with_count(5),
+                positive_bits_with_count(5)},
+        {"multiply_furie-sized cases", positive_bits_with_count(16),
+                all_ones_positive_with_count(12)},
+        {"multiply_furie-sized cases", all_ones_positive_with_count(64),
+                positive_bits_with_count(32)},
+        {"multiply_furie-sized cases", positive_bits_with_count(128),
+                positive_bits_with_count(127)},
+
+        {"karatsuba boundary cases", positive_bits_with_count(255),
+                positive_bits_with_count(255)},
+        {"karatsuba boundary cases", positive_bits_with_count(256),
+                positive_bits_with_count(5)},
+        {"karatsuba boundary cases", positive_bits_with_count(256),
+                positive_bits_with_count(256)},
+        {"karatsuba boundary cases", all_ones_positive_with_count(257),
+                positive_bits_with_count(256)}
+    };
+
     if constexpr (!has_mul_method<T>::value && !has_mul_operator<T>::value) {
-        std::cout << "SKIP: BitBigIntTC has no multiplication API yet"
-                  << std::endl;
+        std::cout
+            << "SKIP/TODO: BitBigIntTC has no public multiplication API yet; "
+            << "full legacy dispatch must be ported before enabling this test."
+            << std::endl;
+        std::cout << "  Prepared groups:" << std::endl;
+        std::cout << "  - easy_mult-sized cases: both current_count < 5" << std::endl;
+        std::cout << "  - multiply_furie-sized cases: both current_count >= 5 and < 256" << std::endl;
+        std::cout << "  - karatsuba boundary cases around current_count == 256" << std::endl;
+        std::cout << "  - sign matrix cases" << std::endl;
+        std::cout << "  - powers of two" << std::endl;
+        std::cout << "  - 2^n - 1 cases" << std::endl;
+        std::cout << "  - randomized fixed-seed valid canonical inputs" << std::endl;
+        std::cout << "  Prepared int cases: " << int_cases.size()
+                  << ", raw bit cases: " << raw_cases.size() << std::endl;
         return;
     } else {
-        for (const auto& pair : deterministic_pairs()) {
-            number legacy_a = int_to_number(pair.first);
-            number legacy_b = int_to_number(pair.second);
+        for (const auto& test : int_cases) {
+            number legacy_a = int_to_number(test.lhs);
+            number legacy_b = int_to_number(test.rhs);
             number legacy_product = multiplication(&legacy_a, &legacy_b);
-            T tc_a(static_cast<int64_t>(pair.first));
-            T tc_b(static_cast<int64_t>(pair.second));
+            T tc_a(static_cast<int64_t>(test.lhs));
+            T tc_b(static_cast<int64_t>(test.rhs));
 
             if constexpr (has_mul_method<T>::value) {
                 T tc_product = tc_a.mul(tc_b);
-                assert_same_binary("multiplication " + std::to_string(pair.first)
-                        + " * " + std::to_string(pair.second),
+                assert_same_binary(test.group + " multiplication "
+                        + std::to_string(test.lhs) + " * "
+                        + std::to_string(test.rhs),
                         legacy_product, tc_product);
             } else if constexpr (has_mul_operator<T>::value) {
                 T tc_product = tc_a * tc_b;
-                assert_same_binary("multiplication " + std::to_string(pair.first)
-                        + " * " + std::to_string(pair.second),
+                assert_same_binary(test.group + " multiplication "
+                        + std::to_string(test.lhs) + " * "
+                        + std::to_string(test.rhs),
                         legacy_product, tc_product);
             }
 
@@ -576,7 +671,34 @@ void test_multiplication_for_type() {
             clear_mem(&legacy_a);
             clear_mem(&legacy_b);
         }
-        std::cout << "PASS: multiplication deterministic cases" << std::endl;
+
+        for (const auto& test : raw_cases) {
+            number legacy_a = normalized_legacy_from_bits(test.lhs);
+            number legacy_b = normalized_legacy_from_bits(test.rhs);
+            number legacy_product = multiplication(&legacy_a, &legacy_b);
+            T tc_a = T::from_binary_bits(test.lhs);
+            T tc_b = T::from_binary_bits(test.rhs);
+
+            if constexpr (has_mul_method<T>::value) {
+                T tc_product = tc_a.mul(tc_b);
+                assert_same_binary(test.group + " raw multiplication "
+                        + bits_to_debug(test.lhs) + " * "
+                        + bits_to_debug(test.rhs),
+                        legacy_product, tc_product);
+            } else if constexpr (has_mul_operator<T>::value) {
+                T tc_product = tc_a * tc_b;
+                assert_same_binary(test.group + " raw multiplication "
+                        + bits_to_debug(test.lhs) + " * "
+                        + bits_to_debug(test.rhs),
+                        legacy_product, tc_product);
+            }
+
+            clear_mem(&legacy_product);
+            clear_mem(&legacy_a);
+            clear_mem(&legacy_b);
+        }
+
+        std::cout << "PASS: multiplication dispatch groups" << std::endl;
     }
 }
 
