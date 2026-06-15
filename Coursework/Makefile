@@ -62,7 +62,7 @@ all: $(WORK_EXEC) bench
 
 bench: $(BENCH_EXEC)
 
-test: test_bitbigint test_tc_vs_legacy test-rsa-tc-smoke test-work1-tc-smoke
+test: test_bitbigint test_biguint test_tc_vs_legacy test-rsa-tc-smoke test-work1-tc-smoke
 
 test-rsa: $(WORK_EXEC)
 	bash ./test_all.sh
