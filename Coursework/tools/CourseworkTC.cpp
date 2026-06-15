@@ -14,6 +14,7 @@ void print_help()
 {
     std::cout
             << "Usage:\n"
+            << "  work1_tc genkey  --size <bits> --pubkey <pub.txt> --secret <sec.txt>\n"
             << "  work1_tc encrypt --infile <in.txt> --pubkey <pub.txt> --outfile <out.txt>\n"
             << "  work1_tc decrypt --infile <in.txt> --secret <sec.txt> --outfile <out.txt>\n"
             << "  work1_tc sign    --infile <in.txt> --secret <sec.txt> --sigfile <sig.txt>\n"
@@ -63,17 +64,23 @@ int run(int argc, char* argv[])
         return SUCCESS;
     }
 
-    if (argc >= 2 && std::string(argv[1]) == "genkey") {
-        std::cerr << "genkey is not supported by work1_tc yet" << std::endl;
-        return FAILURE;
-    }
-
     if (argc < 2) {
         print_help();
         return FAILURE;
     }
 
     const std::string mode = argv[1];
+    if (mode == "genkey") {
+        require_args(argc, argv, "genkey", "--size", "--pubkey", "--secret");
+        const int key_size = std::stoi(argv[3]);
+        const rsa_tc::GeneratedKeyTC key = rsa_tc::generate_key_tc(key_size);
+        rsa_tc::write_key_tc(argv[5], key.public_key.n,
+                key.public_key.subkey, 'e');
+        rsa_tc::write_key_tc(argv[7], key.secret_key.n,
+                key.secret_key.subkey, 'd');
+        return SUCCESS;
+    }
+
     if (mode == "encrypt") {
         require_args(argc, argv, "encrypt", "--infile", "--pubkey", "--outfile");
         const std::string input = read_file_text(argv[3]);

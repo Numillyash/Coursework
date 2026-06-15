@@ -27,8 +27,9 @@ tc_check_tampered_out="$tmp_dir/tc_check_tampered.out"
 tc_check_bad_sig_out="$tmp_dir/tc_check_bad_sig.out"
 tc_empty_decrypted="$tmp_dir/tc_empty_decrypted.txt"
 tc_empty_check_out="$tmp_dir/tc_empty_check.out"
+legacy_empty_decrypted="$tmp_dir/legacy_empty_decrypted.txt"
+legacy_empty_check_out="$tmp_dir/legacy_empty_check.out"
 help_out="$tmp_dir/help.out"
-genkey_out="$tmp_dir/genkey.out"
 
 cat > "$small_pub" <<'KEY'
 _n_bkm#
@@ -49,18 +50,17 @@ printf "EOF" > "$empty_blocks"
 
 ./work1_tc --help > "$help_out"
 grep -q "work1_tc encrypt" "$help_out"
+grep -q "work1_tc genkey" "$help_out"
 
-if ./work1_tc genkey --size 256 --pubkey "$generated_pub" --secret "$generated_sec" > "$genkey_out" 2>&1; then
-    echo "work1_tc genkey unexpectedly succeeded" >&2
-    exit 1
-fi
-grep -q "genkey is not supported by work1_tc yet" "$genkey_out"
-
-./work1 genkey --size 256 --pubkey "$generated_pub" --secret "$generated_sec"
+./work1_tc genkey --size 256 --pubkey "$generated_pub" --secret "$generated_sec"
 ./work1_tc decrypt --infile "$empty_blocks" --secret "$generated_sec" --outfile "$tc_empty_decrypted"
 cmp "$empty_plain" "$tc_empty_decrypted"
 ./work1_tc check --infile "$empty_plain" --pubkey "$generated_pub" --sigfile "$empty_blocks" > "$tc_empty_check_out"
 grep -q "File signature is correct!" "$tc_empty_check_out"
+./work1 decrypt --infile "$empty_blocks" --secret "$generated_sec" --outfile "$legacy_empty_decrypted"
+cmp "$empty_plain" "$legacy_empty_decrypted"
+./work1 check --infile "$empty_plain" --pubkey "$generated_pub" --sigfile "$empty_blocks" > "$legacy_empty_check_out"
+grep -q "File signature is correct!" "$legacy_empty_check_out"
 
 ./work1_tc encrypt --infile "$plain" --pubkey "$small_pub" --outfile "$tc_cipher"
 ./work1 decrypt --infile "$tc_cipher" --secret "$small_sec" --outfile "$legacy_decrypted"
