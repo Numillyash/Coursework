@@ -365,6 +365,7 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 Coursework/work1
+Coursework/work1_tc
 Coursework/test_results/keys/pb256.txt
 Coursework/test_results/keys/pb512.txt
 Coursework/test_results/keys/pb1024.txt

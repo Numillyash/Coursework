@@ -22,6 +22,7 @@ endif
 BUILD := build/$(MODE)
 
 WORK_EXEC  := work1
+WORK_TC_EXEC := work1_tc
 BENCH_EXEC := bench_rsa
 TEST_BITBIGINT_EXEC := $(BUILD)/test_bitbigint
 TEST_TC_EXEC := $(BUILD)/test_tc_vs_legacy
@@ -48,7 +49,7 @@ BENCH_OBJECTS := $(patsubst %.c,$(BUILD)/%.o,$(BENCH_SOURCES))
 DEPS := $(WORK_OBJECTS:.o=.d) $(BENCH_OBJECTS:.o=.d)
 -include $(DEPS)
 
-.PHONY: all bench test test-rsa test-stress test_bitbigint test_tc_vs_legacy test_divmod_random test-divmod-stress test_seeds_0to49 test-rsa-tc-smoke tc_test clean prof release
+.PHONY: all bench test test-rsa test-stress test_bitbigint test_tc_vs_legacy test_divmod_random test-divmod-stress test_seeds_0to49 test-rsa-tc-smoke test-work1-tc-smoke tc_test clean prof release
 
 all: $(WORK_EXEC) bench
 
@@ -63,6 +64,9 @@ test-stress: test_divmod_random test_seeds_0to49
 
 $(WORK_EXEC): $(WORK_OBJECTS)
 	$(CC) $^ -o $@
+
+$(WORK_TC_EXEC): $(BUILD)/tools/CourseworkTC.o $(BUILD)/lib/rsa/RSA_TC.o $(BUILD)/lib/bigint/BitBigIntTC.o
+	$(CXX) $^ -o $@
 
 $(BENCH_EXEC): CPPFLAGS += -DNO_LOG
 $(BENCH_EXEC): $(BENCH_OBJECTS)
@@ -122,6 +126,9 @@ test-rsa-tc-smoke: $(WORK_EXEC) $(TEST_RSA_TC_SMOKE_EXEC)
 $(TEST_RSA_TC_SMOKE_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/rsa/RSA_TC.o tests/test_rsa_tc_smoke.cpp
 	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_rsa_tc_smoke.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/rsa/RSA_TC.o -o $@
 
+test-work1-tc-smoke: $(WORK_EXEC) $(WORK_TC_EXEC)
+	bash ./tests/test_work1_tc_smoke.sh
+
 prof:
 	$(MAKE) MODE=prof bench
 
@@ -130,4 +137,4 @@ release:
 
 clean:
 	rm -rf build
-	rm -f $(WORK_EXEC) $(BENCH_EXEC) test_bitbigint test_tc_vs_legacy test_divmod_random test_divmod_stress test_seeds_0to49 test_rsa_tc_smoke
+	rm -f $(WORK_EXEC) $(WORK_TC_EXEC) $(BENCH_EXEC) test_bitbigint test_tc_vs_legacy test_divmod_random test_divmod_stress test_seeds_0to49 test_rsa_tc_smoke
