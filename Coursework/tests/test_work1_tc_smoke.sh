@@ -46,6 +46,8 @@ tc_check_modified_sig_out="$tmp_dir/tc_check_modified_sig.out"
 legacy_check_modified_sig_out="$tmp_dir/legacy_check_modified_sig.out"
 tc_decrypt_trailing_out="$tmp_dir/tc_decrypt_trailing.txt"
 legacy_decrypt_trailing_out="$tmp_dir/legacy_decrypt_trailing.txt"
+tc_decrypt_extra_after_eof_out="$tmp_dir/tc_decrypt_extra_after_eof.txt"
+tc_decrypt_no_newline_out="$tmp_dir/tc_decrypt_no_newline.txt"
 
 expect_fail() {
     local label="$1"
@@ -179,6 +181,45 @@ _n_bqm#
 _e_bb#
 &
 KEY
+cat > "$tmp_dir/key_truncated_after_n.txt" <<'KEY'
+_n_bkm#
+KEY
+cat > "$tmp_dir/key_duplicated_n.txt" <<'KEY'
+_n_bkm#
+_n_bb#
+&
+KEY
+cat > "$tmp_dir/key_swapped_e_n.txt" <<'KEY'
+_e_bb#
+_n_bkm#
+&
+KEY
+cat > "$tmp_dir/key_missing_subkey.txt" <<'KEY'
+_n_bkm#
+&
+KEY
+cat > "$tmp_dir/key_empty_payload.txt" <<'KEY'
+_n_#
+_e_bb#
+&
+KEY
+cat > "$tmp_dir/key_payload_newline_inside.txt" <<'KEY'
+_n_b
+km#
+_e_bb#
+&
+KEY
+cat > "$tmp_dir/key_invalid_before_hash.txt" <<'KEY'
+_n_bk?#
+_e_bb#
+&
+KEY
+cat > "$tmp_dir/key_extra_after_amp.txt" <<'KEY'
+_n_bkm#
+_e_bb#
+&
+EXTRA
+KEY
 
 # Legacy work1 read_key() parses key files by fixed offsets and does not
 # validate _n_/_e_/_d_ prefixes or payload characters. Keep strict corrupt-key
@@ -196,6 +237,24 @@ expect_fail "work1_tc corrupt key missing &" "$corrupt_out" \
     ./work1_tc encrypt --infile "$plain" --pubkey "$tmp_dir/key_missing_amp.txt" --outfile "$tc_cipher"
 expect_fail "work1_tc corrupt key invalid payload char" "$corrupt_out" \
     ./work1_tc encrypt --infile "$plain" --pubkey "$tmp_dir/key_invalid_payload.txt" --outfile "$tc_cipher"
+expect_fail "work1_tc corrupt key truncated after _n_" "$corrupt_out" \
+    ./work1_tc encrypt --infile "$plain" --pubkey "$tmp_dir/key_truncated_after_n.txt" --outfile "$tc_cipher"
+expect_fail "work1_tc corrupt key duplicated _n_" "$corrupt_out" \
+    ./work1_tc encrypt --infile "$plain" --pubkey "$tmp_dir/key_duplicated_n.txt" --outfile "$tc_cipher"
+expect_fail "work1_tc corrupt key swapped _e_/_n_" "$corrupt_out" \
+    ./work1_tc encrypt --infile "$plain" --pubkey "$tmp_dir/key_swapped_e_n.txt" --outfile "$tc_cipher"
+expect_fail "work1_tc corrupt key missing subkey" "$corrupt_out" \
+    ./work1_tc encrypt --infile "$plain" --pubkey "$tmp_dir/key_missing_subkey.txt" --outfile "$tc_cipher"
+expect_fail "work1_tc corrupt key empty payload" "$corrupt_out" \
+    ./work1_tc encrypt --infile "$plain" --pubkey "$tmp_dir/key_empty_payload.txt" --outfile "$tc_cipher"
+expect_fail "work1_tc corrupt key payload newline inside" "$corrupt_out" \
+    ./work1_tc encrypt --infile "$plain" --pubkey "$tmp_dir/key_payload_newline_inside.txt" --outfile "$tc_cipher"
+expect_fail "work1_tc corrupt key invalid char before #" "$corrupt_out" \
+    ./work1_tc encrypt --infile "$plain" --pubkey "$tmp_dir/key_invalid_before_hash.txt" --outfile "$tc_cipher"
+# RSA_TC currently accepts extra data after the key '&' terminator because
+# read_key_tc() reads only the first three lines. Document that parser quirk.
+expect_success "work1_tc key extra data after & is ignored" "$corrupt_out" \
+    ./work1_tc encrypt --infile "$plain" --pubkey "$tmp_dir/key_extra_after_amp.txt" --outfile "$tc_cipher"
 
 cat > "$tmp_dir/cipher_missing_c.txt" <<'CIPHER'
 _x_a#
@@ -213,11 +272,47 @@ cat > "$tmp_dir/cipher_invalid_payload.txt" <<'CIPHER'
 _c_q#
 EOF
 CIPHER
+cat > "$tmp_dir/cipher_missing_eof.txt" <<'CIPHER'
+_c_a#
+CIPHER
+cat > "$tmp_dir/cipher_extra_block_after_eof.txt" <<'CIPHER'
+_c_paa#
+EOF
+_c_q#
+CIPHER
+cat > "$tmp_dir/cipher_invalid_first.txt" <<'CIPHER'
+_c_qaa#
+EOF
+CIPHER
+cat > "$tmp_dir/cipher_invalid_middle.txt" <<'CIPHER'
+_c_aqa#
+EOF
+CIPHER
+cat > "$tmp_dir/cipher_invalid_last.txt" <<'CIPHER'
+_c_aaq#
+EOF
+CIPHER
+printf '_c_paa#\nEOF' > "$tmp_dir/cipher_block_without_final_newline.txt"
+cat > "$tmp_dir/cipher_multiple_then_corrupt.txt" <<'CIPHER'
+_c_paa#
+_c_paa#
+_c_q#
+EOF
+CIPHER
+long_payload=$(printf 'a%.0s' {1..512})
+{
+    printf '_c_%s#\n' "$long_payload"
+    printf 'EOF\n'
+} > "$tmp_dir/cipher_very_long_payload.txt"
 
 for corrupt_cipher in \
     "$tmp_dir/cipher_missing_c.txt" \
     "$tmp_dir/cipher_missing_hash.txt" \
-    "$tmp_dir/cipher_invalid_payload.txt"
+    "$tmp_dir/cipher_invalid_payload.txt" \
+    "$tmp_dir/cipher_invalid_first.txt" \
+    "$tmp_dir/cipher_invalid_middle.txt" \
+    "$tmp_dir/cipher_invalid_last.txt" \
+    "$tmp_dir/cipher_multiple_then_corrupt.txt"
 do
     expect_fail "work1_tc corrupt cipher $(basename "$corrupt_cipher")" \
         "$corrupt_out" ./work1_tc decrypt --infile "$corrupt_cipher" --secret "$small_sec" --outfile "$tc_decrypted"
@@ -226,6 +321,10 @@ do
 done
 expect_fail "work1_tc corrupt cipher empty block" "$corrupt_out" \
     ./work1_tc decrypt --infile "$tmp_dir/cipher_empty_block.txt" --secret "$small_sec" --outfile "$tc_decrypted"
+expect_fail "work1_tc corrupt cipher missing EOF marker" "$corrupt_out" \
+    ./work1_tc decrypt --infile "$tmp_dir/cipher_missing_eof.txt" --secret "$small_sec" --outfile "$tc_decrypted"
+expect_fail "work1_tc corrupt cipher very long payload" "$corrupt_out" \
+    ./work1_tc decrypt --infile "$tmp_dir/cipher_very_long_payload.txt" --secret "$small_sec" --outfile "$tc_decrypted"
 
 ./work1_tc genkey --size 256 --pubkey "$generated_pub" --secret "$generated_sec"
 ./work1_tc decrypt --infile "$empty_blocks" --secret "$generated_sec" --outfile "$tc_empty_decrypted"
@@ -240,6 +339,20 @@ grep -q "File signature is correct!" "$legacy_empty_check_out"
 ./work1_tc encrypt --infile "$plain" --pubkey "$small_pub" --outfile "$tc_cipher"
 ./work1 decrypt --infile "$tc_cipher" --secret "$small_sec" --outfile "$legacy_decrypted"
 cmp "$plain" "$legacy_decrypted"
+
+cp "$tc_cipher" "$tmp_dir/tc_cipher_extra_block_after_eof.txt"
+printf '\n_c_q#\n' >> "$tmp_dir/tc_cipher_extra_block_after_eof.txt"
+./work1_tc decrypt --infile "$tmp_dir/tc_cipher_extra_block_after_eof.txt" --secret "$small_sec" --outfile "$tc_decrypt_extra_after_eof_out"
+cmp "$plain" "$tc_decrypt_extra_after_eof_out"
+expect_fail "legacy rejects extra block after EOF marker" \
+    "$corrupt_out" ./work1 decrypt --infile "$tmp_dir/tc_cipher_extra_block_after_eof.txt" --secret "$small_sec" --outfile "$legacy_decrypted"
+
+{
+    head -n 1 "$tc_cipher"
+    printf 'EOF'
+} > "$tmp_dir/tc_cipher_without_newline.txt"
+./work1_tc decrypt --infile "$tmp_dir/tc_cipher_without_newline.txt" --secret "$small_sec" --outfile "$tc_decrypt_no_newline_out"
+cmp "$plain" "$tc_decrypt_no_newline_out"
 
 ./work1 encrypt --infile "$plain" --pubkey "$small_pub" --outfile "$legacy_cipher"
 ./work1_tc decrypt --infile "$legacy_cipher" --secret "$small_sec" --outfile "$tc_decrypted"
@@ -292,6 +405,16 @@ expect_fail "work1_tc corrupt signature invalid payload char" "$corrupt_out" \
     ./work1_tc check --infile "$plain" --pubkey "$small_pub" --sigfile "$tmp_dir/cipher_invalid_payload.txt"
 expect_fail "work1 corrupt signature invalid payload char" "$corrupt_out" \
     ./work1 check --infile "$plain" --pubkey "$small_pub" --sigfile "$tmp_dir/cipher_invalid_payload.txt"
+expect_check_result "work1_tc signature missing EOF marker is semantic rejection" \
+    "File signature is NOT correct!" "$corrupt_out" \
+    ./work1_tc check --infile "$plain" --pubkey "$small_pub" --sigfile "$tmp_dir/cipher_missing_eof.txt"
+expect_fail "work1_tc corrupt signature invalid middle char" "$corrupt_out" \
+    ./work1_tc check --infile "$plain" --pubkey "$small_pub" --sigfile "$tmp_dir/cipher_invalid_middle.txt"
+expect_fail "work1_tc corrupt signature multiple valid then corrupt" "$corrupt_out" \
+    ./work1_tc check --infile "$plain" --pubkey "$small_pub" --sigfile "$tmp_dir/cipher_multiple_then_corrupt.txt"
+expect_check_result "work1_tc very long signature payload is semantic rejection" \
+    "File signature is NOT correct!" "$corrupt_out" \
+    ./work1_tc check --infile "$plain" --pubkey "$small_pub" --sigfile "$tmp_dir/cipher_very_long_payload.txt"
 expect_check_result "work1_tc empty signature block is semantic rejection" \
     "File signature is NOT correct!" "$tc_check_modified_sig_out" \
     ./work1_tc check --infile "$plain" --pubkey "$small_pub" --sigfile "$tmp_dir/cipher_empty_block.txt"
