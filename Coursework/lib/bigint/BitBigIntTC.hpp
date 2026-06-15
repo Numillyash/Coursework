@@ -165,6 +165,10 @@ public:
             const BitBigIntTC& other,
             std::array<BitBigIntTC, 4>& values) const;
 
+    /// Compatibility helper for legacy euclide_algorithm(); intended for tests/internal porting only.
+    /// Returns GCD only and preserves legacy sign handling.
+    BitBigIntTC euclide_algorithm_compat_for_testing(const BitBigIntTC& other) const;
+
     /// Divide this by divisor, returning quotient and remainder
     /// Port of division_with_module(number*, number*, number*) from bit_LA.c
     /// Throws if divisor is zero

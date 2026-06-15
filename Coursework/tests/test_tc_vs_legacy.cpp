@@ -20,6 +20,7 @@ number multiply_furie(number *value1, number *value2);
 number karatsuba(number *value1, number *value2);
 number module_pow(number *a, number *t, number *b);
 number euclide_algorithm_modifyed(number *value1, number *value2, number *values);
+number euclide_algorithm(number *value1, number *value2);
 }
 
 #ifdef max
@@ -97,6 +98,16 @@ struct has_modified_euclid_compat<T,
                 .euclide_algorithm_modifyed_compat_for_testing(
                     std::declval<const T&>(),
                     std::declval<std::array<T, 4>&>()))>>
+    : std::true_type {};
+
+template <typename T, typename = void>
+struct has_euclid_compat : std::false_type {};
+
+template <typename T>
+struct has_euclid_compat<T,
+        std::void_t<decltype(std::declval<T>()
+                .euclide_algorithm_compat_for_testing(
+                    std::declval<const T&>()))>>
     : std::true_type {};
 
 void test_section(const char *name) {
@@ -1355,6 +1366,78 @@ void test_modified_euclid_equivalence_if_available() {
     test_modified_euclid_for_type<BitBigIntTC>();
 }
 
+template <typename T>
+void test_euclid_for_type() {
+    struct EuclidCase {
+        std::string group;
+        int lhs;
+        int rhs;
+    };
+
+    std::vector<EuclidCase> cases = {
+        {"deterministic positive pairs", 7, 3},
+        {"deterministic positive pairs", 17, 5},
+        {"deterministic positive pairs", 40, 7},
+        {"deterministic non-coprime pairs", 12, 8},
+        {"deterministic non-coprime pairs", 21, 14},
+        {"RSA-like pairs", 3120, 17},
+
+        {"negative sign combinations", -7, 3},
+        {"negative sign combinations", 7, -3},
+        {"negative sign combinations", -7, -3},
+        {"negative sign combinations", -12, 8},
+        {"negative sign combinations", 12, -8},
+        {"negative sign combinations", -21, -14}
+    };
+
+    std::mt19937_64 euclid_rng(0x676364ULL);
+    std::uniform_int_distribution<int> positive_dist(1, 500);
+    for (int i = 0; i < 25; ++i) {
+        cases.push_back({"fixed-seed random small positive pairs",
+                positive_dist(euclid_rng), positive_dist(euclid_rng)});
+    }
+
+    if constexpr (!has_euclid_compat<T>::value) {
+        std::cout
+            << "SKIP/TODO: BitBigIntTC has no Euclid compatibility helper "
+            << "yet; tests are prepared for legacy parity."
+            << std::endl;
+        std::cout << "  Prepared cases: " << cases.size()
+                  << " (zero inputs intentionally excluded)" << std::endl;
+        return;
+    } else {
+        for (const auto& test : cases) {
+            set_current_case("Euclid " + std::to_string(test.lhs)
+                    + ", " + std::to_string(test.rhs));
+
+            number legacy_lhs = int_to_number(test.lhs);
+            number legacy_rhs = int_to_number(test.rhs);
+            number legacy_gcd = euclide_algorithm(&legacy_lhs, &legacy_rhs);
+
+            T tc_lhs(static_cast<int64_t>(test.lhs));
+            T tc_rhs(static_cast<int64_t>(test.rhs));
+            T tc_gcd = tc_lhs.euclide_algorithm_compat_for_testing(tc_rhs);
+
+            assert_same_binary(test.group + " euclide_algorithm "
+                    + std::to_string(test.lhs) + ", "
+                    + std::to_string(test.rhs),
+                    legacy_gcd, tc_gcd);
+
+            clear_mem(&legacy_gcd);
+            clear_mem(&legacy_lhs);
+            clear_mem(&legacy_rhs);
+        }
+
+        std::cout << "PASS: Euclid deterministic and fixed-seed cases"
+                  << std::endl;
+    }
+}
+
+void test_euclid_equivalence_if_available() {
+    test_section("euclide_algorithm vs legacy");
+    test_euclid_for_type<BitBigIntTC>();
+}
+
 void test_divmod_equivalence() {
     test_section("divmod/modulo vs legacy");
 
@@ -1462,6 +1545,7 @@ int main() {
     test_multiplication_equivalence_if_available();
     test_module_pow_equivalence_if_available();
     test_modified_euclid_equivalence_if_available();
+    test_euclid_equivalence_if_available();
     test_divmod_equivalence();
     test_comparison_equivalence();
 

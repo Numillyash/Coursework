@@ -996,6 +996,57 @@ BitBigIntTC BitBigIntTC::euclide_algorithm_modifyed_compat_for_testing(
 	return (GCD);
 }
 
+// === Euclidean algorithm compatibility helper (ported from bit_LA.c) ===
+
+BitBigIntTC BitBigIntTC::euclide_algorithm_compat_for_testing(
+		const BitBigIntTC &other) const
+{
+	BitBigIntTC a = *this;
+	if (a.mas_[a.mas_.size() - 1])
+	{
+		a.additional_code();
+	}
+	BitBigIntTC b = other;
+	if (b.mas_[b.mas_.size() - 1])
+	{
+		b.additional_code();
+	}
+
+	BitBigIntTC buff = a.sub(b);
+	if (buff.is_negative())
+	{
+		a = other;
+		b = *this;
+	}
+	else
+	{
+		a = *this;
+		b = other;
+	}
+
+	if (a.mas_[a.mas_.size() - 1])
+	{
+		a.additional_code();
+	}
+	if (b.mas_[b.mas_.size() - 1])
+	{
+		b.additional_code();
+	}
+
+	DivModTC dm = a.divmod(b);
+	BitBigIntTC mod = dm.r;
+
+	if (!mod.is_zero())
+	{
+		BitBigIntTC result = b.euclide_algorithm_compat_for_testing(mod);
+		result.normalize();
+		return (result);
+	}
+
+	b.normalize();
+	return (b);
+}
+
 // === Division with remainder (fixed: handles MIN negative, no recursion) ===
 
 DivModTC BitBigIntTC::divmod(const BitBigIntTC &divisor) const
