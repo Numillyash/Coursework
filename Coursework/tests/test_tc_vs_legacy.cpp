@@ -185,6 +185,30 @@ std::vector<std::pair<int, int>> deterministic_pairs() {
     return pairs;
 }
 
+std::vector<int> bit_boundary_exponents() {
+    return {
+        1, 2, 3, 4, 5,
+        7, 8, 15, 16,
+        31, 32,
+        63, 64,
+        127, 128,
+        254, 255, 256, 257
+    };
+}
+
+std::vector<uint8_t> positive_power_bits_for_exponent(int exponent) {
+    std::vector<uint8_t> bits(static_cast<size_t>(exponent) + 2, 0);
+    bits[static_cast<size_t>(exponent)] = 1;
+    return bits;
+}
+
+std::vector<uint8_t> positive_mersenne_bits_for_exponent(int exponent) {
+    std::vector<uint8_t> bits(static_cast<size_t>(exponent) + 1, 0);
+    for (int i = 0; i < exponent; ++i)
+        bits[static_cast<size_t>(i)] = 1;
+    return bits;
+}
+
 std::vector<uint8_t> random_bits(size_t data_bits, std::mt19937_64& gen) {
     std::uniform_int_distribution<int> bit_dist(0, 1);
     std::vector<uint8_t> bits;
@@ -214,6 +238,33 @@ int legacy_compare(number *a, number *b) {
         result = diff.mas[diff.current_count - 1] ? -1 : 1;
     clear_mem(&diff);
     return result;
+}
+
+number negative_legacy_from_positive_bits(const std::vector<uint8_t>& bits) {
+    number zero = int_to_number(0);
+    number positive = normalized_legacy_from_bits(bits);
+    number negative = difference(&zero, &positive);
+    normalize(&negative);
+    clear_mem(&zero);
+    clear_mem(&positive);
+    return negative;
+}
+
+BitBigIntTC negative_tc_from_positive_bits(const std::vector<uint8_t>& bits) {
+    BitBigIntTC positive = BitBigIntTC::from_binary_bits(bits);
+    BitBigIntTC result = BitBigIntTC::zero().sub(positive);
+    result.normalize();
+    return result;
+}
+
+bool is_zero_like_raw(const std::vector<uint8_t>& bits) {
+    if (bits.size() <= 1)
+        return true;
+    for (size_t i = 0; i + 1 < bits.size(); ++i) {
+        if (bits[i] != 0)
+            return false;
+    }
+    return true;
 }
 
 void test_construction_conversion_equivalence() {
@@ -545,6 +596,290 @@ void test_comparison_equivalence() {
     }
 
     std::cout << "PASS: comparison deterministic cases" << std::endl;
+}
+
+void test_exhaustive_small_integer_equivalence() {
+    test_section("exhaustive small integer parity");
+
+    std::vector<int> values;
+    for (int value = -128; value <= 128; ++value)
+        values.push_back(value);
+
+    for (int value : values) {
+        number legacy_num = int_to_number(value);
+        BitBigIntTC tc_num(static_cast<int64_t>(value));
+
+        assert_same_binary("exhaustive construction "
+                + std::to_string(value), legacy_num, tc_num);
+
+        normalize(&legacy_num);
+        tc_num.normalize();
+        assert_same_binary("exhaustive normalize "
+                + std::to_string(value), legacy_num, tc_num);
+
+        int legacy_int = number_to_int(&legacy_num);
+        int tc_int = tc_num.to_int();
+        assert_same_int("exhaustive number_to_int "
+                + std::to_string(value), legacy_int, tc_int);
+
+        clear_mem(&legacy_num);
+    }
+
+    for (int lhs : values) {
+        for (int rhs : values) {
+            set_current_case("exhaustive small pair "
+                    + std::to_string(lhs) + ", " + std::to_string(rhs));
+
+            number legacy_a = int_to_number(lhs);
+            number legacy_b = int_to_number(rhs);
+            BitBigIntTC tc_a(static_cast<int64_t>(lhs));
+            BitBigIntTC tc_b(static_cast<int64_t>(rhs));
+
+            number legacy_a_for_equal = copy(&legacy_a);
+            number legacy_b_for_equal = copy(&legacy_b);
+            bool legacy_equal = is_equal(&legacy_a_for_equal,
+                    &legacy_b_for_equal);
+            bool tc_equal = tc_a.is_equal(tc_b);
+            assert_same_equal("exhaustive is_equal "
+                    + std::to_string(lhs) + " vs " + std::to_string(rhs),
+                    legacy_equal, tc_equal);
+            clear_mem(&legacy_a_for_equal);
+            clear_mem(&legacy_b_for_equal);
+
+            number legacy_a_for_cmp = copy(&legacy_a);
+            number legacy_b_for_cmp = copy(&legacy_b);
+            int legacy_cmp = legacy_compare(&legacy_a_for_cmp,
+                    &legacy_b_for_cmp);
+            int tc_cmp = tc_a.compare(tc_b);
+            tc_cmp = (tc_cmp > 0) - (tc_cmp < 0);
+            if (legacy_cmp != tc_cmp) {
+                std::cerr << "FAIL: exhaustive compare " << lhs
+                          << " vs " << rhs << std::endl;
+                std::cerr << "  Legacy compare: " << legacy_cmp << std::endl;
+                std::cerr << "  TC compare:     " << tc_cmp << std::endl;
+                std::exit(1);
+            }
+            clear_mem(&legacy_a_for_cmp);
+            clear_mem(&legacy_b_for_cmp);
+
+            number legacy_sum = addition(&legacy_a, &legacy_b);
+            BitBigIntTC tc_sum = tc_a.add(tc_b);
+            assert_same_binary("exhaustive addition "
+                    + std::to_string(lhs) + " + " + std::to_string(rhs),
+                    legacy_sum, tc_sum);
+            clear_mem(&legacy_sum);
+
+            number legacy_diff = difference(&legacy_a, &legacy_b);
+            normalize(&legacy_diff);
+            BitBigIntTC tc_diff = tc_a.sub(tc_b);
+            tc_diff.normalize();
+            assert_same_binary("exhaustive difference "
+                    + std::to_string(lhs) + " - " + std::to_string(rhs),
+                    legacy_diff, tc_diff);
+            clear_mem(&legacy_diff);
+
+            number legacy_product = multiplication(&legacy_a, &legacy_b);
+            BitBigIntTC tc_product =
+                    tc_a.multiplication_compat_for_testing(tc_b);
+            assert_same_binary("exhaustive multiplication "
+                    + std::to_string(lhs) + " * " + std::to_string(rhs),
+                    legacy_product, tc_product);
+            clear_mem(&legacy_product);
+
+            clear_mem(&legacy_a);
+            clear_mem(&legacy_b);
+        }
+    }
+
+    for (int dividend = -128; dividend <= 128; ++dividend) {
+        for (int divisor = -16; divisor <= 16; ++divisor) {
+            if (divisor == 0)
+                continue;
+
+            set_current_case("exhaustive bounded divmod "
+                    + std::to_string(dividend) + " / "
+                    + std::to_string(divisor));
+
+            number legacy_a = int_to_number(dividend);
+            number legacy_b = int_to_number(divisor);
+            number legacy_r = init();
+            number legacy_q = division_with_module(
+                    &legacy_a, &legacy_b, &legacy_r);
+            normalize(&legacy_q);
+            normalize(&legacy_r);
+
+            BitBigIntTC tc_a(static_cast<int64_t>(dividend));
+            BitBigIntTC tc_b(static_cast<int64_t>(divisor));
+            auto dm = tc_a.divmod(tc_b);
+
+            assert_same_binary("exhaustive bounded divmod quotient "
+                    + std::to_string(dividend) + " / "
+                    + std::to_string(divisor), legacy_q, dm.q);
+            assert_same_binary("exhaustive bounded divmod remainder "
+                    + std::to_string(dividend) + " % "
+                    + std::to_string(divisor), legacy_r, dm.r);
+
+            clear_mem(&legacy_q);
+            clear_mem(&legacy_r);
+            clear_mem(&legacy_a);
+            clear_mem(&legacy_b);
+        }
+    }
+
+    std::cout << "PASS: exhaustive small integer construction, compare, "
+              << "is_equal, add/sub, multiplication, and bounded divmod"
+              << std::endl;
+}
+
+void assert_boundary_value(const std::string& label, const number& legacy,
+        const BitBigIntTC& tc) {
+    number legacy_copy = copy(const_cast<number *>(&legacy));
+    normalize(&legacy_copy);
+    BitBigIntTC tc_copy = tc;
+    tc_copy.normalize();
+    assert_same_binary(label, legacy_copy, tc_copy);
+    clear_mem(&legacy_copy);
+}
+
+void test_bit_boundary_equivalence() {
+    test_section("bit-boundary operands");
+
+    number legacy_zero = int_to_number(0);
+    BitBigIntTC tc_zero(static_cast<int64_t>(0));
+    number legacy_one = int_to_number(1);
+    BitBigIntTC tc_one(static_cast<int64_t>(1));
+    number legacy_neg_one = int_to_number(-1);
+    BitBigIntTC tc_neg_one(static_cast<int64_t>(-1));
+
+    assert_same_binary("boundary zero", legacy_zero, tc_zero);
+    assert_same_binary("boundary one", legacy_one, tc_one);
+    assert_same_binary("boundary negative one", legacy_neg_one, tc_neg_one);
+
+    clear_mem(&legacy_zero);
+    clear_mem(&legacy_one);
+    clear_mem(&legacy_neg_one);
+
+    for (int exponent : bit_boundary_exponents()) {
+        const auto power_bits = positive_power_bits_for_exponent(exponent);
+        const auto mersenne_bits = positive_mersenne_bits_for_exponent(exponent);
+
+        number legacy_power = normalized_legacy_from_bits(power_bits);
+        BitBigIntTC tc_power = BitBigIntTC::from_binary_bits(power_bits);
+        assert_boundary_value("boundary 2^" + std::to_string(exponent),
+                legacy_power, tc_power);
+
+        number legacy_neg_power = negative_legacy_from_positive_bits(power_bits);
+        BitBigIntTC tc_neg_power = negative_tc_from_positive_bits(power_bits);
+        assert_boundary_value("boundary -(2^" + std::to_string(exponent) + ")",
+                legacy_neg_power, tc_neg_power);
+
+        number legacy_mersenne = normalized_legacy_from_bits(mersenne_bits);
+        BitBigIntTC tc_mersenne = BitBigIntTC::from_binary_bits(mersenne_bits);
+        assert_boundary_value("boundary 2^" + std::to_string(exponent)
+                + " - 1", legacy_mersenne, tc_mersenne);
+
+        number legacy_neg_mersenne =
+                negative_legacy_from_positive_bits(mersenne_bits);
+        BitBigIntTC tc_neg_mersenne =
+                negative_tc_from_positive_bits(mersenne_bits);
+        assert_boundary_value("boundary -(2^" + std::to_string(exponent)
+                + " - 1)", legacy_neg_mersenne, tc_neg_mersenne);
+
+        number legacy_sum = addition(&legacy_power, &legacy_neg_power);
+        BitBigIntTC tc_sum = tc_power.add(tc_neg_power);
+        assert_same_binary("boundary 2^k + -(2^k), k="
+                + std::to_string(exponent), legacy_sum, tc_sum);
+        clear_mem(&legacy_sum);
+
+        number legacy_diff = difference(&legacy_mersenne, &legacy_power);
+        normalize(&legacy_diff);
+        BitBigIntTC tc_diff = tc_mersenne.sub(tc_power);
+        tc_diff.normalize();
+        assert_same_binary("boundary (2^k-1) - 2^k, k="
+                + std::to_string(exponent), legacy_diff, tc_diff);
+        clear_mem(&legacy_diff);
+
+        if (exponent <= 128) {
+            number legacy_product = multiplication(
+                    &legacy_power, &legacy_neg_mersenne);
+            BitBigIntTC tc_product =
+                    tc_power.multiplication_compat_for_testing(tc_neg_mersenne);
+            assert_same_binary("boundary multiplication sign/power k="
+                    + std::to_string(exponent), legacy_product, tc_product);
+            clear_mem(&legacy_product);
+        }
+
+        number legacy_r = init();
+        number legacy_q = division_with_module(
+                &legacy_power, &legacy_mersenne, &legacy_r);
+        normalize(&legacy_q);
+        normalize(&legacy_r);
+        auto dm = tc_power.divmod(tc_mersenne);
+        assert_same_binary("boundary divmod quotient 2^k / (2^k-1), k="
+                + std::to_string(exponent), legacy_q, dm.q);
+        assert_same_binary("boundary divmod remainder 2^k % (2^k-1), k="
+                + std::to_string(exponent), legacy_r, dm.r);
+        clear_mem(&legacy_q);
+        clear_mem(&legacy_r);
+
+        legacy_r = init();
+        legacy_q = division_with_module(&legacy_power, &legacy_power, &legacy_r);
+        normalize(&legacy_q);
+        normalize(&legacy_r);
+        dm = tc_power.divmod(tc_power);
+        assert_same_binary("boundary divmod quotient equal operands k="
+                + std::to_string(exponent), legacy_q, dm.q);
+        assert_same_binary("boundary divmod remainder equal operands k="
+                + std::to_string(exponent), legacy_r, dm.r);
+        clear_mem(&legacy_q);
+        clear_mem(&legacy_r);
+
+        clear_mem(&legacy_power);
+        clear_mem(&legacy_neg_power);
+        clear_mem(&legacy_mersenne);
+        clear_mem(&legacy_neg_mersenne);
+    }
+
+    std::cout << "PASS: bit-boundary construction, sign, add/sub, "
+              << "selected multiplication, and divmod cases" << std::endl;
+}
+
+void test_raw_representation_invariants() {
+    test_section("raw representation invariants");
+
+    std::vector<std::vector<uint8_t>> positive_zero_forms = {
+        {0, 0},
+        {0, 0, 0},
+        {0, 0, 0, 0}
+    };
+
+    for (const auto& bits : positive_zero_forms) {
+        number legacy_num = normalized_legacy_from_bits(bits);
+        BitBigIntTC tc_num = BitBigIntTC::from_binary_bits(bits);
+        assert_same_binary("canonical positive zero normalization "
+                + bits_to_debug(bits), legacy_num, tc_num);
+        clear_mem(&legacy_num);
+    }
+
+    std::vector<std::vector<uint8_t>> malformed_zero_like = {
+        {0, 1},
+        {0, 0, 0, 1}
+    };
+
+    for (const auto& bits : malformed_zero_like) {
+        if (!is_zero_like_raw(bits)) {
+            std::cerr << "FAIL: malformed zero-like diagnostic was not "
+                      << "classified as zero-like: " << bits_to_debug(bits)
+                      << std::endl;
+            std::exit(1);
+        }
+    }
+
+    std::cout
+        << "PASS: positive zero normalization; malformed sign-only "
+        << "zero-like states such as [0,1] are diagnostic-only and excluded "
+        << "from legacy division oracle calls"
+        << std::endl;
 }
 
 void test_addition_difference_equivalence() {
@@ -1054,6 +1389,15 @@ void test_multiplication_for_type() {
     }
 
     std::vector<RawMulCase> raw_cases = {
+        {"easy_mult dispatch: both current_count < 5", positive_bits_with_count(2),
+                positive_bits_with_count(2)},
+        {"easy_mult dispatch: both current_count < 5", positive_bits_with_count(4),
+                all_ones_positive_with_count(4)},
+        {"threshold around current_count == 5", positive_bits_with_count(4),
+                positive_bits_with_count(5)},
+        {"threshold around current_count == 5", positive_bits_with_count(5),
+                all_ones_positive_with_count(5)},
+
         {"multiply_furie-sized cases", positive_bits_with_count(5),
                 positive_bits_with_count(5)},
         {"multiply_furie-sized cases", positive_bits_with_count(16),
@@ -1065,12 +1409,23 @@ void test_multiplication_for_type() {
 
         {"karatsuba boundary cases", positive_bits_with_count(255),
                 positive_bits_with_count(255)},
+        {"karatsuba boundary cases", positive_bits_with_count(255),
+                positive_bits_with_count(256)},
         {"karatsuba boundary cases", positive_bits_with_count(256),
                 positive_bits_with_count(5)},
+        {"karatsuba boundary cases", positive_bits_with_count(5),
+                positive_bits_with_count(256)},
         {"karatsuba boundary cases", positive_bits_with_count(256),
                 positive_bits_with_count(256)},
         {"karatsuba boundary cases", all_ones_positive_with_count(257),
-                positive_bits_with_count(256)}
+                positive_bits_with_count(256)},
+        {"karatsuba boundary cases", positive_bits_with_count(257),
+                all_ones_positive_with_count(257)},
+
+        {"uneven operands: huge * small", all_ones_positive_with_count(320),
+                positive_bits_with_count(3)},
+        {"uneven operands: small * huge", positive_bits_with_count(3),
+                all_ones_positive_with_count(320)}
     };
 
     if constexpr (!has_multiplication_compat<T>::value
@@ -1184,6 +1539,9 @@ void test_module_pow_for_type() {
         {"deterministic cases", 5, 3, 13},
         {"deterministic cases", 0, 1, 7},
         {"deterministic cases", 1, 100, 7},
+        {"deterministic cases", 2, 3, 1},
+        {"deterministic cases", 17, 0, 1},
+        {"deterministic cases", 21, 1, 7},
 
         {"RSA-like small cases", 65, 17, 3233},
         {"RSA-like small cases", 2790, 2753, 3233},
@@ -1259,11 +1617,16 @@ void test_modified_euclid_for_type() {
 
     std::vector<EuclidCase> cases = {
         {"deterministic coprime pairs", 7, 3},
+        {"deterministic coprime swapped pairs", 3, 7},
         {"deterministic coprime pairs", 17, 5},
+        {"deterministic coprime swapped pairs", 5, 17},
         {"deterministic coprime pairs", 40, 7},
         {"deterministic non-coprime pairs", 12, 8},
+        {"deterministic non-coprime swapped pairs", 8, 12},
         {"deterministic non-coprime pairs", 21, 14},
+        {"deterministic non-coprime swapped pairs", 14, 21},
         {"RSA-like pairs", 3120, 17},
+        {"RSA-like swapped pairs", 17, 3120},
         {"RSA-like pairs", 2773, 17}
     };
 
@@ -1376,11 +1739,16 @@ void test_euclid_for_type() {
 
     std::vector<EuclidCase> cases = {
         {"deterministic positive pairs", 7, 3},
+        {"deterministic swapped pairs", 3, 7},
         {"deterministic positive pairs", 17, 5},
+        {"deterministic swapped pairs", 5, 17},
         {"deterministic positive pairs", 40, 7},
         {"deterministic non-coprime pairs", 12, 8},
+        {"deterministic non-coprime swapped pairs", 8, 12},
         {"deterministic non-coprime pairs", 21, 14},
+        {"deterministic non-coprime swapped pairs", 14, 21},
         {"RSA-like pairs", 3120, 17},
+        {"RSA-like swapped pairs", 17, 3120},
 
         {"negative sign combinations", -7, 3},
         {"negative sign combinations", 7, -3},
@@ -1449,7 +1817,13 @@ void test_divmod_equivalence() {
         {12, 3}, {-12, 3}, {12, -3}, {-12, -3},
         {3, 10}, {-3, 10}, {3, -10}, {-3, -10},
         {64, 8}, {-64, 8}, {64, -8}, {-64, -8},
-        {255, 255}, {-255, -255}, {255, -255}, {-255, 255}
+        {255, 255}, {-255, -255}, {255, -255}, {-255, 255},
+
+        {7, 8}, {8, 8}, {9, 8},
+        {127, 1}, {127, -1}, {-127, 1}, {-127, -1},
+        {128, 2}, {129, 2}, {255, 16}, {257, 16},
+        {1024, 31}, {1024, 32}, {1024, 63}, {1024, 64},
+        {4095, 127}, {4096, 127}, {4097, 127}
     };
 
     std::uniform_int_distribution<int> small_dist(-4096, 4096);
@@ -1517,6 +1891,52 @@ void test_divmod_equivalence() {
         clear_mem(&legacy_b);
     }
 
+    for (int exponent : {1, 2, 3, 4, 5, 7, 8, 15, 16}) {
+        int dividend = 1 << exponent;
+        int power_divisor = 1 << (exponent / 2);
+        int mersenne_divisor = (1 << exponent) - 1;
+        pairs = {
+            {dividend - 1, dividend},
+            {dividend, dividend},
+            {dividend + 1, dividend},
+            {dividend, power_divisor},
+            {dividend, mersenne_divisor}
+        };
+
+        for (const auto& pair : pairs) {
+            if (pair.second == 0)
+                continue;
+
+            set_current_case("divmod power boundary "
+                    + std::to_string(pair.first) + " / "
+                    + std::to_string(pair.second));
+
+            number legacy_a = int_to_number(pair.first);
+            number legacy_b = int_to_number(pair.second);
+            number legacy_r = init();
+            number legacy_q = division_with_module(
+                    &legacy_a, &legacy_b, &legacy_r);
+            normalize(&legacy_q);
+            normalize(&legacy_r);
+
+            BitBigIntTC tc_a(static_cast<int64_t>(pair.first));
+            BitBigIntTC tc_b(static_cast<int64_t>(pair.second));
+            auto dm = tc_a.divmod(tc_b);
+
+            assert_same_binary("power-boundary divmod quotient "
+                    + std::to_string(pair.first) + " / "
+                    + std::to_string(pair.second), legacy_q, dm.q);
+            assert_same_binary("power-boundary divmod remainder "
+                    + std::to_string(pair.first) + " % "
+                    + std::to_string(pair.second), legacy_r, dm.r);
+
+            clear_mem(&legacy_q);
+            clear_mem(&legacy_r);
+            clear_mem(&legacy_a);
+            clear_mem(&legacy_b);
+        }
+    }
+
     std::cout << "PASS: divmod/modulo deterministic and random cases"
               << std::endl;
 }
@@ -1538,6 +1958,9 @@ int main() {
     test_number_to_int_equivalence();
     test_unary_mutation_equivalence();
     test_is_equal_equivalence();
+    test_raw_representation_invariants();
+    test_exhaustive_small_integer_equivalence();
+    test_bit_boundary_equivalence();
     test_addition_difference_equivalence();
     test_easy_mult_equivalence();
     test_multiply_furie_equivalence_if_available<BitBigIntTC>();
