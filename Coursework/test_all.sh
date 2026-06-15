@@ -56,6 +56,12 @@ do
         done < './tests/file_nums'
     done < './tests/keysizes'
 
+    bash ./tests/test_sign.sh "sign-$filename"
+    check_log_success "sign-$filename"
+
+    bash ./tests/test_check.sh "check-$filename"
+    check_log_success "check-$filename"
+
     end=$(date +%s.%N)
     DIFF=$( echo "$end - $start" | bc -l )
     echo "Runtime: ALL, time: $DIFF" >> ./test_results/logs/"ALL=$filename".txt

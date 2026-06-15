@@ -34,6 +34,17 @@ BOOL check_sign_file(char *input_filename, char *pubkey_filename, char *sign_fil
 		msg_ci = init();
 	}
 
+	if (fgetc(input) != EOF)
+	{
+		clear_mem(&e);
+		clear_mem(&n);
+		clear_mem(&msg_ci);
+
+		fclose(input);
+		fclose(sign);
+		return 0;
+	}
+
 	clear_mem(&e);
 	clear_mem(&n);
 	clear_mem(&msg_ci);

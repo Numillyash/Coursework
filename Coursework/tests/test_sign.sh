@@ -1,3 +1,5 @@
+set -u
+
 while read -r a
 do
 while read -r b
