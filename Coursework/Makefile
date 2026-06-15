@@ -119,8 +119,8 @@ $(TEST_SEEDS_0TO49_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o test_seeds_0to49.cpp
 test-rsa-tc-smoke: $(WORK_EXEC) $(TEST_RSA_TC_SMOKE_EXEC)
 	./$(TEST_RSA_TC_SMOKE_EXEC)
 
-$(TEST_RSA_TC_SMOKE_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o tests/test_rsa_tc_smoke.cpp
-	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_rsa_tc_smoke.cpp $(BUILD)/lib/bigint/BitBigIntTC.o -o $@
+$(TEST_RSA_TC_SMOKE_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/rsa/RSA_TC.o tests/test_rsa_tc_smoke.cpp
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_rsa_tc_smoke.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/rsa/RSA_TC.o -o $@
 
 prof:
 	$(MAKE) MODE=prof bench
