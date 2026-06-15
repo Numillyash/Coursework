@@ -95,6 +95,18 @@ int main()
         std::cout << "PASS: TC parsed legacy-generated public and secret keys"
                   << std::endl;
 
+        rsa_tc::GeneratedKeyTC deterministic_key =
+                rsa_tc::generate_key_tc_for_testing(256, 1, 2);
+        BitBigIntTC product =
+                deterministic_key.public_key.subkey
+                        .multiplication_compat_for_testing(
+                                deterministic_key.secret_key.subkey);
+        BitBigIntTC remainder = product.divmod(deterministic_key.phi).r;
+        expect(remainder.is_equal(BitBigIntTC(static_cast<int64_t>(1))),
+                "deterministic TC key failed e*d mod phi == 1 validation");
+        std::cout << "PASS: deterministic TC keygen validates e*d mod phi == 1"
+                  << std::endl;
+
         // Small RSA fixture: p=61, q=53, n=3233, phi=3120, e=17, d=2753.
         // It keeps this opt-in smoke target fast while exercising the same
         // legacy file/key formats through work1.
