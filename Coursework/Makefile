@@ -26,6 +26,7 @@ WORK_TC_EXEC := work1_tc
 BENCH_EXEC := bench_rsa
 TEST_BITBIGINT_EXEC := $(BUILD)/test_bitbigint
 TEST_TC_EXEC := $(BUILD)/test_tc_vs_legacy
+TEST_TC_HEAVY_EXEC := $(BUILD)/test_tc_heavy
 TEST_DIVMOD_RANDOM_EXEC := $(BUILD)/test_divmod_random
 TEST_DIVMOD_STRESS_EXEC := $(BUILD)/test_divmod_stress
 TEST_SEEDS_0TO49_EXEC := $(BUILD)/test_seeds_0to49
@@ -49,7 +50,7 @@ BENCH_OBJECTS := $(patsubst %.c,$(BUILD)/%.o,$(BENCH_SOURCES))
 DEPS := $(WORK_OBJECTS:.o=.d) $(BENCH_OBJECTS:.o=.d)
 -include $(DEPS)
 
-.PHONY: all bench test test-rsa test-stress test_bitbigint test_tc_vs_legacy test_divmod_random test-divmod-stress test_seeds_0to49 test-rsa-tc-smoke test-work1-tc-smoke tc_test clean prof release
+.PHONY: all bench test test-rsa test-stress test_bitbigint test_tc_vs_legacy test-tc-heavy test_divmod_random test-divmod-stress test_seeds_0to49 test-rsa-tc-smoke test-work1-tc-smoke tc_test clean prof release
 
 all: $(WORK_EXEC) bench
 
@@ -97,6 +98,16 @@ test_tc_vs_legacy: $(TEST_TC_EXEC)
 
 $(TEST_TC_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o tests/test_tc_vs_legacy.cpp $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o
 	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_tc_vs_legacy.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o -o $@
+
+test-tc-heavy: $(TEST_TC_HEAVY_EXEC)
+	@if command -v timeout >/dev/null 2>&1; then \
+		timeout 120s ./$(TEST_TC_HEAVY_EXEC); \
+	else \
+		./$(TEST_TC_HEAVY_EXEC); \
+	fi
+
+$(TEST_TC_HEAVY_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o tests/test_tc_heavy.cpp $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_tc_heavy.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o -o $@
 
 test_divmod_random: $(TEST_DIVMOD_RANDOM_EXEC)
 	./$(TEST_DIVMOD_RANDOM_EXEC)
