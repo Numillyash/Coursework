@@ -55,18 +55,33 @@ Recommended normal checks:
 
 ```sh
 make MODE=debug test
-make MODE=debug test-divmod-stress
 bash -x ./test_all.sh
+```
+
+Pre-release or deeper validation:
+
+```sh
+make MODE=debug test-divmod-stress
+make MODE=debug test-tc-heavy
+make MODE=asan test-sanitize
 ```
 
 Current test coverage:
 
 - `test_tc_vs_legacy`: compares `BitBigIntTC` arithmetic against the legacy C
   `bit_LA.c` oracle.
+- `test-tc-heavy`: opt-in deterministic heavy `BitBigIntTC` parity corpus with
+  broader randomized, boundary, threshold, module-power, and Euclid coverage.
 - `test-rsa-tc-smoke`: tests reusable `RSA_TC` helpers and cross-backend file
   format compatibility.
 - `test-work1-tc-smoke`: tests the `work1_tc` CLI against legacy `work1` on
-  small cross-backend cases.
+  small cross-backend cases, including CLI negative cases and deterministic
+  RSA_TC parser edge cases.
+- `test-divmod-stress`: opt-in diagnostic stress coverage for `BitBigIntTC`
+  division/modulo.
+- `test-sanitize`: opt-in AddressSanitizer/UndefinedBehaviorSanitizer subset
+  for BigIntTC parity and TC RSA smoke tests. LeakSanitizer is disabled with
+  `ASAN_OPTIONS=detect_leaks=0` in this environment.
 - `test_all.sh`: legacy `work1` end-to-end keygen, encrypt, decrypt, sign, and
   check coverage.
 
@@ -122,6 +137,5 @@ Current test coverage:
 Финальное время выполнения алгоритма суммарно уменьшилось в 4 раза.
 
 ![image](https://user-images.githubusercontent.com/60771708/213117514-932f3197-87ec-4e5e-ad84-4ce4ce9f487c.png)
-
 
 
