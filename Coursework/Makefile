@@ -107,8 +107,8 @@ $(TEST_BITBIGINT_EXEC): $(BUILD)/lib/bigint/BitBigInt.o tests/test_bitbigint.cpp
 test_biguint: $(TEST_BIGUINT_EXEC)
 	./$(TEST_BIGUINT_EXEC)
 
-$(TEST_BIGUINT_EXEC): $(BUILD)/lib/bigint/BigUint.o tests/test_biguint.cpp
-	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_biguint.cpp $(BUILD)/lib/bigint/BigUint.o $(LDFLAGS) -o $@
+$(TEST_BIGUINT_EXEC): $(BUILD)/lib/bigint/BigUint.o $(BUILD)/lib/bigint/BitBigIntTC.o tests/test_biguint.cpp
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_biguint.cpp $(BUILD)/lib/bigint/BigUint.o $(BUILD)/lib/bigint/BitBigIntTC.o $(LDFLAGS) -o $@
 
 # BitBigIntTC legacy equivalence test
 tc_test: test_tc_vs_legacy

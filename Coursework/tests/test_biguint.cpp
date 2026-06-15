@@ -2,14 +2,17 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "BigUint.hpp"
+#include "BitBigIntTC.hpp"
 #include "LimbOps.hpp"
 
 using bigint::BigUint;
+using bigint::BitBigIntTC;
 using bigint::limb::dlimb_t;
 using bigint::limb::limb_t;
 
@@ -60,6 +63,121 @@ void expect_limbs(
 
 void test_section(const char* name) {
     std::cout << "\n=== " << name << " ===" << std::endl;
+}
+
+std::string limbs_to_debug(const BigUint& value) {
+    std::string result = "[";
+    for (size_t i = 0; i < value.limbs().size(); ++i) {
+        if (i)
+            result += ",";
+        result += std::to_string(value.limbs()[i]);
+    }
+    result += "]";
+    return result;
+}
+
+BitBigIntTC tc_from_biguint(const BigUint& value) {
+    if (value.is_zero())
+        return BitBigIntTC::from_binary_bits({0, 0});
+
+    std::vector<uint8_t> bits;
+    bits.reserve(value.bit_length() + 1);
+    for (size_t i = 0; i < value.bit_length(); ++i)
+        bits.push_back(value.test_bit(i) ? 1 : 0);
+    bits.push_back(0);
+    return BitBigIntTC::from_binary_bits(bits);
+}
+
+BigUint biguint_from_positive_tc(const BitBigIntTC& value) {
+    if (value.sign_bit() != 0) {
+        std::cerr << "FAIL: BitBigIntTC oracle produced negative value: "
+                  << value.to_binary() << std::endl;
+        std::exit(1);
+    }
+
+    BigUint result;
+    const auto& raw = value.raw();
+    if (raw.empty())
+        return result;
+
+    for (size_t i = 0; i + 1 < raw.size(); ++i) {
+        if (raw[i])
+            result.set_bit(i);
+    }
+    return result;
+}
+
+void expect_same_as_tc(
+        const BigUint& actual,
+        const BitBigIntTC& expected,
+        const std::string& message) {
+    BigUint converted = biguint_from_positive_tc(expected);
+    if (actual != converted) {
+        std::cerr << "FAIL: " << message << std::endl;
+        std::cerr << "  BigUint: " << limbs_to_debug(actual) << std::endl;
+        std::cerr << "  TC:      " << expected.to_binary() << std::endl;
+        std::cerr << "  TC->BU:  " << limbs_to_debug(converted) << std::endl;
+        std::exit(1);
+    }
+}
+
+std::vector<BigUint> oracle_values() {
+    std::vector<BigUint> values = {
+        BigUint(0),
+        BigUint(1),
+        BigUint(UINT32_MAX),
+        BigUint(uint64_t{UINT32_MAX} + 1),
+        BigUint(uint64_t{UINT32_MAX} + 2),
+        BigUint(UINT64_MAX),
+        BigUint::from_limbs({UINT32_MAX}),
+        BigUint::from_limbs({UINT32_MAX, UINT32_MAX}),
+        BigUint::from_limbs({UINT32_MAX, UINT32_MAX, UINT32_MAX}),
+        BigUint::from_limbs({0xaaaaaaaaU, 0x55555555U, 0xffffffffU}),
+        BigUint::from_limbs(
+                {0x12345678U, 0x9abcdef0U, 0x0badc0deU, 0xffffffffU}),
+    };
+
+    const std::vector<size_t> power_bits = {
+        0, 1, 31, 32, 33, 63, 64, 65, 100, 127, 128,
+        191, 255, 256, 257, 384, 511, 512
+    };
+    for (size_t bit : power_bits)
+        values.push_back(BigUint(1).shift_left_bits(bit));
+
+    const std::vector<size_t> random_bits = {
+        1, 2, 3, 4, 5, 7, 8, 15, 16, 31, 32, 33, 63, 64, 65,
+        96, 127, 128, 191, 255, 256, 257, 384, 512
+    };
+    const std::vector<uint64_t> seeds = {
+        0x12345678ULL, 0xdeadbeefULL, 0xc0ffeeULL
+    };
+    for (uint64_t seed : seeds) {
+        std::mt19937_64 rng(seed);
+        for (size_t bits : random_bits) {
+            BigUint value;
+            for (size_t bit = 0; bit < bits; ++bit) {
+                if ((rng() & 1U) != 0)
+                    value.set_bit(bit);
+            }
+            if (bits > 0)
+                value.set_bit(bits - 1);
+            values.push_back(value);
+        }
+    }
+
+    return values;
+}
+
+BitBigIntTC tc_shift_left(BitBigIntTC value, size_t shift) {
+    for (size_t i = 0; i < shift; ++i)
+        value.offset_left();
+    return value;
+}
+
+BitBigIntTC tc_shift_right(BitBigIntTC value, size_t shift) {
+    for (size_t i = 0; i < shift; ++i)
+        value.offset_right();
+    return value;
 }
 
 void test_limb_ops() {
@@ -471,10 +589,59 @@ void test_square() {
             "power of two square");
 }
 
+void test_bitbiginttc_oracle() {
+    test_section("BitBigIntTC positive oracle");
+
+    const std::vector<BigUint> values = oracle_values();
+    const std::vector<size_t> shifts = {0, 1, 31, 32, 33, 63, 64, 65, 127};
+
+    for (const BigUint& value : values) {
+        BitBigIntTC tc_value = tc_from_biguint(value);
+        expect_same_as_tc(value, tc_value, "BigUint -> TC -> BigUint");
+
+        for (size_t shift : shifts) {
+            BigUint shifted_left = value.shift_left_bits(shift);
+            expect_same_as_tc(shifted_left, tc_shift_left(tc_value, shift),
+                    "shift_left_bits vs BitBigIntTC offset_left");
+
+            BigUint shifted_right = value.shift_right_bits(shift);
+            expect_same_as_tc(shifted_right, tc_shift_right(tc_value, shift),
+                    "shift_right_bits vs BitBigIntTC offset_right");
+        }
+
+        BigUint squared = value.square();
+        BitBigIntTC tc_square = tc_value.multiplication_compat_for_testing(
+                tc_value);
+        expect_same_as_tc(squared, tc_square, "square vs BitBigIntTC");
+    }
+
+    const size_t pair_limit = 18;
+    for (size_t i = 0; i < pair_limit && i < values.size(); ++i) {
+        for (size_t j = 0; j < pair_limit && j < values.size(); ++j) {
+            const BigUint& lhs = values[i];
+            const BigUint& rhs = values[j];
+            BitBigIntTC tc_lhs = tc_from_biguint(lhs);
+            BitBigIntTC tc_rhs = tc_from_biguint(rhs);
+
+            expect_same_as_tc(lhs.add(rhs), tc_lhs.add(tc_rhs),
+                    "add vs BitBigIntTC");
+
+            if (lhs.compare(rhs) >= 0) {
+                expect_same_as_tc(lhs.sub_abs(rhs), tc_lhs.sub(tc_rhs),
+                        "sub_abs vs BitBigIntTC");
+            }
+
+            expect_same_as_tc(lhs.mul_schoolbook(rhs),
+                    tc_lhs.multiplication_compat_for_testing(tc_rhs),
+                    "mul_schoolbook vs BitBigIntTC");
+        }
+    }
+}
+
 } // namespace
 
 int main() {
-    std::cout << "BigUint Stage 1A/1B Tests\n";
+    std::cout << "BigUint Stage 1A/1B/1C Tests\n";
     std::cout << "======================\n" << std::endl;
 
     test_limb_ops();
@@ -492,6 +659,7 @@ int main() {
     test_multiplication_dense_patterns();
     test_multiplication_identities();
     test_square();
+    test_bitbiginttc_oracle();
 
     std::cout << "\nAll BigUint tests PASSED" << std::endl;
     return 0;
