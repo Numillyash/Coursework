@@ -1,31 +1,92 @@
-# Криптосистема с открытым ключом(RSA)
-Консольная программа, позволяющая:
-1. Генерировать ключи заданной длины.
-2. Подписывать заданный файл.
-3. Проверять подпись.
-4. Шифровать заданный файл.
-5. Расшифровывать файл.
-    
-Программа позволяет работать с файлами любой длины.
-Программа является утилитой командной строки.
-[имя_программы] --help – выводит как ей пользоваться
+# RSA Coursework
 
-[имя_программы] genkey --size 1024 --pubkey pk.txt --secret secret.txt
-Генерирует ключи. Открытый сохраняется в pk.txt, закрытый – в secret.txt. Размер может быть любой, кратный 256: 256, 512, 1024, 2048.
+This repository contains an RSA coursework implementation with two command-line
+backends:
 
-[имя_программы] sign --infile file.txt --secret secret.txt --sigfile signature.txt
-Вычислят подпись файла, сохраняет ее в signature.txt.
+- `work1`: the original legacy C backend. This remains the stable/oracle
+  implementation.
+- `work1_tc`: a separate opt-in C++ backend using the transliteration-first
+  `BitBigIntTC` BigInt port.
 
-[имя_программы] check --infile file.txt --pubkey pk.txt --sigfile signature.txt
-Проверяет подпись файла, результат пишет в stdout.
+Both binaries support the same RSA command shapes and use compatible key,
+ciphertext, and signature file formats. The legacy C backend remains the oracle
+for BigInt parity tests and RSA cross-backend smoke tests.
 
-[имя_программы]  --infile file.txt --pubkey pk.txt --outfile file_out.txt
-Шифрует файл для получателя. Результат помещает в file_out.txt
+## Build
 
-[имя_программы] --infile file.txt.enc --secret secret.txt --outfile file.txt
-Расшифровывает файл. Результат помещает в file.txt.
+```sh
+make MODE=debug all
+make MODE=debug work1_tc
+make MODE=debug test
+```
 
-##Итог
+`make MODE=debug all` builds the legacy `work1` binary and benchmark binary.
+`work1_tc` is intentionally opt-in and is not part of `all`.
+
+## Legacy CLI: work1
+
+```sh
+./work1 genkey  --size <bits> --pubkey <pub.txt> --secret <sec.txt>
+./work1 encrypt --infile <in.txt> --pubkey <pub.txt> --outfile <out.txt>
+./work1 decrypt --infile <in.txt> --secret <sec.txt> --outfile <out.txt>
+./work1 sign    --infile <in.txt> --secret <sec.txt> --sigfile <sig.txt>
+./work1 check   --infile <in.txt> --pubkey <pub.txt> --sigfile <sig.txt>
+```
+
+Supported key sizes are `256`, `512`, `1024`, and `2048`.
+
+## BitBigIntTC CLI: work1_tc
+
+```sh
+./work1_tc genkey  --size <bits> --pubkey <pub.txt> --secret <sec.txt>
+./work1_tc encrypt --infile <in.txt> --pubkey <pub.txt> --outfile <out.txt>
+./work1_tc decrypt --infile <in.txt> --secret <sec.txt> --outfile <out.txt>
+./work1_tc sign    --infile <in.txt> --secret <sec.txt> --sigfile <sig.txt>
+./work1_tc check   --infile <in.txt> --pubkey <pub.txt> --sigfile <sig.txt>
+```
+
+`work1_tc` is experimental compatibility-stage tooling. It is useful for
+cross-checking the C++ `BitBigIntTC` port against the legacy file formats and
+legacy RSA behavior. It is not a replacement for `work1` yet.
+
+## Tests
+
+Recommended normal checks:
+
+```sh
+make MODE=debug test
+make MODE=debug test-divmod-stress
+bash -x ./test_all.sh
+```
+
+Current test coverage:
+
+- `test_tc_vs_legacy`: compares `BitBigIntTC` arithmetic against the legacy C
+  `bit_LA.c` oracle.
+- `test-rsa-tc-smoke`: tests reusable `RSA_TC` helpers and cross-backend file
+  format compatibility.
+- `test-work1-tc-smoke`: tests the `work1_tc` CLI against legacy `work1` on
+  small cross-backend cases.
+- `test_all.sh`: legacy `work1` end-to-end keygen, encrypt, decrypt, sign, and
+  check coverage.
+
+`make MODE=debug test` runs the normal C++ tests plus the TC RSA smoke tests.
+`test_all.sh` is still legacy-focused.
+
+## Caveats
+
+- `BitBigIntTC` is a transliteration-first compatibility port of the legacy
+  bit-level BigInt implementation. The representation has intentionally not
+  been redesigned.
+- Several `BitBigIntTC` methods are currently named `*_compat_for_testing`.
+  They are compatibility APIs used by `RSA_TC` while behavior parity is being
+  established.
+- TC-backed 256-bit modular exponentiation may be slow before any optimization
+  work.
+- Performance notes below are historical coursework notes for the original
+  implementation and should not be read as claims about `work1_tc`.
+
+## Historical Notes
 
 Оценка оптимизаций на разных этапах производилась путем сравнение  свободных клетотаблиц времени к ключу,
 затраченного на зашифаровку, расшифровку файла.
@@ -61,7 +122,6 @@
 Финальное время выполнения алгоритма суммарно уменьшилось в 4 раза.
 
 ![image](https://user-images.githubusercontent.com/60771708/213117514-932f3197-87ec-4e5e-ad84-4ce4ce9f487c.png)
-
 
 
 
