@@ -5,6 +5,8 @@ MODE ?= debug
 CSTD := -std=c11
 CXXSTD := -std=c++17
 WARN := -Wall -Wextra
+LDFLAGS ?=
+SAN_FLAGS := -fsanitize=address,undefined
 
 INCS := -I./include -I./lib/bigint -I./lib/rsa -I./lib/util
 CPPFLAGS := $(INCS)
@@ -15,6 +17,9 @@ else ifeq ($(MODE),release)
   CFLAGS := -O2 -DNDEBUG $(WARN)
 else ifeq ($(MODE),prof)
   CFLAGS := -O2 -g -fno-omit-frame-pointer $(WARN)
+else ifeq ($(MODE),asan)
+  CFLAGS := -O1 -g -fno-omit-frame-pointer $(WARN) $(SAN_FLAGS)
+  LDFLAGS += $(SAN_FLAGS)
 else
   $(error Unknown MODE=$(MODE))
 endif
@@ -50,7 +55,7 @@ BENCH_OBJECTS := $(patsubst %.c,$(BUILD)/%.o,$(BENCH_SOURCES))
 DEPS := $(WORK_OBJECTS:.o=.d) $(BENCH_OBJECTS:.o=.d)
 -include $(DEPS)
 
-.PHONY: all bench test test-rsa test-stress test_bitbigint test_tc_vs_legacy test-tc-heavy test_divmod_random test-divmod-stress test_seeds_0to49 test-rsa-tc-smoke test-work1-tc-smoke tc_test clean prof release
+.PHONY: all bench test test-rsa test-stress test-sanitize test_bitbigint test_tc_vs_legacy test-tc-heavy test_divmod_random test-divmod-stress test_seeds_0to49 test-rsa-tc-smoke test-work1-tc-smoke tc_test clean prof release FORCE
 
 all: $(WORK_EXEC) bench
 
@@ -63,15 +68,24 @@ test-rsa: $(WORK_EXEC)
 
 test-stress: test_divmod_random test_seeds_0to49
 
-$(WORK_EXEC): $(WORK_OBJECTS)
-	$(CC) $^ -o $@
+test-sanitize:
+	@if [ "$(MODE)" != "asan" ]; then \
+		echo "test-sanitize must be run with MODE=asan"; \
+		exit 1; \
+	fi
+	ASAN_OPTIONS=detect_leaks=0 $(MAKE) MODE=asan test_tc_vs_legacy test-rsa-tc-smoke test-work1-tc-smoke
 
-$(WORK_TC_EXEC): $(BUILD)/tools/CourseworkTC.o $(BUILD)/lib/rsa/RSA_TC.o $(BUILD)/lib/bigint/BitBigIntTC.o
-	$(CXX) $^ -o $@
+$(WORK_EXEC): FORCE $(WORK_OBJECTS)
+	$(CC) $(filter-out FORCE,$^) $(LDFLAGS) -o $@
+
+$(WORK_TC_EXEC): FORCE $(BUILD)/tools/CourseworkTC.o $(BUILD)/lib/rsa/RSA_TC.o $(BUILD)/lib/bigint/BitBigIntTC.o
+	$(CXX) $(filter-out FORCE,$^) $(LDFLAGS) -o $@
 
 $(BENCH_EXEC): CPPFLAGS += -DNO_LOG
-$(BENCH_EXEC): $(BENCH_OBJECTS)
-	$(CC) $^ -o $@
+$(BENCH_EXEC): FORCE $(BENCH_OBJECTS)
+	$(CC) $(filter-out FORCE,$^) $(LDFLAGS) -o $@
+
+FORCE:
 
 $(BUILD)/%.o: %.c
 	@mkdir -p $(dir $@)
@@ -87,7 +101,7 @@ test_bitbigint: $(TEST_BITBIGINT_EXEC)
 	./$(TEST_BITBIGINT_EXEC)
 
 $(TEST_BITBIGINT_EXEC): $(BUILD)/lib/bigint/BitBigInt.o tests/test_bitbigint.cpp
-	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_bitbigint.cpp $(BUILD)/lib/bigint/BitBigInt.o -o $@
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_bitbigint.cpp $(BUILD)/lib/bigint/BitBigInt.o $(LDFLAGS) -o $@
 
 # BitBigIntTC legacy equivalence test
 tc_test: test_tc_vs_legacy
@@ -97,7 +111,7 @@ test_tc_vs_legacy: $(TEST_TC_EXEC)
 	./$(TEST_TC_EXEC)
 
 $(TEST_TC_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o tests/test_tc_vs_legacy.cpp $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o
-	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_tc_vs_legacy.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o -o $@
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_tc_vs_legacy.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o $(LDFLAGS) -o $@
 
 test-tc-heavy: $(TEST_TC_HEAVY_EXEC)
 	@if command -v timeout >/dev/null 2>&1; then \
@@ -107,13 +121,13 @@ test-tc-heavy: $(TEST_TC_HEAVY_EXEC)
 	fi
 
 $(TEST_TC_HEAVY_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o tests/test_tc_heavy.cpp $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o
-	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_tc_heavy.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o -o $@
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_tc_heavy.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o $(LDFLAGS) -o $@
 
 test_divmod_random: $(TEST_DIVMOD_RANDOM_EXEC)
 	./$(TEST_DIVMOD_RANDOM_EXEC)
 
 $(TEST_DIVMOD_RANDOM_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o test_divmod_random.cpp
-	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) test_divmod_random.cpp $(BUILD)/lib/bigint/BitBigIntTC.o -o $@
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) test_divmod_random.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(LDFLAGS) -o $@
 
 test-divmod-stress: $(TEST_DIVMOD_STRESS_EXEC)
 	@if command -v timeout >/dev/null 2>&1; then \
@@ -123,19 +137,19 @@ test-divmod-stress: $(TEST_DIVMOD_STRESS_EXEC)
 	fi
 
 $(TEST_DIVMOD_STRESS_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o tests/test_divmod_stress.cpp $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o
-	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_divmod_stress.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o -o $@
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_divmod_stress.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/bigint/bit_LA.o $(BUILD)/lib/util/_log_.o $(LDFLAGS) -o $@
 
 test_seeds_0to49: $(TEST_SEEDS_0TO49_EXEC)
 	./$(TEST_SEEDS_0TO49_EXEC)
 
 $(TEST_SEEDS_0TO49_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o test_seeds_0to49.cpp
-	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) test_seeds_0to49.cpp $(BUILD)/lib/bigint/BitBigIntTC.o -o $@
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) test_seeds_0to49.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(LDFLAGS) -o $@
 
 test-rsa-tc-smoke: $(WORK_EXEC) $(TEST_RSA_TC_SMOKE_EXEC)
 	./$(TEST_RSA_TC_SMOKE_EXEC)
 
 $(TEST_RSA_TC_SMOKE_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/rsa/RSA_TC.o tests/test_rsa_tc_smoke.cpp
-	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_rsa_tc_smoke.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/rsa/RSA_TC.o -o $@
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_rsa_tc_smoke.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/rsa/RSA_TC.o $(LDFLAGS) -o $@
 
 test-work1-tc-smoke: $(WORK_EXEC) $(WORK_TC_EXEC)
 	bash ./tests/test_work1_tc_smoke.sh
