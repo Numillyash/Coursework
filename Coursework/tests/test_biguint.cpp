@@ -316,10 +316,165 @@ void test_large_representation() {
     expect(threw, "to_uint64_for_testing overflow");
 }
 
+void test_multiplication_basic() {
+    test_section("mul_schoolbook basic");
+
+    expect_limbs(BigUint(0).mul_schoolbook(BigUint(0)), {}, "0 * 0");
+    expect_limbs(BigUint(0).mul_schoolbook(BigUint(12345)), {}, "0 * x");
+    expect_limbs(BigUint(12345).mul_schoolbook(BigUint(0)), {}, "x * 0");
+    expect_limbs(BigUint(1).mul_schoolbook(BigUint(UINT64_MAX)),
+            {UINT32_MAX, UINT32_MAX}, "1 * UINT64_MAX");
+    expect_eq(BigUint(2).mul_schoolbook(BigUint(3)).to_uint64_for_testing(),
+            uint64_t{6}, "2 * 3");
+    expect_limbs(BigUint(UINT32_MAX).mul_schoolbook(BigUint(2)),
+            {UINT32_MAX - 1, 1}, "UINT32_MAX * 2");
+    expect_limbs(BigUint(UINT32_MAX).mul_schoolbook(BigUint(UINT32_MAX)),
+            {1, UINT32_MAX - 1}, "UINT32_MAX * UINT32_MAX");
+    expect_limbs(BigUint(UINT64_MAX).mul_schoolbook(BigUint(1)),
+            {UINT32_MAX, UINT32_MAX}, "UINT64_MAX * 1");
+    expect_limbs(BigUint(UINT64_MAX).mul_schoolbook(BigUint(UINT64_MAX)),
+            {1, 0, UINT32_MAX - 1, UINT32_MAX},
+            "UINT64_MAX * UINT64_MAX");
+}
+
+void test_multiplication_exhaustive_small() {
+    test_section("mul_schoolbook exhaustive uint64_t-safe");
+
+    for (uint64_t a = 0; a <= 1000; a += 7) {
+        for (uint64_t b = 0; b <= 1000; b += 11) {
+            BigUint product = BigUint(a).mul_schoolbook(BigUint(b));
+            expect_eq(product.to_uint64_for_testing(), a * b,
+                    "deterministic small multiplication");
+        }
+    }
+}
+
+void test_multiplication_boundaries() {
+    test_section("mul_schoolbook limb boundaries");
+
+    BigUint two32 = BigUint(1).shift_left_bits(32);
+    expect_limbs(two32.mul_schoolbook(two32), {0, 0, 1},
+            "2^32 * 2^32");
+
+    expect_limbs(BigUint(UINT32_MAX).square(), {1, UINT32_MAX - 1},
+            "(2^32 - 1)^2");
+    expect_limbs(BigUint(UINT64_MAX).square(),
+            {1, 0, UINT32_MAX - 1, UINT32_MAX},
+            "(2^64 - 1)^2");
+
+    const std::vector<size_t> powers = {
+        0, 1, 31, 32, 33, 63, 64, 65, 100, 127, 128
+    };
+    for (size_t lhs_bit : powers) {
+        for (size_t rhs_bit : powers) {
+            BigUint lhs = BigUint(1).shift_left_bits(lhs_bit);
+            BigUint rhs = BigUint(1).shift_left_bits(rhs_bit);
+            BigUint product = lhs.mul_schoolbook(rhs);
+            expect(product.test_bit(lhs_bit + rhs_bit),
+                    "power-of-two product has expected bit");
+            expect_eq(product.bit_length(), lhs_bit + rhs_bit + 1,
+                    "power-of-two product bit_length");
+        }
+    }
+}
+
+void test_multiplication_dense_patterns() {
+    test_section("mul_schoolbook dense limb patterns");
+
+    BigUint dense1 = BigUint::from_limbs({UINT32_MAX});
+    BigUint dense2 = BigUint::from_limbs({UINT32_MAX, UINT32_MAX});
+    BigUint dense3 = BigUint::from_limbs(
+            {UINT32_MAX, UINT32_MAX, UINT32_MAX});
+
+    expect_limbs(dense1.mul_schoolbook(BigUint(2)), {UINT32_MAX - 1, 1},
+            "dense1 * 2");
+    expect_limbs(dense2.mul_schoolbook(BigUint(2)),
+            {UINT32_MAX - 1, UINT32_MAX, 1}, "dense2 * 2");
+    expect_limbs(dense3.mul_schoolbook(BigUint(2)),
+            {UINT32_MAX - 1, UINT32_MAX, UINT32_MAX, 1}, "dense3 * 2");
+
+    expect_limbs(dense1.square(), {1, UINT32_MAX - 1}, "dense1 square");
+    expect_limbs(dense2.square(), {1, 0, UINT32_MAX - 1, UINT32_MAX},
+            "dense2 square");
+    expect_limbs(dense3.square(),
+            {1, 0, 0, UINT32_MAX - 1, UINT32_MAX, UINT32_MAX},
+            "dense3 square");
+
+    expect_limbs(dense3.mul_schoolbook(dense1),
+            {1, UINT32_MAX, UINT32_MAX, UINT32_MAX - 1},
+            "dense3 * dense1");
+}
+
+void test_multiplication_identities() {
+    test_section("mul_schoolbook commutativity and distributivity");
+
+    const std::vector<BigUint> values = {
+        BigUint(0),
+        BigUint(1),
+        BigUint(2),
+        BigUint(17),
+        BigUint(UINT32_MAX),
+        BigUint(uint64_t{UINT32_MAX} + 1),
+        BigUint(UINT64_MAX),
+        BigUint::from_limbs({3, 0, 7}),
+    };
+
+    for (const BigUint& a : values) {
+        for (const BigUint& b : values) {
+            expect(a.mul_schoolbook(b) == b.mul_schoolbook(a),
+                    "multiplication commutativity");
+        }
+    }
+
+    const std::vector<BigUint> dist_values = {
+        BigUint(0),
+        BigUint(1),
+        BigUint(3),
+        BigUint(17),
+        BigUint(UINT32_MAX),
+        BigUint::from_limbs({5, 1}),
+    };
+    for (const BigUint& a : dist_values) {
+        for (const BigUint& b : dist_values) {
+            for (const BigUint& c : dist_values) {
+                BigUint lhs = a.mul_schoolbook(b.add(c));
+                BigUint rhs = a.mul_schoolbook(b).add(a.mul_schoolbook(c));
+                expect(lhs == rhs, "a*(b+c) == a*b + a*c");
+            }
+        }
+    }
+}
+
+void test_square() {
+    test_section("square");
+
+    const std::vector<BigUint> values = {
+        BigUint(0),
+        BigUint(1),
+        BigUint(2),
+        BigUint(UINT32_MAX),
+        BigUint(UINT64_MAX),
+        BigUint::from_limbs({UINT32_MAX, UINT32_MAX, UINT32_MAX}),
+        BigUint(1).shift_left_bits(31),
+        BigUint(1).shift_left_bits(32),
+        BigUint(1).shift_left_bits(64),
+        BigUint(1).shift_left_bits(128),
+    };
+
+    for (const BigUint& value : values)
+        expect(value.square() == value.mul_schoolbook(value),
+                "square equals mul_schoolbook self-product");
+
+    expect_limbs(BigUint(0).square(), {}, "zero square");
+    expect_limbs(BigUint(1).square(), {1}, "one square");
+    expect_limbs(BigUint(1).shift_left_bits(64).square(), {0, 0, 0, 0, 1},
+            "power of two square");
+}
+
 } // namespace
 
 int main() {
-    std::cout << "BigUint Stage 1A Tests\n";
+    std::cout << "BigUint Stage 1A/1B Tests\n";
     std::cout << "======================\n" << std::endl;
 
     test_limb_ops();
@@ -331,6 +486,12 @@ int main() {
     test_sub_abs();
     test_shifts();
     test_large_representation();
+    test_multiplication_basic();
+    test_multiplication_exhaustive_small();
+    test_multiplication_boundaries();
+    test_multiplication_dense_patterns();
+    test_multiplication_identities();
+    test_square();
 
     std::cout << "\nAll BigUint tests PASSED" << std::endl;
     return 0;

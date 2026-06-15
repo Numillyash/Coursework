@@ -134,6 +134,43 @@ BigUint BigUint::sub_abs(const BigUint& other) const {
     return BigUint(std::move(result));
 }
 
+BigUint BigUint::mul_schoolbook(const BigUint& other) const {
+    if (is_zero() || other.is_zero())
+        return BigUint::zero();
+
+    std::vector<Limb> result(limbs_.size() + other.limbs_.size(), 0);
+
+    for (size_t i = 0; i < limbs_.size(); ++i) {
+        limb::dlimb_t carry = 0;
+        for (size_t j = 0; j < other.limbs_.size(); ++j) {
+            limb::dlimb_t current =
+                    static_cast<limb::dlimb_t>(result[i + j])
+                    + static_cast<limb::dlimb_t>(limbs_[i])
+                            * static_cast<limb::dlimb_t>(other.limbs_[j])
+                    + carry;
+            result[i + j] = static_cast<Limb>(current);
+            carry = current >> LIMB_BITS;
+        }
+
+        size_t k = i + other.limbs_.size();
+        while (carry != 0) {
+            if (k == result.size())
+                result.push_back(0);
+            limb::dlimb_t current =
+                    static_cast<limb::dlimb_t>(result[k]) + carry;
+            result[k] = static_cast<Limb>(current);
+            carry = current >> LIMB_BITS;
+            ++k;
+        }
+    }
+
+    return BigUint(std::move(result));
+}
+
+BigUint BigUint::square() const {
+    return mul_schoolbook(*this);
+}
+
 BigUint BigUint::shift_left_bits(size_t bits) const {
     if (is_zero() || bits == 0)
         return *this;

@@ -33,6 +33,8 @@ public:
 
     BigUint add(const BigUint& other) const;
     BigUint sub_abs(const BigUint& other) const;
+    BigUint mul_schoolbook(const BigUint& other) const;
+    BigUint square() const;
     BigUint shift_left_bits(size_t bits) const;
     BigUint shift_right_bits(size_t bits) const;
 
