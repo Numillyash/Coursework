@@ -30,6 +30,7 @@ WORK_EXEC  := work1
 WORK_TC_EXEC := work1_tc
 BENCH_EXEC := bench_rsa
 TEST_BITBIGINT_EXEC := $(BUILD)/test_bitbigint
+TEST_BIGUINT_EXEC := $(BUILD)/test_biguint
 TEST_TC_EXEC := $(BUILD)/test_tc_vs_legacy
 TEST_TC_HEAVY_EXEC := $(BUILD)/test_tc_heavy
 TEST_DIVMOD_RANDOM_EXEC := $(BUILD)/test_divmod_random
@@ -55,7 +56,7 @@ BENCH_OBJECTS := $(patsubst %.c,$(BUILD)/%.o,$(BENCH_SOURCES))
 DEPS := $(WORK_OBJECTS:.o=.d) $(BENCH_OBJECTS:.o=.d)
 -include $(DEPS)
 
-.PHONY: all bench test test-rsa test-stress test-sanitize test_bitbigint test_tc_vs_legacy test-tc-heavy test_divmod_random test-divmod-stress test_seeds_0to49 test-rsa-tc-smoke test-work1-tc-smoke tc_test clean prof release FORCE
+.PHONY: all bench test test-rsa test-stress test-sanitize test_bitbigint test_biguint test_tc_vs_legacy test-tc-heavy test_divmod_random test-divmod-stress test_seeds_0to49 test-rsa-tc-smoke test-work1-tc-smoke tc_test clean prof release FORCE
 
 all: $(WORK_EXEC) bench
 
@@ -102,6 +103,12 @@ test_bitbigint: $(TEST_BITBIGINT_EXEC)
 
 $(TEST_BITBIGINT_EXEC): $(BUILD)/lib/bigint/BitBigInt.o tests/test_bitbigint.cpp
 	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_bitbigint.cpp $(BUILD)/lib/bigint/BitBigInt.o $(LDFLAGS) -o $@
+
+test_biguint: $(TEST_BIGUINT_EXEC)
+	./$(TEST_BIGUINT_EXEC)
+
+$(TEST_BIGUINT_EXEC): $(BUILD)/lib/bigint/BigUint.o tests/test_biguint.cpp
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_biguint.cpp $(BUILD)/lib/bigint/BigUint.o $(LDFLAGS) -o $@
 
 # BitBigIntTC legacy equivalence test
 tc_test: test_tc_vs_legacy
