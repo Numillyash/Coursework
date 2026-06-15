@@ -197,6 +197,38 @@ std::string tc_decrypt_blocks(const std::vector<BitBigIntTC>& blocks,
     return text;
 }
 
+std::vector<BitBigIntTC> tc_sign_bytes(const std::string& text,
+        const KeyTC& sec)
+{
+    std::vector<BitBigIntTC> blocks;
+    for (unsigned char ch : text) {
+        BitBigIntTC m(static_cast<int64_t>(static_cast<int>(ch) + 100));
+        blocks.push_back(m.module_pow_compat_for_testing(sec.subkey, sec.n));
+    }
+    return blocks;
+}
+
+bool tc_check_signature_blocks(const std::string& text,
+        const std::vector<BitBigIntTC>& blocks,
+        const KeyTC& pub)
+{
+    size_t index = 0;
+    for (const BitBigIntTC& block : blocks) {
+        if (index >= text.size()) {
+            return false;
+        }
+        BitBigIntTC m = block.module_pow_compat_for_testing(pub.subkey, pub.n);
+        int decoded = m.to_int() - 100;
+        if (decoded < 0 || decoded > 255
+                || static_cast<unsigned char>(decoded)
+                        != static_cast<unsigned char>(text[index])) {
+            return false;
+        }
+        ++index;
+    }
+    return index == text.size();
+}
+
 } // namespace
 
 int main()
@@ -214,6 +246,9 @@ int main()
         const std::string tc_cipher = tmp_dir + "/tc_cipher.txt";
         const std::string legacy_decrypted = tmp_dir + "/legacy_decrypted.txt";
         const std::string legacy_cipher = tmp_dir + "/legacy_cipher.txt";
+        const std::string tc_signature = tmp_dir + "/tc_signature.txt";
+        const std::string legacy_signature = tmp_dir + "/legacy_signature.txt";
+        const std::string legacy_check_out = tmp_dir + "/legacy_check.out";
 
         const std::string message = "A";
 
@@ -256,6 +291,30 @@ int main()
         std::string tc_plain = tc_decrypt_blocks(legacy_blocks, sec);
         expect(tc_plain == message, "TC failed to decrypt legacy ciphertext");
         std::cout << "PASS: legacy encrypt -> TC decrypt" << std::endl;
+
+        std::vector<BitBigIntTC> tc_sig_blocks = tc_sign_bytes(message, sec);
+        write_cipher_blocks_tc(tc_signature, tc_sig_blocks);
+        run_command("./work1 check --infile " + shell_quote(plain)
+                + " --pubkey " + shell_quote(pubkey)
+                + " --sigfile " + shell_quote(tc_signature)
+                + " > " + shell_quote(legacy_check_out) + " 2>&1");
+        expect(read_file_text(legacy_check_out)
+                        .find("File signature is correct!") != std::string::npos,
+                "legacy check rejected TC signature");
+        std::cout << "PASS: TC sign -> legacy check" << std::endl;
+
+        run_command("./work1 sign --infile " + shell_quote(plain)
+                + " --secret " + shell_quote(secret)
+                + " --sigfile " + shell_quote(legacy_signature));
+        std::vector<BitBigIntTC> legacy_sig_blocks =
+                read_cipher_blocks_tc(legacy_signature);
+        expect(tc_check_signature_blocks(message, legacy_sig_blocks, pub),
+                "TC check rejected legacy signature");
+        std::cout << "PASS: legacy sign -> TC check" << std::endl;
+
+        expect(!tc_check_signature_blocks("B", legacy_sig_blocks, pub),
+                "TC check accepted signature for tampered plaintext");
+        std::cout << "PASS: TC check rejects tampered plaintext" << std::endl;
 
         std::cout << "RSA TC smoke test PASSED" << std::endl;
         return 0;
