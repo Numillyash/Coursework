@@ -163,3 +163,4 @@ release:
 clean:
 	rm -rf build
 	rm -f $(WORK_EXEC) $(WORK_TC_EXEC) $(BENCH_EXEC) test_bitbigint test_tc_vs_legacy test_divmod_random test_divmod_stress test_seeds_0to49 test_rsa_tc_smoke
+	rm -f tools/*.o *.o
