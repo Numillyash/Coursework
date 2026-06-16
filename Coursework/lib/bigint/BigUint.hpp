@@ -45,6 +45,12 @@ public:
     bool is_odd() const noexcept;
 
     static BigUint gcd(BigUint a, BigUint b);
+    static BigUint mod_add(
+            const BigUint& a, const BigUint& b, const BigUint& modulus);
+    static BigUint mod_sub(
+            const BigUint& a, const BigUint& b, const BigUint& modulus);
+    static BigUint mod_mul(
+            const BigUint& a, const BigUint& b, const BigUint& modulus);
 
     uint64_t to_uint64_for_testing() const;
 

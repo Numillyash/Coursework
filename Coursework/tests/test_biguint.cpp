@@ -6,6 +6,7 @@
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "BigUint.hpp"
@@ -134,6 +135,18 @@ void expect_divmod_invariant(
         std::cerr << "  divisor:  " << limbs_to_debug(divisor) << std::endl;
         std::cerr << "  quotient: " << limbs_to_debug(dm.first) << std::endl;
         std::cerr << "  rem:      " << limbs_to_debug(dm.second) << std::endl;
+        std::exit(1);
+    }
+}
+
+void expect_mod_result(
+        const BigUint& result,
+        const BigUint& modulus,
+        const std::string& message) {
+    if (modulus.is_zero() || result.compare(modulus) >= 0) {
+        std::cerr << "FAIL: " << message << std::endl;
+        std::cerr << "  result:  " << limbs_to_debug(result) << std::endl;
+        std::cerr << "  modulus: " << limbs_to_debug(modulus) << std::endl;
         std::exit(1);
     }
 }
@@ -912,6 +925,202 @@ void test_gcd_bitbiginttc_oracle() {
     }
 }
 
+void test_mod_helpers_zero_and_one() {
+    test_section("mod_add/mod_sub/mod_mul zero and modulus-one cases");
+
+    bool add_threw = false;
+    try {
+        (void)BigUint::mod_add(BigUint(1), BigUint(2), BigUint::zero());
+    } catch (const std::invalid_argument&) {
+        add_threw = true;
+    }
+    expect(add_threw, "mod_add zero modulus throws");
+
+    bool sub_threw = false;
+    try {
+        (void)BigUint::mod_sub(BigUint(1), BigUint(2), BigUint::zero());
+    } catch (const std::invalid_argument&) {
+        sub_threw = true;
+    }
+    expect(sub_threw, "mod_sub zero modulus throws");
+
+    bool mul_threw = false;
+    try {
+        (void)BigUint::mod_mul(BigUint(1), BigUint(2), BigUint::zero());
+    } catch (const std::invalid_argument&) {
+        mul_threw = true;
+    }
+    expect(mul_threw, "mod_mul zero modulus throws");
+
+    BigUint a = BigUint::from_limbs({0x12345678U, 0x9abcdef0U});
+    BigUint b = BigUint::from_limbs({0xffffffffU, 0x0badc0deU});
+    expect_limbs(BigUint::mod_add(a, b, BigUint(1)), {}, "mod_add mod 1");
+    expect_limbs(BigUint::mod_sub(a, b, BigUint(1)), {}, "mod_sub mod 1");
+    expect_limbs(BigUint::mod_mul(a, b, BigUint(1)), {}, "mod_mul mod 1");
+}
+
+void test_mod_helpers_uint64_oracle() {
+    test_section("mod_add/mod_sub/mod_mul uint64_t oracle");
+
+    const std::vector<std::tuple<uint64_t, uint64_t, uint64_t>> cases = {
+        {0, 0, 1},
+        {1, 2, 3},
+        {5, 9, 7},
+        {UINT32_MAX, 2, UINT32_MAX - 1ULL},
+        {uint64_t{1} << 32, uint64_t{1} << 32, UINT32_MAX},
+        {(uint64_t{1} << 32) + 1, UINT32_MAX, uint64_t{1} << 32},
+        {UINT64_MAX, 1, UINT32_MAX},
+        {UINT64_MAX, UINT32_MAX, UINT64_MAX - 58},
+        {UINT64_MAX, UINT64_MAX - 1, UINT64_MAX},
+    };
+
+    auto check_case = [](uint64_t a, uint64_t b, uint64_t m) {
+        unsigned __int128 aw = a;
+        unsigned __int128 bw = b;
+        unsigned __int128 mw = m;
+
+        uint64_t expected_add = static_cast<uint64_t>((aw + bw) % mw);
+        uint64_t a_mod = a % m;
+        uint64_t b_mod = b % m;
+        uint64_t expected_sub = static_cast<uint64_t>(
+                (static_cast<unsigned __int128>(a_mod) + mw - b_mod) % mw);
+        uint64_t expected_mul = static_cast<uint64_t>((aw * bw) % mw);
+
+        BigUint modulus(m);
+        BigUint add = BigUint::mod_add(BigUint(a), BigUint(b), modulus);
+        BigUint sub = BigUint::mod_sub(BigUint(a), BigUint(b), modulus);
+        BigUint mul = BigUint::mod_mul(BigUint(a), BigUint(b), modulus);
+
+        expect_eq(add.to_uint64_for_testing(), expected_add,
+                "uint64 mod_add oracle");
+        expect_eq(sub.to_uint64_for_testing(), expected_sub,
+                "uint64 mod_sub oracle");
+        expect_eq(mul.to_uint64_for_testing(), expected_mul,
+                "uint64 mod_mul oracle");
+        expect_mod_result(add, modulus, "uint64 mod_add result range");
+        expect_mod_result(sub, modulus, "uint64 mod_sub result range");
+        expect_mod_result(mul, modulus, "uint64 mod_mul result range");
+    };
+
+    for (const auto& test : cases)
+        check_case(std::get<0>(test), std::get<1>(test), std::get<2>(test));
+
+    for (uint64_t a = 0; a <= 200; a += 10) {
+        for (uint64_t b = 0; b <= 200; b += 11) {
+            for (uint64_t m = 1; m <= 200; ++m)
+                check_case(a, b, m);
+        }
+    }
+}
+
+void test_mod_helpers_large_cases() {
+    test_section("mod_add/mod_sub/mod_mul large cases and invariants");
+
+    const std::vector<std::tuple<BigUint, BigUint, BigUint>> cases = {
+        {BigUint(0), BigUint(1), BigUint(3)},
+        {BigUint(UINT32_MAX), BigUint((uint64_t{1} << 32) + 1),
+                BigUint(UINT32_MAX)},
+        {BigUint(UINT64_MAX), BigUint(1).shift_left_bits(64),
+                BigUint(uint64_t{1} << 32)},
+        {BigUint(1).shift_left_bits(100), BigUint(UINT32_MAX),
+                BigUint(1).shift_left_bits(96).add(BigUint(17))},
+        {BigUint(1).shift_left_bits(255),
+                BigUint::from_limbs({UINT32_MAX, UINT32_MAX, UINT32_MAX}),
+                BigUint(1).shift_left_bits(128).sub_abs(BigUint(1))},
+        {BigUint::from_limbs(
+                 {0x12345678U, 0x9abcdef0U, 0x0badc0deU, 0xffffffffU}),
+                BigUint::from_limbs(
+                        {0xaaaaaaaaU, 0x55555555U, 0xffffffffU}),
+                BigUint::from_limbs({0x11111111U, 0x22222222U})},
+    };
+
+    for (const auto& test : cases) {
+        const BigUint& a = std::get<0>(test);
+        const BigUint& b = std::get<1>(test);
+        const BigUint& modulus = std::get<2>(test);
+        BigUint add = BigUint::mod_add(a, b, modulus);
+        BigUint sub = BigUint::mod_sub(a, b, modulus);
+        BigUint mul = BigUint::mod_mul(a, b, modulus);
+
+        expect_mod_result(add, modulus, "large mod_add result range");
+        expect_mod_result(sub, modulus, "large mod_sub result range");
+        expect_mod_result(mul, modulus, "large mod_mul result range");
+        expect(add == BigUint::mod_add(b, a, modulus),
+                "mod_add commutativity");
+        expect(mul == BigUint::mod_mul(b, a, modulus),
+                "mod_mul commutativity");
+    }
+
+    BigUint large = BigUint(1).shift_left_bits(255).add(
+            BigUint::from_limbs({0x12345678U, 0x9abcdef0U}));
+    BigUint small_modulus = BigUint(UINT32_MAX);
+    expect_mod_result(BigUint::mod_add(large, large, small_modulus),
+            small_modulus, "huge operands small modulus add");
+    expect_mod_result(BigUint::mod_sub(large, BigUint(12345), small_modulus),
+            small_modulus, "huge operands small modulus sub");
+    expect_mod_result(BigUint::mod_mul(large, large, small_modulus),
+            small_modulus, "huge operands small modulus mul");
+
+    BigUint huge_modulus = BigUint(1).shift_left_bits(300).add(BigUint(19));
+    expect(BigUint::mod_add(BigUint(5), BigUint(7), huge_modulus)
+                    == BigUint(12),
+            "mod_add with larger modulus keeps direct sum");
+    expect(BigUint::mod_sub(BigUint(5), BigUint(7), huge_modulus)
+                    == huge_modulus.sub_abs(BigUint(2)),
+            "mod_sub wraps under larger modulus");
+    expect(BigUint::mod_mul(BigUint(5), BigUint(7), huge_modulus)
+                    == BigUint(35),
+            "mod_mul with larger modulus keeps direct product");
+}
+
+BitBigIntTC tc_mod_sub(
+        const BigUint& a, const BigUint& b, const BigUint& modulus) {
+    BitBigIntTC tc_modulus = tc_from_biguint(modulus);
+    BitBigIntTC a_mod = tc_from_biguint(a).divmod(tc_modulus).r;
+    BitBigIntTC b_mod = tc_from_biguint(b).divmod(tc_modulus).r;
+    if (a_mod.compare(b_mod) >= 0)
+        return a_mod.sub(b_mod).divmod(tc_modulus).r;
+
+    BitBigIntTC diff = b_mod.sub(a_mod);
+    return tc_modulus.sub(diff).divmod(tc_modulus).r;
+}
+
+void test_mod_helpers_bitbiginttc_oracle() {
+    test_section("mod_add/mod_sub/mod_mul BitBigIntTC positive oracle");
+
+    const std::vector<std::tuple<BigUint, BigUint, BigUint>> cases = {
+        {BigUint(0), BigUint(1), BigUint(1)},
+        {BigUint(5), BigUint(9), BigUint(7)},
+        {BigUint(UINT32_MAX), BigUint(uint64_t{1} << 32), BigUint(3)},
+        {BigUint(uint64_t{1} << 32), BigUint(UINT32_MAX),
+                BigUint(UINT32_MAX)},
+        {BigUint(1).shift_left_bits(96).add(BigUint(12345)), BigUint(17),
+                BigUint::from_limbs({0x12345678U, 1})},
+        {BigUint::from_limbs({0xaaaaaaaaU, 0x55555555U, 0xffffffffU}),
+                BigUint(UINT32_MAX), BigUint::from_limbs({0x12345678U, 1})},
+    };
+
+    for (const auto& test : cases) {
+        const BigUint& a = std::get<0>(test);
+        const BigUint& b = std::get<1>(test);
+        const BigUint& modulus = std::get<2>(test);
+        BitBigIntTC tc_modulus = tc_from_biguint(modulus);
+        BitBigIntTC tc_a = tc_from_biguint(a);
+        BitBigIntTC tc_b = tc_from_biguint(b);
+
+        expect_same_as_tc(BigUint::mod_add(a, b, modulus),
+                tc_a.add(tc_b).divmod(tc_modulus).r,
+                "mod_add vs BitBigIntTC");
+        expect_same_as_tc(BigUint::mod_sub(a, b, modulus),
+                tc_mod_sub(a, b, modulus),
+                "mod_sub vs BitBigIntTC");
+        expect_same_as_tc(BigUint::mod_mul(a, b, modulus),
+                tc_a.multiplication_compat_for_testing(tc_b)
+                        .divmod(tc_modulus).r,
+                "mod_mul vs BitBigIntTC");
+    }
+}
+
 void test_bitbiginttc_oracle() {
     test_section("BitBigIntTC positive oracle");
 
@@ -973,7 +1182,7 @@ void test_bitbiginttc_oracle() {
 } // namespace
 
 int main() {
-    std::cout << "BigUint Stage 1A/1B/1C/2A/2B Tests\n";
+    std::cout << "BigUint Stage 1A/1B/1C/2A/2B/2C Tests\n";
     std::cout << "======================\n" << std::endl;
 
     test_limb_ops();
@@ -1000,6 +1209,10 @@ int main() {
     test_gcd_uint64_oracle();
     test_gcd_large_cases();
     test_gcd_bitbiginttc_oracle();
+    test_mod_helpers_zero_and_one();
+    test_mod_helpers_uint64_oracle();
+    test_mod_helpers_large_cases();
+    test_mod_helpers_bitbiginttc_oracle();
     test_bitbiginttc_oracle();
 
     std::cout << "\nAll BigUint tests PASSED" << std::endl;

@@ -224,6 +224,36 @@ BigUint BigUint::gcd(BigUint a, BigUint b) {
     return a;
 }
 
+BigUint BigUint::mod_add(
+        const BigUint& a, const BigUint& b, const BigUint& modulus) {
+    if (modulus.is_zero())
+        throw std::invalid_argument("BigUint::mod_add zero modulus");
+
+    return a.mod(modulus).add(b.mod(modulus)).mod(modulus);
+}
+
+BigUint BigUint::mod_sub(
+        const BigUint& a, const BigUint& b, const BigUint& modulus) {
+    if (modulus.is_zero())
+        throw std::invalid_argument("BigUint::mod_sub zero modulus");
+
+    BigUint a_mod = a.mod(modulus);
+    BigUint b_mod = b.mod(modulus);
+    if (a_mod.compare(b_mod) >= 0)
+        return a_mod.sub_abs(b_mod);
+
+    BigUint diff = b_mod.sub_abs(a_mod);
+    return modulus.sub_abs(diff).mod(modulus);
+}
+
+BigUint BigUint::mod_mul(
+        const BigUint& a, const BigUint& b, const BigUint& modulus) {
+    if (modulus.is_zero())
+        throw std::invalid_argument("BigUint::mod_mul zero modulus");
+
+    return a.mod(modulus).mul_schoolbook(b.mod(modulus)).mod(modulus);
+}
+
 BigUint BigUint::shift_left_bits(size_t bits) const {
     if (is_zero() || bits == 0)
         return *this;
