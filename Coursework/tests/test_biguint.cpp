@@ -1,3 +1,4 @@
+#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -1321,6 +1322,195 @@ void test_mod_pow_bitbiginttc_oracle() {
     }
 }
 
+void expect_inverse_invariant(
+        const BigUint& value,
+        const BigUint& inverse,
+        const BigUint& modulus,
+        const std::string& message) {
+    expect_mod_result(inverse, modulus, message + " inverse range");
+    BigUint check = BigUint::mod_mul(value, inverse, modulus);
+    if (check != BigUint::one()) {
+        std::cerr << "FAIL: " << message << std::endl;
+        std::cerr << "  value:   " << limbs_to_debug(value) << std::endl;
+        std::cerr << "  inverse: " << limbs_to_debug(inverse) << std::endl;
+        std::cerr << "  modulus: " << limbs_to_debug(modulus) << std::endl;
+        std::cerr << "  check:   " << limbs_to_debug(check) << std::endl;
+        std::exit(1);
+    }
+}
+
+void test_mod_inverse_invalid_inputs() {
+    test_section("mod_inverse invalid modulus and non-coprime cases");
+
+    bool zero_mod_threw = false;
+    try {
+        (void)BigUint::mod_inverse(BigUint(1), BigUint::zero());
+    } catch (const std::invalid_argument&) {
+        zero_mod_threw = true;
+    }
+    expect(zero_mod_threw, "mod_inverse zero modulus throws");
+
+    bool one_mod_threw = false;
+    try {
+        (void)BigUint::mod_inverse(BigUint(1), BigUint(1));
+    } catch (const std::invalid_argument&) {
+        one_mod_threw = true;
+    }
+    expect(one_mod_threw, "mod_inverse modulus one throws");
+
+    const std::vector<std::pair<BigUint, BigUint>> non_coprime = {
+        {BigUint(2), BigUint(4)},
+        {BigUint(6), BigUint(9)},
+        {BigUint(0), BigUint(7)},
+        {BigUint(14), BigUint(21)},
+    };
+
+    for (const auto& test : non_coprime) {
+        bool threw = false;
+        try {
+            (void)BigUint::mod_inverse(test.first, test.second);
+        } catch (const std::invalid_argument&) {
+            threw = true;
+        }
+        expect(threw, "mod_inverse non-coprime throws");
+    }
+}
+
+void test_mod_inverse_basic_and_rsa_cases() {
+    test_section("mod_inverse basic and RSA-shaped cases");
+
+    const std::vector<std::tuple<BigUint, BigUint, BigUint>> cases = {
+        {BigUint(1), BigUint(2), BigUint(1)},
+        {BigUint(1), BigUint(17), BigUint(1)},
+        {BigUint(2), BigUint(5), BigUint(3)},
+        {BigUint(3), BigUint(11), BigUint(4)},
+        {BigUint(10), BigUint(17), BigUint(12)},
+        {BigUint(17), BigUint(3120), BigUint(2753)},
+        {BigUint(65537), BigUint(3120), BigUint(2753)},
+    };
+
+    for (const auto& test : cases) {
+        BigUint inverse = BigUint::mod_inverse(
+                std::get<0>(test), std::get<1>(test));
+        expect(inverse == std::get<2>(test), "known mod_inverse value");
+        expect_inverse_invariant(
+                std::get<0>(test), inverse, std::get<1>(test),
+                "known mod_inverse invariant");
+    }
+
+    const std::vector<std::pair<uint64_t, uint64_t>> prime_pairs = {
+        {61, 53},
+        {47, 59},
+        {71, 67},
+        {83, 89},
+    };
+    BigUint e(65537);
+    for (const auto& primes : prime_pairs) {
+        uint64_t phi_u64 = (primes.first - 1) * (primes.second - 1);
+        BigUint phi(phi_u64);
+        if (std::gcd(uint64_t{65537}, phi_u64) != 1)
+            continue;
+        BigUint d = BigUint::mod_inverse(e, phi);
+        expect_inverse_invariant(e, d, phi, "RSA-shaped e*d mod phi");
+    }
+}
+
+void test_mod_inverse_reduced_input_and_uint64_oracle() {
+    test_section("mod_inverse reduced inputs and uint64_t oracle");
+
+    BigUint value(17);
+    BigUint modulus(3120);
+    BigUint lifted = value.add(modulus.mul_schoolbook(BigUint(5)));
+    expect(BigUint::mod_inverse(lifted, modulus)
+                    == BigUint::mod_inverse(value, modulus),
+            "inverse of value+k*modulus matches reduced value");
+
+    for (uint64_t m = 2; m <= 300; ++m) {
+        for (uint64_t a = 1; a <= 300; ++a) {
+            if (std::gcd(a, m) == 1) {
+                BigUint inverse = BigUint::mod_inverse(BigUint(a), BigUint(m));
+                unsigned __int128 check =
+                        static_cast<unsigned __int128>(a % m)
+                        * inverse.to_uint64_for_testing();
+                expect_eq(static_cast<uint64_t>(check % m), uint64_t{1},
+                        "small uint64 mod_inverse invariant");
+                expect_mod_result(inverse, BigUint(m),
+                        "small uint64 mod_inverse range");
+            } else {
+                bool threw = false;
+                try {
+                    (void)BigUint::mod_inverse(BigUint(a), BigUint(m));
+                } catch (const std::invalid_argument&) {
+                    threw = true;
+                }
+                expect(threw, "small non-coprime mod_inverse throws");
+            }
+        }
+    }
+}
+
+void test_mod_inverse_large_cases() {
+    test_section("mod_inverse large cases");
+
+    const std::vector<std::pair<BigUint, BigUint>> cases = {
+        {BigUint(65537), BigUint(UINT64_MAX).sub_abs(BigUint(58))},
+        {BigUint(17), BigUint(1).shift_left_bits(128).sub_abs(BigUint(159))},
+        {BigUint::from_limbs({0x12345678U, 1}),
+                BigUint(1).shift_left_bits(128).add(BigUint(51))},
+        {BigUint::from_limbs({0xaaaaaaabU, 0x55555555U}),
+                BigUint::from_limbs({0xfffffffbU, UINT32_MAX, 1})},
+    };
+
+    for (const auto& test : cases) {
+        expect(BigUint::gcd(test.first, test.second) == BigUint::one(),
+                "large inverse case is coprime");
+        BigUint inverse = BigUint::mod_inverse(test.first, test.second);
+        expect_inverse_invariant(test.first, inverse, test.second,
+                "large mod_inverse invariant");
+    }
+}
+
+void test_mod_inverse_bitbiginttc_oracle() {
+    test_section("mod_inverse BitBigIntTC modified Euclid oracle");
+
+    const std::vector<std::pair<BigUint, BigUint>> cases = {
+        {BigUint(17), BigUint(3120)},
+        {BigUint(65537), BigUint(3120)},
+        {BigUint(65537), BigUint((61 - 1) * (53 - 1))},
+        {BigUint(17), BigUint((47 - 1) * (59 - 1))},
+    };
+
+    for (const auto& test : cases) {
+        const BigUint& value = test.first;
+        const BigUint& modulus = test.second;
+        BigUint inverse = BigUint::mod_inverse(value, modulus);
+        expect_inverse_invariant(value, inverse, modulus,
+                "BigUint inverse invariant before TC check");
+
+        BitBigIntTC tc_modulus = tc_from_biguint(modulus);
+        BitBigIntTC tc_value = tc_from_biguint(value);
+        std::array<BitBigIntTC, 4> values = {
+            BitBigIntTC::one(),
+            BitBigIntTC::zero(),
+            BitBigIntTC::zero(),
+            BitBigIntTC::one()
+        };
+        BitBigIntTC tc_gcd =
+                tc_modulus.euclide_algorithm_modifyed_compat_for_testing(
+                        tc_value, values);
+        expect_same_as_tc(BigUint::one(), tc_gcd,
+                "TC modified Euclid gcd for inverse");
+
+        BitBigIntTC tc_inverse = tc_from_biguint(inverse);
+        BitBigIntTC tc_check = tc_value.multiplication_compat_for_testing(
+                tc_inverse).divmod(tc_modulus).r;
+        expect_same_as_tc(BigUint::one(), tc_check,
+                "BigUint inverse satisfies TC modular invariant");
+
+        (void)values;
+    }
+}
+
 void test_bitbiginttc_oracle() {
     test_section("BitBigIntTC positive oracle");
 
@@ -1382,7 +1572,7 @@ void test_bitbiginttc_oracle() {
 } // namespace
 
 int main() {
-    std::cout << "BigUint Stage 1A/1B/1C/2A/2B/2C/2D Tests\n";
+    std::cout << "BigUint Stage 1A/1B/1C/2A/2B/2C/2D/2E Tests\n";
     std::cout << "======================\n" << std::endl;
 
     test_limb_ops();
@@ -1417,6 +1607,11 @@ int main() {
     test_mod_pow_basic_and_uint64_oracle();
     test_mod_pow_large_and_algebraic_cases();
     test_mod_pow_bitbiginttc_oracle();
+    test_mod_inverse_invalid_inputs();
+    test_mod_inverse_basic_and_rsa_cases();
+    test_mod_inverse_reduced_input_and_uint64_oracle();
+    test_mod_inverse_large_cases();
+    test_mod_inverse_bitbiginttc_oracle();
     test_bitbiginttc_oracle();
 
     std::cout << "\nAll BigUint tests PASSED" << std::endl;

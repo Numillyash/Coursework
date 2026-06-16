@@ -7,6 +7,69 @@
 
 namespace bigint {
 
+namespace {
+
+struct SignedBigUint {
+    bool negative = false;
+    BigUint magnitude;
+
+    SignedBigUint() = default;
+
+    SignedBigUint(bool is_negative, BigUint mag)
+            : negative(is_negative), magnitude(std::move(mag)) {
+        normalize();
+    }
+
+    static SignedBigUint positive(BigUint value) {
+        return SignedBigUint(false, std::move(value));
+    }
+
+    static SignedBigUint zero() {
+        return SignedBigUint();
+    }
+
+    void normalize() {
+        if (magnitude.is_zero())
+            negative = false;
+    }
+};
+
+SignedBigUint signed_negate(SignedBigUint value) {
+    if (!value.magnitude.is_zero())
+        value.negative = !value.negative;
+    return value;
+}
+
+SignedBigUint signed_add(const SignedBigUint& lhs, const SignedBigUint& rhs) {
+    if (lhs.negative == rhs.negative)
+        return SignedBigUint(lhs.negative, lhs.magnitude.add(rhs.magnitude));
+
+    int cmp = lhs.magnitude.compare(rhs.magnitude);
+    if (cmp == 0)
+        return SignedBigUint::zero();
+    if (cmp > 0)
+        return SignedBigUint(lhs.negative, lhs.magnitude.sub_abs(rhs.magnitude));
+    return SignedBigUint(rhs.negative, rhs.magnitude.sub_abs(lhs.magnitude));
+}
+
+SignedBigUint signed_sub(const SignedBigUint& lhs, const SignedBigUint& rhs) {
+    return signed_add(lhs, signed_negate(rhs));
+}
+
+SignedBigUint signed_mul_unsigned(
+        const SignedBigUint& lhs, const BigUint& rhs) {
+    return SignedBigUint(lhs.negative, lhs.magnitude.mul_schoolbook(rhs));
+}
+
+BigUint signed_mod(const SignedBigUint& value, const BigUint& modulus) {
+    BigUint mag_mod = value.magnitude.mod(modulus);
+    if (!value.negative || mag_mod.is_zero())
+        return mag_mod;
+    return modulus.sub_abs(mag_mod);
+}
+
+} // namespace
+
 BigUint::BigUint() = default;
 
 BigUint::BigUint(uint64_t value) {
@@ -271,6 +334,35 @@ BigUint BigUint::mod_pow(
         power = mod_mul(power, power, modulus);
     }
     return result;
+}
+
+BigUint BigUint::mod_inverse(
+        const BigUint& value,
+        const BigUint& modulus) {
+    if (modulus.is_zero())
+        throw std::invalid_argument("BigUint::mod_inverse zero modulus");
+    if (modulus == BigUint::one())
+        throw std::invalid_argument("BigUint::mod_inverse modulus one");
+
+    BigUint old_r = value.mod(modulus);
+    BigUint r = modulus;
+    SignedBigUint old_t = SignedBigUint::positive(BigUint::one());
+    SignedBigUint t = SignedBigUint::zero();
+
+    while (!r.is_zero()) {
+        BigUint q = old_r.div(r);
+        BigUint next_r = old_r.sub_abs(q.mul_schoolbook(r));
+        SignedBigUint next_t = signed_sub(old_t, signed_mul_unsigned(t, q));
+        old_r = r;
+        r = next_r;
+        old_t = t;
+        t = next_t;
+    }
+
+    if (old_r != BigUint::one())
+        throw std::invalid_argument("BigUint::mod_inverse non-coprime");
+
+    return signed_mod(old_t, modulus);
 }
 
 BigUint BigUint::shift_left_bits(size_t bits) const {

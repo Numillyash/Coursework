@@ -55,6 +55,9 @@ public:
             const BigUint& base,
             const BigUint& exponent,
             const BigUint& modulus);
+    static BigUint mod_inverse(
+            const BigUint& value,
+            const BigUint& modulus);
 
     uint64_t to_uint64_for_testing() const;
 
