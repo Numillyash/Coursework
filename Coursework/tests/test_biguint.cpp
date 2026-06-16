@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <numeric>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -754,6 +755,163 @@ void test_divmod_bitbiginttc_oracle() {
     }
 }
 
+void test_div_mod_wrappers() {
+    test_section("div/mod wrappers");
+
+    const std::vector<std::pair<BigUint, BigUint>> cases = {
+        {BigUint(0), BigUint(1)},
+        {BigUint(5), BigUint(2)},
+        {BigUint(12345), BigUint(17)},
+        {BigUint(UINT64_MAX), BigUint(UINT32_MAX)},
+        {BigUint::from_limbs({0x12345678U, 0x9abcdef0U}),
+                BigUint::from_limbs({0x1111U, 1})},
+    };
+
+    for (const auto& test : cases) {
+        auto dm = test.first.divmod(test.second);
+        expect(test.first.div(test.second) == dm.first,
+                "div wrapper matches divmod quotient");
+        expect(test.first.mod(test.second) == dm.second,
+                "mod wrapper matches divmod remainder");
+    }
+
+    expect_limbs(BigUint(0).mod(BigUint(1)), {}, "0 mod 1");
+    expect_limbs(BigUint(5).div(BigUint(2)), {2}, "5 div 2");
+    expect_limbs(BigUint(5).mod(BigUint(2)), {1}, "5 mod 2");
+
+    BigUint x = BigUint::from_limbs({0xaaaaaaaaU, 0x55555555U});
+    expect_limbs(x.mod(x), {}, "x mod x");
+    BigUint larger = x.shift_left_bits(1);
+    expect(x.mod(larger) == x, "x mod larger");
+
+    bool div_threw = false;
+    try {
+        (void)BigUint(1).div(BigUint::zero());
+    } catch (const std::invalid_argument&) {
+        div_threw = true;
+    }
+    expect(div_threw, "div by zero throws");
+
+    bool mod_threw = false;
+    try {
+        (void)BigUint(1).mod(BigUint::zero());
+    } catch (const std::invalid_argument&) {
+        mod_threw = true;
+    }
+    expect(mod_threw, "mod by zero throws");
+}
+
+void test_parity() {
+    test_section("is_even / is_odd");
+
+    expect(BigUint(0).is_even(), "0 is even");
+    expect(!BigUint(0).is_odd(), "0 is not odd");
+    expect(BigUint(1).is_odd(), "1 is odd");
+    expect(!BigUint(1).is_even(), "1 is not even");
+    expect(BigUint(2).is_even(), "2 is even");
+    expect(BigUint(UINT32_MAX).is_odd(), "UINT32_MAX is odd");
+    expect(BigUint(uint64_t{1} << 32).is_even(), "2^32 is even");
+
+    BigUint value;
+    value.set_bit(0);
+    expect(value.is_odd(), "set bit 0 makes odd");
+    value = BigUint();
+    value.set_bit(31);
+    expect(value.is_even(), "set bit 31 is even");
+    value.set_bit(0);
+    expect(value.is_odd(), "set bit 31 plus bit 0 is odd");
+    value = BigUint();
+    value.set_bit(32);
+    expect(value.is_even(), "set bit 32 is even");
+    value.set_bit(100);
+    expect(value.is_even(), "set bit 32 and 100 is even");
+}
+
+void test_gcd_uint64_oracle() {
+    test_section("gcd uint64_t oracle");
+
+    expect_limbs(BigUint::gcd(BigUint(0), BigUint(0)), {}, "gcd(0,0)");
+    expect_limbs(BigUint::gcd(BigUint(42), BigUint(0)), {42}, "gcd(a,0)");
+    expect_limbs(BigUint::gcd(BigUint(0), BigUint(42)), {42}, "gcd(0,b)");
+    expect_limbs(BigUint::gcd(BigUint(1), BigUint(UINT64_MAX)), {1},
+            "gcd(1,x)");
+    expect(BigUint::gcd(BigUint(UINT64_MAX), BigUint(UINT64_MAX))
+                    == BigUint(UINT64_MAX),
+            "gcd(x,x)");
+    expect_limbs(BigUint::gcd(BigUint(12), BigUint(18)), {6},
+            "gcd(12,18)");
+    expect_limbs(BigUint::gcd(BigUint(17), BigUint(31)), {1},
+            "gcd(17,31)");
+    expect_limbs(BigUint::gcd(BigUint(65537), BigUint(3120)), {1},
+            "gcd(65537,3120)");
+
+    for (uint64_t a = 0; a <= 300; ++a) {
+        for (uint64_t b = 0; b <= 300; ++b) {
+            BigUint g = BigUint::gcd(BigUint(a), BigUint(b));
+            expect_eq(g.to_uint64_for_testing(), std::gcd(a, b),
+                    "exhaustive small gcd");
+        }
+    }
+
+    for (size_t i = 0; i <= 16; ++i) {
+        for (size_t j = 0; j <= 16; ++j) {
+            BigUint lhs = BigUint(1).shift_left_bits(i);
+            BigUint rhs = BigUint(1).shift_left_bits(j);
+            BigUint expected = BigUint(1).shift_left_bits(i < j ? i : j);
+            expect(BigUint::gcd(lhs, rhs) == expected,
+                    "gcd powers of two");
+        }
+    }
+}
+
+void test_gcd_large_cases() {
+    test_section("gcd large cases");
+
+    BigUint two128 = BigUint(1).shift_left_bits(128);
+    BigUint two64 = BigUint(1).shift_left_bits(64);
+    expect(BigUint::gcd(two128, two64) == two64,
+            "gcd(2^128,2^64)");
+
+    BigUint two128_minus_one = two128.sub_abs(BigUint(1));
+    BigUint two64_minus_one = two64.sub_abs(BigUint(1));
+    expect(BigUint::gcd(two128_minus_one, two64_minus_one)
+                    == two64_minus_one,
+            "gcd(2^128-1,2^64-1)");
+
+    BigUint dense = BigUint::from_limbs(
+            {UINT32_MAX, UINT32_MAX, UINT32_MAX});
+    expect(BigUint::gcd(dense, dense) == dense,
+            "gcd(dense,dense)");
+
+    BigUint large = BigUint::from_limbs(
+            {0x12345678U, 0x9abcdef0U, 0x0badc0deU, 0xffffffffU});
+    expect_limbs(BigUint::gcd(large, BigUint(1)), {1},
+            "gcd(large,1)");
+}
+
+void test_gcd_bitbiginttc_oracle() {
+    test_section("gcd BitBigIntTC positive oracle");
+
+    const std::vector<std::pair<BigUint, BigUint>> cases = {
+        {BigUint(12), BigUint(18)},
+        {BigUint(17), BigUint(31)},
+        {BigUint(65537), BigUint(3120)},
+        {BigUint(1).shift_left_bits(128), BigUint(1).shift_left_bits(64)},
+        {BigUint(1).shift_left_bits(128).sub_abs(BigUint(1)),
+                BigUint(1).shift_left_bits(64).sub_abs(BigUint(1))},
+        {BigUint::from_limbs({UINT32_MAX, UINT32_MAX, UINT32_MAX}),
+                BigUint::from_limbs({UINT32_MAX, UINT32_MAX})},
+    };
+
+    for (const auto& test : cases) {
+        BigUint actual = BigUint::gcd(test.first, test.second);
+        BitBigIntTC expected = tc_from_biguint(test.first)
+                .euclide_algorithm_compat_for_testing(
+                        tc_from_biguint(test.second));
+        expect_same_as_tc(actual, expected, "gcd vs BitBigIntTC Euclid");
+    }
+}
+
 void test_bitbiginttc_oracle() {
     test_section("BitBigIntTC positive oracle");
 
@@ -815,7 +973,7 @@ void test_bitbiginttc_oracle() {
 } // namespace
 
 int main() {
-    std::cout << "BigUint Stage 1A/1B/1C Tests\n";
+    std::cout << "BigUint Stage 1A/1B/1C/2A/2B Tests\n";
     std::cout << "======================\n" << std::endl;
 
     test_limb_ops();
@@ -837,6 +995,11 @@ int main() {
     test_divmod_uint64_oracle();
     test_divmod_limb_cases();
     test_divmod_bitbiginttc_oracle();
+    test_div_mod_wrappers();
+    test_parity();
+    test_gcd_uint64_oracle();
+    test_gcd_large_cases();
+    test_gcd_bitbiginttc_oracle();
     test_bitbiginttc_oracle();
 
     std::cout << "\nAll BigUint tests PASSED" << std::endl;

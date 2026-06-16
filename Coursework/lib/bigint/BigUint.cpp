@@ -41,6 +41,14 @@ bool BigUint::is_zero() const noexcept {
     return limbs_.empty();
 }
 
+bool BigUint::is_even() const noexcept {
+    return limbs_.empty() || ((limbs_[0] & Limb{1}) == 0);
+}
+
+bool BigUint::is_odd() const noexcept {
+    return !is_even();
+}
+
 size_t BigUint::limb_count() const noexcept {
     return limbs_.size();
 }
@@ -197,6 +205,23 @@ std::pair<BigUint, BigUint> BigUint::divmod(const BigUint& divisor) const {
     }
 
     return {quotient, remainder};
+}
+
+BigUint BigUint::div(const BigUint& divisor) const {
+    return divmod(divisor).first;
+}
+
+BigUint BigUint::mod(const BigUint& divisor) const {
+    return divmod(divisor).second;
+}
+
+BigUint BigUint::gcd(BigUint a, BigUint b) {
+    while (!b.is_zero()) {
+        BigUint r = a.mod(b);
+        a = b;
+        b = r;
+    }
+    return a;
 }
 
 BigUint BigUint::shift_left_bits(size_t bits) const {

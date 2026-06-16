@@ -37,8 +37,14 @@ public:
     BigUint mul_schoolbook(const BigUint& other) const;
     BigUint square() const;
     std::pair<BigUint, BigUint> divmod(const BigUint& divisor) const;
+    BigUint div(const BigUint& divisor) const;
+    BigUint mod(const BigUint& divisor) const;
     BigUint shift_left_bits(size_t bits) const;
     BigUint shift_right_bits(size_t bits) const;
+    bool is_even() const noexcept;
+    bool is_odd() const noexcept;
+
+    static BigUint gcd(BigUint a, BigUint b);
 
     uint64_t to_uint64_for_testing() const;
 
