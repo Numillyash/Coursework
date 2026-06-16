@@ -254,6 +254,25 @@ BigUint BigUint::mod_mul(
     return a.mod(modulus).mul_schoolbook(b.mod(modulus)).mod(modulus);
 }
 
+BigUint BigUint::mod_pow(
+        const BigUint& base,
+        const BigUint& exponent,
+        const BigUint& modulus) {
+    if (modulus.is_zero())
+        throw std::invalid_argument("BigUint::mod_pow zero modulus");
+    if (modulus == BigUint::one())
+        return BigUint::zero();
+
+    BigUint result = BigUint::one().mod(modulus);
+    BigUint power = base.mod(modulus);
+    for (size_t bit = 0; bit < exponent.bit_length(); ++bit) {
+        if (exponent.test_bit(bit))
+            result = mod_mul(result, power, modulus);
+        power = mod_mul(power, power, modulus);
+    }
+    return result;
+}
+
 BigUint BigUint::shift_left_bits(size_t bits) const {
     if (is_zero() || bits == 0)
         return *this;

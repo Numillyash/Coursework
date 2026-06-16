@@ -1121,6 +1121,206 @@ void test_mod_helpers_bitbiginttc_oracle() {
     }
 }
 
+uint64_t mod_pow_u64(uint64_t base, uint64_t exponent, uint64_t modulus) {
+    unsigned __int128 result = 1 % modulus;
+    unsigned __int128 power = base % modulus;
+    while (exponent != 0) {
+        if ((exponent & 1U) != 0)
+            result = (result * power) % modulus;
+        power = (power * power) % modulus;
+        exponent >>= 1;
+    }
+    return static_cast<uint64_t>(result);
+}
+
+void test_mod_pow_zero_and_one() {
+    test_section("mod_pow zero modulus, modulus-one, and exponent-zero cases");
+
+    bool threw = false;
+    try {
+        (void)BigUint::mod_pow(BigUint(2), BigUint(10), BigUint::zero());
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    expect(threw, "mod_pow zero modulus throws");
+
+    const std::vector<BigUint> bases = {
+        BigUint(0),
+        BigUint(1),
+        BigUint(5),
+        BigUint(UINT64_MAX),
+        BigUint(1).shift_left_bits(100),
+    };
+    const std::vector<BigUint> exponents = {
+        BigUint(0),
+        BigUint(1),
+        BigUint(17),
+        BigUint(1).shift_left_bits(64),
+    };
+    for (const BigUint& base : bases) {
+        for (const BigUint& exponent : exponents)
+            expect_limbs(BigUint::mod_pow(base, exponent, BigUint(1)), {},
+                    "mod_pow modulus 1 returns zero");
+    }
+
+    expect_limbs(BigUint::mod_pow(BigUint(0), BigUint(0), BigUint(7)), {1},
+            "0^0 mod m is 1 mod m");
+    expect_limbs(BigUint::mod_pow(BigUint(5), BigUint(0), BigUint(7)), {1},
+            "5^0 mod m is 1 mod m");
+    expect_limbs(BigUint::mod_pow(BigUint(7), BigUint(0), BigUint(7)), {1},
+            "m^0 mod m is 1 for m > 1");
+}
+
+void test_mod_pow_basic_and_uint64_oracle() {
+    test_section("mod_pow basic and uint64_t oracle");
+
+    expect_eq(BigUint::mod_pow(BigUint(2), BigUint(10), BigUint(1000))
+                    .to_uint64_for_testing(),
+            uint64_t{24}, "2^10 mod 1000");
+    expect_eq(BigUint::mod_pow(BigUint(3), BigUint(0), BigUint(7))
+                    .to_uint64_for_testing(),
+            uint64_t{1}, "3^0 mod 7");
+    expect_eq(BigUint::mod_pow(BigUint(3), BigUint(1), BigUint(7))
+                    .to_uint64_for_testing(),
+            uint64_t{3}, "3^1 mod 7");
+    expect_eq(BigUint::mod_pow(BigUint(3), BigUint(2), BigUint(7))
+                    .to_uint64_for_testing(),
+            uint64_t{2}, "3^2 mod 7");
+    expect_eq(BigUint::mod_pow(BigUint(5), BigUint(3), BigUint(13))
+                    .to_uint64_for_testing(),
+            uint64_t{8}, "5^3 mod 13");
+    expect_eq(BigUint::mod_pow(BigUint(10), BigUint(9), BigUint(6))
+                    .to_uint64_for_testing(),
+            uint64_t{4}, "10^9 mod 6");
+
+    const std::vector<std::tuple<uint64_t, uint64_t, uint64_t>> cases = {
+        {0, 0, 2},
+        {0, 5, 17},
+        {1, 100, 19},
+        {2, 63, 97},
+        {3, 17, 101},
+        {17, 31, 65537},
+        {UINT32_MAX, 5, UINT32_MAX - 1ULL},
+        {uint64_t{1} << 32, 9, UINT32_MAX},
+        {UINT64_MAX, 3, UINT32_MAX},
+        {UINT64_MAX - 17, 11, UINT64_MAX - 58},
+    };
+
+    for (const auto& test : cases) {
+        uint64_t base = std::get<0>(test);
+        uint64_t exponent = std::get<1>(test);
+        uint64_t modulus = std::get<2>(test);
+        BigUint actual = BigUint::mod_pow(
+                BigUint(base), BigUint(exponent), BigUint(modulus));
+        expect_eq(actual.to_uint64_for_testing(),
+                mod_pow_u64(base, exponent, modulus),
+                "uint64 mod_pow oracle");
+        expect_mod_result(actual, BigUint(modulus),
+                "uint64 mod_pow result range");
+    }
+
+    for (uint64_t base = 0; base <= 80; base += 7) {
+        for (uint64_t exponent = 0; exponent <= 32; exponent += 5) {
+            for (uint64_t modulus = 1; modulus <= 97; modulus += 6) {
+                BigUint actual = BigUint::mod_pow(
+                        BigUint(base), BigUint(exponent), BigUint(modulus));
+                expect_eq(actual.to_uint64_for_testing(),
+                        mod_pow_u64(base, exponent, modulus),
+                        "small deterministic mod_pow oracle");
+            }
+        }
+    }
+}
+
+void test_mod_pow_large_and_algebraic_cases() {
+    test_section("mod_pow large cases and algebraic sanity");
+
+    BigUint high_exponent;
+    for (size_t bit : std::vector<size_t>{0, 31, 32, 63, 64, 100})
+        high_exponent.set_bit(bit);
+
+    const std::vector<std::tuple<BigUint, BigUint, BigUint>> cases = {
+        {BigUint(1).shift_left_bits(100).add(BigUint(12345)),
+                high_exponent,
+                BigUint(UINT32_MAX)},
+        {BigUint(1).shift_left_bits(128).add(BigUint(UINT32_MAX)),
+                BigUint(37),
+                BigUint::from_limbs({0xffffffc5U, UINT32_MAX})},
+        {BigUint::from_limbs({UINT32_MAX, UINT32_MAX, UINT32_MAX}),
+                BigUint(19),
+                BigUint(1).shift_left_bits(96).add(BigUint(17))},
+        {BigUint::from_limbs(
+                 {0x12345678U, 0x9abcdef0U, 0x0badc0deU, 0xffffffffU}),
+                BigUint(23),
+                BigUint::from_limbs({0x11111111U, 0x22222222U})},
+    };
+
+    for (const auto& test : cases) {
+        BigUint result = BigUint::mod_pow(
+                std::get<0>(test), std::get<1>(test), std::get<2>(test));
+        expect_mod_result(result, std::get<2>(test),
+                "large mod_pow result range");
+    }
+
+    const std::vector<std::tuple<BigUint, BigUint, BigUint, BigUint>>
+            algebraic_cases = {
+        {BigUint(2), BigUint(5), BigUint(7), BigUint(101)},
+        {BigUint(17), BigUint(11), BigUint(13), BigUint(UINT32_MAX)},
+        {BigUint::from_limbs({0x12345678U, 1}), BigUint(3), BigUint(9),
+                BigUint::from_limbs({0xffffffc5U, UINT32_MAX})},
+    };
+
+    for (const auto& test : algebraic_cases) {
+        const BigUint& base = std::get<0>(test);
+        const BigUint& b = std::get<1>(test);
+        const BigUint& c = std::get<2>(test);
+        const BigUint& modulus = std::get<3>(test);
+
+        BigUint lhs = BigUint::mod_pow(base, b.add(c), modulus);
+        BigUint rhs = BigUint::mod_mul(
+                BigUint::mod_pow(base, b, modulus),
+                BigUint::mod_pow(base, c, modulus),
+                modulus);
+        expect(lhs == rhs, "mod_pow exponent addition identity");
+        expect(BigUint::mod_pow(base, BigUint(2), modulus)
+                        == BigUint::mod_mul(base, base, modulus),
+                "mod_pow exponent 2 equals mod_mul square");
+        expect(BigUint::mod_pow(base, BigUint(1), modulus)
+                        == base.mod(modulus),
+                "mod_pow exponent 1 equals base mod modulus");
+    }
+}
+
+void test_mod_pow_bitbiginttc_oracle() {
+    test_section("mod_pow BitBigIntTC positive oracle");
+
+    // BigUint::mod_pow is mathematical: exponent zero returns 1 mod m.
+    // Legacy module_pow has an early base%modulus zero quirk, so avoid
+    // exponent-zero cases where base is divisible by modulus.
+    const std::vector<std::tuple<BigUint, BigUint, BigUint>> cases = {
+        {BigUint(2), BigUint(0), BigUint(5)},
+        {BigUint(2), BigUint(1), BigUint(5)},
+        {BigUint(2), BigUint(10), BigUint(1000)},
+        {BigUint(3), BigUint(4), BigUint(7)},
+        {BigUint(5), BigUint(3), BigUint(13)},
+        {BigUint(1).shift_left_bits(64).add(BigUint(123)),
+                BigUint(17), BigUint(UINT32_MAX)},
+        {BigUint::from_limbs({0xaaaaaaaaU, 0x55555555U}),
+                BigUint(11), BigUint::from_limbs({0x12345678U, 1})},
+    };
+
+    for (const auto& test : cases) {
+        const BigUint& base = std::get<0>(test);
+        const BigUint& exponent = std::get<1>(test);
+        const BigUint& modulus = std::get<2>(test);
+        BitBigIntTC expected = tc_from_biguint(base)
+                .module_pow_compat_for_testing(
+                        tc_from_biguint(exponent), tc_from_biguint(modulus));
+        expect_same_as_tc(BigUint::mod_pow(base, exponent, modulus),
+                expected, "mod_pow vs BitBigIntTC module_pow");
+    }
+}
+
 void test_bitbiginttc_oracle() {
     test_section("BitBigIntTC positive oracle");
 
@@ -1182,7 +1382,7 @@ void test_bitbiginttc_oracle() {
 } // namespace
 
 int main() {
-    std::cout << "BigUint Stage 1A/1B/1C/2A/2B/2C Tests\n";
+    std::cout << "BigUint Stage 1A/1B/1C/2A/2B/2C/2D Tests\n";
     std::cout << "======================\n" << std::endl;
 
     test_limb_ops();
@@ -1213,6 +1413,10 @@ int main() {
     test_mod_helpers_uint64_oracle();
     test_mod_helpers_large_cases();
     test_mod_helpers_bitbiginttc_oracle();
+    test_mod_pow_zero_and_one();
+    test_mod_pow_basic_and_uint64_oracle();
+    test_mod_pow_large_and_algebraic_cases();
+    test_mod_pow_bitbiginttc_oracle();
     test_bitbiginttc_oracle();
 
     std::cout << "\nAll BigUint tests PASSED" << std::endl;

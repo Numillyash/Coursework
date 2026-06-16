@@ -51,6 +51,10 @@ public:
             const BigUint& a, const BigUint& b, const BigUint& modulus);
     static BigUint mod_mul(
             const BigUint& a, const BigUint& b, const BigUint& modulus);
+    static BigUint mod_pow(
+            const BigUint& base,
+            const BigUint& exponent,
+            const BigUint& modulus);
 
     uint64_t to_uint64_for_testing() const;
 
