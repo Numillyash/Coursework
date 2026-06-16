@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "LimbOps.hpp"
@@ -35,6 +36,7 @@ public:
     BigUint sub_abs(const BigUint& other) const;
     BigUint mul_schoolbook(const BigUint& other) const;
     BigUint square() const;
+    std::pair<BigUint, BigUint> divmod(const BigUint& divisor) const;
     BigUint shift_left_bits(size_t bits) const;
     BigUint shift_right_bits(size_t bits) const;
 

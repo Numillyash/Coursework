@@ -121,6 +121,22 @@ void expect_same_as_tc(
     }
 }
 
+void expect_divmod_invariant(
+        const BigUint& dividend,
+        const BigUint& divisor,
+        const std::string& message) {
+    auto dm = dividend.divmod(divisor);
+    BigUint recomposed = dm.first.mul_schoolbook(divisor).add(dm.second);
+    if (recomposed != dividend || dm.second.compare(divisor) >= 0) {
+        std::cerr << "FAIL: " << message << std::endl;
+        std::cerr << "  dividend: " << limbs_to_debug(dividend) << std::endl;
+        std::cerr << "  divisor:  " << limbs_to_debug(divisor) << std::endl;
+        std::cerr << "  quotient: " << limbs_to_debug(dm.first) << std::endl;
+        std::cerr << "  rem:      " << limbs_to_debug(dm.second) << std::endl;
+        std::exit(1);
+    }
+}
+
 std::vector<BigUint> oracle_values() {
     std::vector<BigUint> values = {
         BigUint(0),
@@ -589,6 +605,155 @@ void test_square() {
             "power of two square");
 }
 
+void test_divmod_basic() {
+    test_section("divmod basic");
+
+    auto zero_by_one = BigUint(0).divmod(BigUint(1));
+    expect_limbs(zero_by_one.first, {}, "0 / 1 quotient");
+    expect_limbs(zero_by_one.second, {}, "0 / 1 remainder");
+
+    auto one_by_one = BigUint(1).divmod(BigUint(1));
+    expect_limbs(one_by_one.first, {1}, "1 / 1 quotient");
+    expect_limbs(one_by_one.second, {}, "1 / 1 remainder");
+
+    auto five_by_two = BigUint(5).divmod(BigUint(2));
+    expect_limbs(five_by_two.first, {2}, "5 / 2 quotient");
+    expect_limbs(five_by_two.second, {1}, "5 / 2 remainder");
+
+    BigUint x = BigUint::from_limbs({0x12345678U, 0x9abcdef0U});
+    auto x_by_x = x.divmod(x);
+    expect_limbs(x_by_x.first, {1}, "x / x quotient");
+    expect_limbs(x_by_x.second, {}, "x / x remainder");
+
+    BigUint larger = x.shift_left_bits(1);
+    auto x_by_larger = x.divmod(larger);
+    expect_limbs(x_by_larger.first, {}, "x / larger quotient");
+    expect(x_by_larger.second == x, "x / larger remainder");
+
+    auto x_by_one = x.divmod(BigUint(1));
+    expect(x_by_one.first == x, "x / 1 quotient");
+    expect_limbs(x_by_one.second, {}, "x / 1 remainder");
+
+    bool threw = false;
+    try {
+        (void)BigUint(1).divmod(BigUint::zero());
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    expect(threw, "division by zero throws invalid_argument");
+}
+
+void test_divmod_uint64_oracle() {
+    test_section("divmod uint64_t oracle");
+
+    for (uint64_t a = 0; a <= 1000; ++a) {
+        for (uint64_t b = 1; b <= 1000; ++b) {
+            auto dm = BigUint(a).divmod(BigUint(b));
+            expect_eq(dm.first.to_uint64_for_testing(), a / b,
+                    "exhaustive small div quotient");
+            expect_eq(dm.second.to_uint64_for_testing(), a % b,
+                    "exhaustive small div remainder");
+        }
+    }
+
+    const std::vector<std::pair<uint64_t, uint64_t>> cases = {
+        {UINT32_MAX, 2},
+        {uint64_t{1} << 32, 2},
+        {uint64_t{1} << 32, UINT32_MAX},
+        {UINT64_MAX, UINT32_MAX},
+        {UINT64_MAX, uint64_t{1} << 32},
+    };
+
+    for (const auto& test : cases) {
+        auto dm = BigUint(test.first).divmod(BigUint(test.second));
+        expect_eq(dm.first.to_uint64_for_testing(), test.first / test.second,
+                "uint64 boundary div quotient");
+        expect_eq(dm.second.to_uint64_for_testing(), test.first % test.second,
+                "uint64 boundary div remainder");
+        expect_divmod_invariant(BigUint(test.first), BigUint(test.second),
+                "uint64 boundary invariant");
+    }
+}
+
+void test_divmod_limb_cases() {
+    test_section("divmod limb and power cases");
+
+    BigUint two32 = BigUint(1).shift_left_bits(32);
+    BigUint two64 = BigUint(1).shift_left_bits(64);
+    auto two64_by_two32 = two64.divmod(two32);
+    expect(two64_by_two32.first == two32, "2^64 / 2^32 quotient");
+    expect_limbs(two64_by_two32.second, {}, "2^64 / 2^32 remainder");
+
+    BigUint two100 = BigUint(1).shift_left_bits(100);
+    auto two100_by_two32 = two100.divmod(two32);
+    expect(two100_by_two32.first == BigUint(1).shift_left_bits(68),
+            "2^100 / 2^32 quotient");
+    expect_limbs(two100_by_two32.second, {}, "2^100 / 2^32 remainder");
+
+    BigUint two128_minus_one = BigUint(1).shift_left_bits(128).sub_abs(
+            BigUint(1));
+    BigUint two64_minus_one = BigUint(1).shift_left_bits(64).sub_abs(
+            BigUint(1));
+    auto mersenne_dm = two128_minus_one.divmod(two64_minus_one);
+    expect(mersenne_dm.first == BigUint(1).shift_left_bits(64).add(
+                   BigUint(1)),
+            "(2^128-1)/(2^64-1) quotient");
+    expect_limbs(mersenne_dm.second, {}, "(2^128-1)/(2^64-1) remainder");
+
+    const std::vector<std::pair<BigUint, BigUint>> cases = {
+        {BigUint::from_limbs({UINT32_MAX}), BigUint(3)},
+        {BigUint::from_limbs({UINT32_MAX, UINT32_MAX}), BigUint(17)},
+        {BigUint::from_limbs({UINT32_MAX, UINT32_MAX, UINT32_MAX}),
+                BigUint::from_limbs({0x12345678U, 1})},
+        {BigUint::from_limbs({0xaaaaaaaaU, 0x55555555U, 0xffffffffU}),
+                BigUint::from_limbs({0xffffU, 0x10U})},
+        {BigUint::from_limbs(
+                 {0x12345678U, 0x9abcdef0U, 0x0badc0deU, 0xffffffffU}),
+                BigUint::from_limbs({0x11111111U, 0x22222222U})},
+    };
+
+    for (const auto& test : cases)
+        expect_divmod_invariant(test.first, test.second,
+                "dense/uneven divmod invariant");
+}
+
+void test_divmod_bitbiginttc_oracle() {
+    test_section("divmod BitBigIntTC positive oracle");
+
+    const std::vector<BigUint> dividends = {
+        BigUint(0),
+        BigUint(1),
+        BigUint(5),
+        BigUint(UINT32_MAX),
+        BigUint(uint64_t{1} << 32),
+        BigUint(UINT64_MAX),
+        BigUint(1).shift_left_bits(96).add(BigUint(12345)),
+        BigUint::from_limbs({0xaaaaaaaaU, 0x55555555U, 0xffffffffU}),
+    };
+    const std::vector<BigUint> divisors = {
+        BigUint(1),
+        BigUint(2),
+        BigUint(3),
+        BigUint(UINT32_MAX),
+        BigUint(uint64_t{1} << 32),
+        BigUint::from_limbs({0x12345678U, 1}),
+    };
+
+    for (const BigUint& dividend : dividends) {
+        for (const BigUint& divisor : divisors) {
+            auto dm = dividend.divmod(divisor);
+            auto tc_dm = tc_from_biguint(dividend).divmod(
+                    tc_from_biguint(divisor));
+            expect_same_as_tc(dm.first, tc_dm.q,
+                    "divmod quotient vs BitBigIntTC");
+            expect_same_as_tc(dm.second, tc_dm.r,
+                    "divmod remainder vs BitBigIntTC");
+            expect_divmod_invariant(dividend, divisor,
+                    "BitBigIntTC oracle divmod invariant");
+        }
+    }
+}
+
 void test_bitbiginttc_oracle() {
     test_section("BitBigIntTC positive oracle");
 
@@ -634,6 +799,15 @@ void test_bitbiginttc_oracle() {
             expect_same_as_tc(lhs.mul_schoolbook(rhs),
                     tc_lhs.multiplication_compat_for_testing(tc_rhs),
                     "mul_schoolbook vs BitBigIntTC");
+
+            if (!rhs.is_zero()) {
+                auto dm = lhs.divmod(rhs);
+                auto tc_dm = tc_lhs.divmod(tc_rhs);
+                expect_same_as_tc(dm.first, tc_dm.q,
+                        "divmod quotient vs BitBigIntTC corpus");
+                expect_same_as_tc(dm.second, tc_dm.r,
+                        "divmod remainder vs BitBigIntTC corpus");
+            }
         }
     }
 }
@@ -659,6 +833,10 @@ int main() {
     test_multiplication_dense_patterns();
     test_multiplication_identities();
     test_square();
+    test_divmod_basic();
+    test_divmod_uint64_oracle();
+    test_divmod_limb_cases();
+    test_divmod_bitbiginttc_oracle();
     test_bitbiginttc_oracle();
 
     std::cout << "\nAll BigUint tests PASSED" << std::endl;

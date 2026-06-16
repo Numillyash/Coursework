@@ -171,6 +171,34 @@ BigUint BigUint::square() const {
     return mul_schoolbook(*this);
 }
 
+std::pair<BigUint, BigUint> BigUint::divmod(const BigUint& divisor) const {
+    if (divisor.is_zero())
+        throw std::invalid_argument("BigUint::divmod division by zero");
+
+    if (is_zero())
+        return {BigUint::zero(), BigUint::zero()};
+
+    if (compare(divisor) < 0)
+        return {BigUint::zero(), *this};
+
+    BigUint quotient;
+    BigUint remainder;
+
+    for (size_t bit = bit_length(); bit > 0; --bit) {
+        const size_t i = bit - 1;
+        remainder = remainder.shift_left_bits(1);
+        if (test_bit(i))
+            remainder.set_bit(0);
+
+        if (remainder.compare(divisor) >= 0) {
+            remainder = remainder.sub_abs(divisor);
+            quotient.set_bit(i);
+        }
+    }
+
+    return {quotient, remainder};
+}
+
 BigUint BigUint::shift_left_bits(size_t bits) const {
     if (is_zero() || bits == 0)
         return *this;
