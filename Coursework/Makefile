@@ -37,6 +37,7 @@ TEST_DIVMOD_RANDOM_EXEC := $(BUILD)/test_divmod_random
 TEST_DIVMOD_STRESS_EXEC := $(BUILD)/test_divmod_stress
 TEST_SEEDS_0TO49_EXEC := $(BUILD)/test_seeds_0to49
 TEST_RSA_TC_SMOKE_EXEC := $(BUILD)/test_rsa_tc_smoke
+TEST_RSA_LIMB_SMOKE_EXEC := $(BUILD)/test_rsa_limb_smoke
 
 WORK_SOURCES := \
   tools/Coursework.c \
@@ -56,7 +57,7 @@ BENCH_OBJECTS := $(patsubst %.c,$(BUILD)/%.o,$(BENCH_SOURCES))
 DEPS := $(WORK_OBJECTS:.o=.d) $(BENCH_OBJECTS:.o=.d)
 -include $(DEPS)
 
-.PHONY: all bench test test-rsa test-stress test-sanitize test_bitbigint test_biguint test_tc_vs_legacy test-tc-heavy test_divmod_random test-divmod-stress test_seeds_0to49 test-rsa-tc-smoke test-work1-tc-smoke tc_test clean prof release FORCE
+.PHONY: all bench test test-rsa test-stress test-sanitize test_bitbigint test_biguint test_tc_vs_legacy test-tc-heavy test_divmod_random test-divmod-stress test_seeds_0to49 test-rsa-tc-smoke test-rsa-limb-smoke test-work1-tc-smoke tc_test clean prof release FORCE
 
 all: $(WORK_EXEC) bench
 
@@ -157,6 +158,12 @@ test-rsa-tc-smoke: $(WORK_EXEC) $(TEST_RSA_TC_SMOKE_EXEC)
 
 $(TEST_RSA_TC_SMOKE_EXEC): $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/rsa/RSA_TC.o tests/test_rsa_tc_smoke.cpp
 	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_rsa_tc_smoke.cpp $(BUILD)/lib/bigint/BitBigIntTC.o $(BUILD)/lib/rsa/RSA_TC.o $(LDFLAGS) -o $@
+
+test-rsa-limb-smoke: $(TEST_RSA_LIMB_SMOKE_EXEC)
+	./$(TEST_RSA_LIMB_SMOKE_EXEC)
+
+$(TEST_RSA_LIMB_SMOKE_EXEC): $(BUILD)/lib/bigint/BigUint.o $(BUILD)/lib/rsa/RSA_Limb.o tests/test_rsa_limb_smoke.cpp
+	$(CXX) $(CXXSTD) $(CFLAGS) $(CPPFLAGS) tests/test_rsa_limb_smoke.cpp $(BUILD)/lib/bigint/BigUint.o $(BUILD)/lib/rsa/RSA_Limb.o $(LDFLAGS) -o $@
 
 test-work1-tc-smoke: $(WORK_EXEC) $(WORK_TC_EXEC)
 	bash ./tests/test_work1_tc_smoke.sh
