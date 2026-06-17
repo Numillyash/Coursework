@@ -39,6 +39,7 @@ KeyPairLimb make_keypair_from_primes(
 bool rsa_check_keypair(const KeyPairLimb& keypair);
 
 size_t max_plaintext_block_bytes(const PublicKeyLimb& key);
+size_t max_plaintext_block_bytes(const PrivateKeyLimb& key);
 BigUint bytes_to_block(const std::vector<uint8_t>& bytes);
 std::vector<uint8_t> block_to_bytes(
         const BigUint& block,
@@ -53,5 +54,16 @@ std::vector<uint8_t> rsa_decrypt_blocks(
         const std::vector<BigUint>& blocks,
         const PrivateKeyLimb& key,
         size_t original_size);
+std::vector<BigUint> rsa_sign_bytes(
+        const std::vector<uint8_t>& input,
+        const PrivateKeyLimb& key);
+std::vector<uint8_t> rsa_recover_signed_bytes(
+        const std::vector<BigUint>& signature_blocks,
+        const PublicKeyLimb& key,
+        size_t original_size);
+bool rsa_check_signature_bytes(
+        const std::vector<uint8_t>& input,
+        const std::vector<BigUint>& signature_blocks,
+        const PublicKeyLimb& key);
 
 } // namespace rsa_limb

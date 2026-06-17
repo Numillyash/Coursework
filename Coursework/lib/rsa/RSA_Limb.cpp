@@ -91,6 +91,10 @@ size_t max_plaintext_block_bytes(const PublicKeyLimb& key) {
     return max_plaintext_block_bytes_for_modulus(key.n);
 }
 
+size_t max_plaintext_block_bytes(const PrivateKeyLimb& key) {
+    return max_plaintext_block_bytes_for_modulus(key.n);
+}
+
 BigUint bytes_to_block(const std::vector<uint8_t>& bytes) {
     BigUint result;
     for (size_t byte = 0; byte < bytes.size(); ++byte) {
@@ -183,6 +187,64 @@ std::vector<uint8_t> rsa_decrypt_blocks(
         output.insert(output.end(), bytes.begin(), bytes.end());
     }
     return output;
+}
+
+std::vector<BigUint> rsa_sign_bytes(
+        const std::vector<uint8_t>& input,
+        const PrivateKeyLimb& key) {
+    size_t block_size = max_plaintext_block_bytes(key);
+    std::vector<BigUint> signatures;
+    for (const std::vector<uint8_t>& block
+            : split_plaintext_blocks(input, block_size)) {
+        BigUint plaintext = bytes_to_block(block);
+        if (plaintext.compare(key.n) >= 0)
+            throw std::invalid_argument("sign plaintext block out of range");
+        signatures.push_back(rsa_private_op(plaintext, key));
+    }
+    return signatures;
+}
+
+std::vector<uint8_t> rsa_recover_signed_bytes(
+        const std::vector<BigUint>& signature_blocks,
+        const PublicKeyLimb& key,
+        size_t original_size) {
+    size_t block_size = max_plaintext_block_bytes(key);
+    if (original_size == 0 && !signature_blocks.empty())
+        throw std::invalid_argument("nonempty signature blocks for empty input");
+    if (original_size > 0 && signature_blocks.empty())
+        throw std::invalid_argument("empty signature blocks for nonempty input");
+
+    size_t expected_blocks =
+            original_size == 0 ? 0 : (original_size + block_size - 1) / block_size;
+    if (signature_blocks.size() != expected_blocks)
+        throw std::invalid_argument("signature block count does not match original_size");
+
+    std::vector<uint8_t> output;
+    output.reserve(original_size);
+    for (size_t i = 0; i < signature_blocks.size(); ++i) {
+        BigUint plaintext = rsa_public_op(signature_blocks[i], key);
+        size_t remaining = original_size - output.size();
+        size_t expected_bytes = remaining < block_size ? remaining : block_size;
+        std::vector<uint8_t> bytes = block_to_bytes(plaintext, expected_bytes);
+        output.insert(output.end(), bytes.begin(), bytes.end());
+    }
+    return output;
+}
+
+bool rsa_check_signature_bytes(
+        const std::vector<uint8_t>& input,
+        const std::vector<BigUint>& signature_blocks,
+        const PublicKeyLimb& key) {
+    max_plaintext_block_bytes(key);
+    if (key.e.is_zero())
+        throw std::invalid_argument("rsa_check_signature_bytes zero exponent");
+
+    try {
+        return rsa_recover_signed_bytes(signature_blocks, key, input.size())
+                == input;
+    } catch (const std::invalid_argument&) {
+        return false;
+    }
 }
 
 } // namespace rsa_limb

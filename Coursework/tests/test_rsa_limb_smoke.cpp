@@ -293,6 +293,96 @@ void test_byte_roundtrips() {
     expect_byte_roundtrip(two_byte_key, all_bytes);
 }
 
+void expect_signature_roundtrip(
+        const KeyPairLimb& keypair,
+        const std::vector<uint8_t>& input) {
+    std::vector<BigUint> signature =
+            rsa_limb::rsa_sign_bytes(input, keypair.private_key);
+    std::vector<uint8_t> recovered = rsa_limb::rsa_recover_signed_bytes(
+            signature, keypair.public_key, input.size());
+    expect_bytes_eq(recovered, input, "RSA_Limb sign/recover roundtrip");
+    expect(rsa_limb::rsa_check_signature_bytes(
+                   input, signature, keypair.public_key),
+            "RSA_Limb check accepts valid signature");
+}
+
+void test_sign_recover_roundtrips() {
+    std::cout << "\n=== RSA_Limb raw sign/recover roundtrips ==="
+              << std::endl;
+
+    KeyPairLimb classic = rsa_limb::make_keypair_from_primes(
+            BigUint(61), BigUint(53), BigUint(17));
+    expect(rsa_limb::rsa_sign_bytes({}, classic.private_key).empty(),
+            "empty input signs to empty vector");
+    expect(rsa_limb::rsa_check_signature_bytes(
+                   {}, {}, classic.public_key),
+            "empty signature checks true for empty input");
+
+    expect_signature_roundtrip(classic, {65});
+    expect_signature_roundtrip(classic, {0});
+    expect_signature_roundtrip(classic, {0, 0, 65});
+    expect_signature_roundtrip(classic, {1, 2, 3, 4, 5});
+
+    KeyPairLimb two_byte_key = rsa_limb::make_keypair_from_primes(
+            BigUint(257), BigUint(263), BigUint(17));
+    expect(rsa_limb::max_plaintext_block_bytes(two_byte_key.private_key) == 2,
+            "private key two-byte block size");
+    expect_signature_roundtrip(two_byte_key, {0x34, 0x12});
+    expect_signature_roundtrip(two_byte_key, {0, 0});
+    expect_signature_roundtrip(two_byte_key, {1, 2, 3, 4});
+    expect_signature_roundtrip(two_byte_key, {1, 2, 3});
+
+    std::vector<uint8_t> all_bytes;
+    for (int i = 0; i <= 255; ++i)
+        all_bytes.push_back(static_cast<uint8_t>(i));
+    expect_signature_roundtrip(two_byte_key, all_bytes);
+}
+
+void test_signature_check_failures() {
+    std::cout << "\n=== RSA_Limb raw signature check failures ==="
+              << std::endl;
+
+    KeyPairLimb keypair = rsa_limb::make_keypair_from_primes(
+            BigUint(257), BigUint(263), BigUint(17));
+    std::vector<uint8_t> input = {1, 2, 3};
+    std::vector<BigUint> signature =
+            rsa_limb::rsa_sign_bytes(input, keypair.private_key);
+
+    expect(!rsa_limb::rsa_check_signature_bytes(
+                   {1, 2, 4}, signature, keypair.public_key),
+            "modified input returns false");
+
+    std::vector<BigUint> modified = signature;
+    modified[0] = modified[0].add(BigUint(1)).mod(keypair.public_key.n);
+    expect(!rsa_limb::rsa_check_signature_bytes(
+                   input, modified, keypair.public_key),
+            "modified signature block returns false");
+
+    std::vector<BigUint> appended = signature;
+    appended.push_back(BigUint(0));
+    expect(!rsa_limb::rsa_check_signature_bytes(
+                   input, appended, keypair.public_key),
+            "appended signature block returns false");
+
+    std::vector<BigUint> removed = signature;
+    removed.pop_back();
+    expect(!rsa_limb::rsa_check_signature_bytes(
+                   input, removed, keypair.public_key),
+            "removed signature block returns false");
+
+    std::vector<BigUint> out_of_range = signature;
+    out_of_range[0] = keypair.public_key.n;
+    expect(!rsa_limb::rsa_check_signature_bytes(
+                   input, out_of_range, keypair.public_key),
+            "signature block >= n returns false");
+
+    KeyPairLimb wrong_key = rsa_limb::make_keypair_from_primes(
+            BigUint(263), BigUint(269), BigUint(17));
+    expect(!rsa_limb::rsa_check_signature_bytes(
+                   input, signature, wrong_key.public_key),
+            "wrong public key returns false");
+}
+
 void test_decrypt_validation() {
     std::cout << "\n=== RSA_Limb byte decrypt validation ===" << std::endl;
 
@@ -318,6 +408,59 @@ void test_decrypt_validation() {
     }, "cipher block >= n throws");
 }
 
+void test_signature_recover_validation() {
+    std::cout << "\n=== RSA_Limb raw signature recover validation ==="
+              << std::endl;
+
+    KeyPairLimb keypair = rsa_limb::make_keypair_from_primes(
+            BigUint(257), BigUint(263), BigUint(17));
+    std::vector<BigUint> signature =
+            rsa_limb::rsa_sign_bytes({1, 2, 3}, keypair.private_key);
+
+    expect_invalid_argument([&] {
+        (void)rsa_limb::rsa_recover_signed_bytes(
+                {BigUint(0)}, keypair.public_key, 0);
+    }, "nonempty signature blocks for zero original size throws");
+    expect_invalid_argument([&] {
+        (void)rsa_limb::rsa_recover_signed_bytes(
+                {}, keypair.public_key, 1);
+    }, "empty signature blocks for nonzero original size throws");
+    expect_invalid_argument([&] {
+        (void)rsa_limb::rsa_recover_signed_bytes(
+                {signature[0]}, keypair.public_key, 3);
+    }, "signature block count mismatch throws");
+}
+
+void test_signature_key_validation() {
+    std::cout << "\n=== RSA_Limb raw signature key validation ==="
+              << std::endl;
+
+    expect_invalid_argument([] {
+        (void)rsa_limb::rsa_sign_bytes(
+                {1}, PrivateKeyLimb{BigUint(0), BigUint(3)});
+    }, "signing with private key n == 0 throws");
+    expect_invalid_argument([] {
+        (void)rsa_limb::rsa_sign_bytes(
+                {1}, PrivateKeyLimb{BigUint(3233), BigUint(0)});
+    }, "signing with private key d == 0 throws");
+    expect_invalid_argument([] {
+        (void)rsa_limb::rsa_recover_signed_bytes(
+                {BigUint(1)}, PublicKeyLimb{BigUint(0), BigUint(17)}, 1);
+    }, "recover with public key n == 0 throws");
+    expect_invalid_argument([] {
+        (void)rsa_limb::rsa_recover_signed_bytes(
+                {BigUint(1)}, PublicKeyLimb{BigUint(3233), BigUint(0)}, 1);
+    }, "recover with public key e == 0 throws");
+    expect_invalid_argument([] {
+        (void)rsa_limb::rsa_check_signature_bytes(
+                {1}, {BigUint(1)}, PublicKeyLimb{BigUint(0), BigUint(17)});
+    }, "check with public key n == 0 throws");
+    expect_invalid_argument([] {
+        (void)rsa_limb::rsa_check_signature_bytes(
+                {1}, {BigUint(1)}, PublicKeyLimb{BigUint(3233), BigUint(0)});
+    }, "check with public key e == 0 throws");
+}
+
 } // namespace
 
 int main() {
@@ -333,7 +476,11 @@ int main() {
     test_operation_validation_errors();
     test_additional_small_prime_pairs();
     test_byte_roundtrips();
+    test_sign_recover_roundtrips();
+    test_signature_check_failures();
     test_decrypt_validation();
+    test_signature_recover_validation();
+    test_signature_key_validation();
 
     std::cout << "\nRSA_Limb smoke tests PASSED" << std::endl;
     return 0;
