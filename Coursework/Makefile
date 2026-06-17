@@ -28,6 +28,7 @@ BUILD := build/$(MODE)
 
 WORK_EXEC  := work1
 WORK_TC_EXEC := work1_tc
+WORK_LIMB_EXEC := work1_limb
 BENCH_EXEC := bench_rsa
 TEST_BITBIGINT_EXEC := $(BUILD)/test_bitbigint
 TEST_BIGUINT_EXEC := $(BUILD)/test_biguint
@@ -58,7 +59,7 @@ BENCH_OBJECTS := $(patsubst %.c,$(BUILD)/%.o,$(BENCH_SOURCES))
 DEPS := $(WORK_OBJECTS:.o=.d) $(BENCH_OBJECTS:.o=.d)
 -include $(DEPS)
 
-.PHONY: all bench test test-rsa test-stress test-sanitize test_bitbigint test_biguint test_tc_vs_legacy test-tc-heavy test_divmod_random test-divmod-stress test_seeds_0to49 test-rsa-tc-smoke test-rsa-limb-smoke test-rsa-limb-format test-work1-tc-smoke tc_test clean prof release FORCE
+.PHONY: all bench test test-rsa test-stress test-sanitize test_bitbigint test_biguint test_tc_vs_legacy test-tc-heavy test_divmod_random test-divmod-stress test_seeds_0to49 test-rsa-tc-smoke test-rsa-limb-smoke test-rsa-limb-format test-work1-tc-smoke test-work1-limb-smoke tc_test clean prof release FORCE
 
 all: $(WORK_EXEC) bench
 
@@ -82,6 +83,9 @@ $(WORK_EXEC): FORCE $(WORK_OBJECTS)
 	$(CC) $(filter-out FORCE,$^) $(LDFLAGS) -o $@
 
 $(WORK_TC_EXEC): FORCE $(BUILD)/tools/CourseworkTC.o $(BUILD)/lib/rsa/RSA_TC.o $(BUILD)/lib/bigint/BitBigIntTC.o
+	$(CXX) $(filter-out FORCE,$^) $(LDFLAGS) -o $@
+
+$(WORK_LIMB_EXEC): FORCE $(BUILD)/tools/CourseworkLimb.o $(BUILD)/lib/rsa/RSA_Limb.o $(BUILD)/lib/rsa/RSA_Limb_Format.o $(BUILD)/lib/bigint/BigUint.o
 	$(CXX) $(filter-out FORCE,$^) $(LDFLAGS) -o $@
 
 $(BENCH_EXEC): CPPFLAGS += -DNO_LOG
@@ -175,6 +179,9 @@ $(TEST_RSA_LIMB_FORMAT_EXEC): $(BUILD)/lib/bigint/BigUint.o $(BUILD)/lib/rsa/RSA
 test-work1-tc-smoke: $(WORK_EXEC) $(WORK_TC_EXEC)
 	bash ./tests/test_work1_tc_smoke.sh
 
+test-work1-limb-smoke: $(WORK_LIMB_EXEC)
+	bash ./tests/test_work1_limb_smoke.sh
+
 prof:
 	$(MAKE) MODE=prof bench
 
@@ -183,5 +190,5 @@ release:
 
 clean:
 	rm -rf build
-	rm -f $(WORK_EXEC) $(WORK_TC_EXEC) $(BENCH_EXEC) test_bitbigint test_tc_vs_legacy test_divmod_random test_divmod_stress test_seeds_0to49 test_rsa_tc_smoke
+	rm -f $(WORK_EXEC) $(WORK_TC_EXEC) $(WORK_LIMB_EXEC) $(BENCH_EXEC) test_bitbigint test_tc_vs_legacy test_divmod_random test_divmod_stress test_seeds_0to49 test_rsa_tc_smoke
 	rm -f tools/*.o *.o
