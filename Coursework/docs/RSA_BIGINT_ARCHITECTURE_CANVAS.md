@@ -2,7 +2,7 @@
 
 **Проект:** собственная производительная BigInt/RSA-библиотека  
 **Цель:** сделать библиотеку своими руками, с полным пониманием внутренней арифметики, пригодную для дальнейшей оптимизации и портирования, в том числе на микроконтроллеры.  
-**Текущий контекст:** старый учебный bit-level bigint уже есть и работает; новый этап — проектирование нормального архитектурного ядра.
+**Текущий контекст:** старый учебный bit-level bigint остаётся oracle/reference; `BitBigIntTC` завершил compatibility/reference фазу; ветка `LimbBigUint-core` уже содержит первый рабочий `BigUint` limb-backend и минимальный `RSA_Limb` raw RSA слой для тестов.
 
 ---
 
@@ -22,6 +22,60 @@
    Архитектура должна позволять ускорять операции без полного переписывания API.
 5. **Учебная ценность.**
    Старый bit-level bigint не выбрасывается, а используется как reference backend / oracle для проверки нового limb-backend.
+
+---
+
+## 0.1. Текущий статус ветки LimbBigUint-core
+
+Сейчас в проекте существуют три слоя backend'ов:
+
+1. **Legacy C backend `work1`.**
+   Использует `lib/bigint/bit_LA.c` и `lib/rsa/RSA.c`.
+   Это стабильная исходная реализация и oracle для проверки поведения.
+2. **Compatibility/reference backend `work1_tc`.**
+   Использует transliteration-first C++ порт `BitBigIntTC` и совместимые legacy
+   форматы ключей, шифртекста и подписи.
+3. **Experimental limb backend `BigUint` / `RSA_Limb`.**
+   Это новый unsigned limb-backend и raw RSA test layer. У него пока нет CLI,
+   legacy file-format интеграции, чтения prime-файлов или padding/signature
+   scheme уровня PKCS/PSS.
+
+Текущий `BigUint`:
+
+- хранит число в `uint32_t` limb'ах;
+- использует little-endian порядок limb'ов;
+- является unsigned-only типом;
+- представляет zero как пустой `std::vector` limb'ов;
+- поддерживает canonical invariant: у ненулевых чисел нет leading zero limb'ов;
+- уже имеет construction, compare, bit_length, test_bit/set_bit, shifts, add,
+  `sub_abs`, schoolbook multiplication, square, divmod/div/mod, gcd,
+  `mod_add`, `mod_sub`, `mod_mul`, `mod_pow`, `mod_inverse`.
+
+Текущий `RSA_Limb`:
+
+- строит keypair из переданных простых `p`, `q` и экспоненты `e`;
+- выполняет public/private operation через `BigUint::mod_pow`;
+- содержит raw byte encrypt/decrypt helpers;
+- содержит raw sign/check helpers;
+- предназначен для тестов raw/textbook RSA, а не для production cryptography;
+- не реализует padding, hashing, PKCS#1, OAEP или PSS.
+
+Тестовый статус:
+
+- `make MODE=debug test` включает `test_biguint` и `test-rsa-limb-smoke`;
+- `test_biguint` проверяет `BigUint` на deterministic fixtures и выбранных
+  positive-value oracle-сравнениях с `BitBigIntTC`;
+- `test-rsa-limb-smoke` проверяет keypair construction, raw RSA operations,
+  raw byte encrypt/decrypt roundtrips и raw sign/check helpers;
+- дополнительные проверки остаются отдельными: `test-tc-heavy`,
+  `test-sanitize`, `test_all.sh`.
+
+Ближайшая работа:
+
+1. Спроектировать RSA_Limb serialization и возможный отдельный CLI.
+2. Добавить performance-слой: Knuth division, Montgomery reduction, Barrett
+   reduction.
+3. При необходимости сделать legacy-compatible режим для форматов старого RSA.
 
 ---
 
@@ -63,7 +117,7 @@ B = 2^32
 
 ### Статус
 
-Принято как целевая архитектура нового backend.
+Принято и реализовано в первой версии `BigUint`.
 
 ---
 
@@ -105,7 +159,8 @@ B = 2^32
 
 ### Статус
 
-Принято.
+Принято. На практике эту роль сейчас выполняют legacy `bit_LA.c` и
+compatibility/reference backend `BitBigIntTC`.
 
 ---
 
@@ -157,7 +212,7 @@ class BigInt {
 
 ### Статус
 
-Принято.
+Принято и реализовано в `BigUint`. Публичный signed `BigInt` пока не добавлен.
 
 ---
 
@@ -709,25 +764,25 @@ class StaticBigUint {
 
 ### Stage 1 — Limb BigUint core
 
-- [ ] `BigUint` на `uint32_t`.
-- [ ] `normalize`.
-- [ ] `compare`.
-- [ ] `bit_length`.
-- [ ] `test_bit`.
-- [ ] `set_bit`.
-- [ ] `add`.
-- [ ] `sub_abs`.
-- [ ] `shift_left_bits`.
-- [ ] `shift_right_bits`.
-- [ ] `mul_schoolbook`.
-- [ ] `square`.
+- [x] `BigUint` на `uint32_t`.
+- [x] `normalize`.
+- [x] `compare`.
+- [x] `bit_length`.
+- [x] `test_bit`.
+- [x] `set_bit`.
+- [x] `add`.
+- [x] `sub_abs`.
+- [x] `shift_left_bits`.
+- [x] `shift_right_bits`.
+- [x] `mul_schoolbook`.
+- [x] `square`.
 
 ### Stage 2 — Division and number theory
 
-- [ ] `divmod`.
-- [ ] `mod`.
-- [ ] `gcd`.
-- [ ] `extended_gcd` или другой `mod_inverse`.
+- [x] `divmod`.
+- [x] `mod`.
+- [x] `gcd`.
+- [x] `extended_gcd` или другой `mod_inverse`.
 - [ ] Miller-Rabin primality test.
 - [ ] Prime generation.
 
@@ -737,18 +792,23 @@ class StaticBigUint {
 - [ ] MontgomeryContext.
 - [ ] Montgomery multiplication.
 - [ ] Montgomery square.
+- [x] Basic `mod_add` / `mod_sub` / `mod_mul`.
+- [x] Basic binary `mod_pow`.
 - [ ] Montgomery pow.
 - [ ] Sliding window exponentiation.
 
 ### Stage 4 — RSA
 
-- [ ] `RsaPublicKey`.
-- [ ] `RsaPrivateKey`.
+- [x] `RsaPublicKey` / `PublicKeyLimb`.
+- [x] `RsaPrivateKey` / `PrivateKeyLimb`.
 - [ ] key generation.
-- [ ] public operation.
-- [ ] private operation slow.
+- [x] keypair from supplied primes.
+- [x] public operation.
+- [x] private operation slow.
 - [ ] private operation CRT.
-- [ ] basic block encoding.
+- [x] basic raw byte block encoding.
+- [x] raw byte encrypt/decrypt helpers.
+- [x] raw sign/check helpers.
 - [ ] later: OAEP/PSS-like modes.
 
 ### Stage 5 — Optimization
@@ -2249,4 +2309,3 @@ crypto-safe private RSA bigint
 ```
 
 Для начала делаем fast/educational backend, но API должен позволять позже добавить const-time private RSA path.
-

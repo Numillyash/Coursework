@@ -1,16 +1,18 @@
 # RSA Coursework
 
-This repository contains an RSA coursework implementation with two command-line
-backends:
+This repository contains an RSA coursework implementation with three backend
+layers:
 
 - `work1`: the original legacy C backend. This remains the stable/oracle
   implementation.
 - `work1_tc`: a separate opt-in C++ backend using the transliteration-first
   `BitBigIntTC` BigInt port.
+- `BigUint` / `RSA_Limb`: a new experimental unsigned limb backend and raw RSA
+  test layer. This layer has no CLI or legacy file-format integration yet.
 
-Both binaries support the same RSA command shapes and use compatible key,
-ciphertext, and signature file formats. The legacy C backend remains the oracle
-for BigInt parity tests and RSA cross-backend smoke tests.
+The `work1` and `work1_tc` binaries support the same RSA command shapes and use
+compatible key, ciphertext, and signature file formats. The legacy C backend
+remains the oracle for BigInt parity tests and RSA cross-backend smoke tests.
 
 ## Build
 
@@ -49,6 +51,35 @@ Supported key sizes are `256`, `512`, `1024`, and `2048`.
 cross-checking the C++ `BitBigIntTC` port against the legacy file formats and
 legacy RSA behavior. It is not a replacement for `work1` yet.
 
+## BigUint / RSA_Limb
+
+`BigUint` is the next experimental arithmetic backend. It is separate from the
+legacy bit-level implementation and from `BitBigIntTC`.
+
+Current `BigUint` representation and scope:
+
+- `uint32_t` limbs with `uint64_t` double-limb arithmetic.
+- Little-endian limb order: limb 0 stores the least significant 32 bits.
+- Unsigned-only semantics.
+- Canonical zero is an empty limb vector.
+- Nonzero values are normalized with no leading zero limbs.
+- Current arithmetic includes construction, comparison, bit operations, shifts,
+  addition, absolute subtraction, schoolbook multiplication, square, divmod,
+  div/mod wrappers, gcd, modular add/sub/mul, modular exponentiation, and
+  modular inverse.
+
+`RSA_Limb` is a minimal raw RSA layer on top of `BigUint`. It currently supports:
+
+- keypair construction from supplied primes;
+- public/private RSA operations through `BigUint::mod_pow`;
+- raw byte encrypt/decrypt helpers;
+- raw sign/check helpers.
+
+`RSA_Limb` does not currently provide a CLI, legacy key/cipher/signature file
+format integration, prime-file loading, padding, hashing, PKCS#1, OAEP, or PSS.
+The byte encryption and signing helpers are textbook/raw RSA test helpers only;
+they are not production cryptographic schemes.
+
 ## Tests
 
 Recommended normal checks:
@@ -68,12 +99,17 @@ make MODE=asan test-sanitize
 
 Current test coverage:
 
+- `test_biguint`: tests the `BigUint` limb backend, including deterministic
+  limb/`uint64_t` cases and selected positive-value comparisons against the
+  `BitBigIntTC` oracle.
 - `test_tc_vs_legacy`: compares `BitBigIntTC` arithmetic against the legacy C
   `bit_LA.c` oracle.
 - `test-tc-heavy`: opt-in deterministic heavy `BitBigIntTC` parity corpus with
   broader randomized, boundary, threshold, module-power, and Euclid coverage.
 - `test-rsa-tc-smoke`: tests reusable `RSA_TC` helpers and cross-backend file
   format compatibility.
+- `test-rsa-limb-smoke`: tests `RSA_Limb` key construction, raw RSA arithmetic,
+  raw byte encrypt/decrypt roundtrips, and raw sign/check helpers.
 - `test-work1-tc-smoke`: tests the `work1_tc` CLI against legacy `work1` on
   small cross-backend cases, including CLI negative cases and deterministic
   RSA_TC parser edge cases.
@@ -85,8 +121,9 @@ Current test coverage:
 - `test_all.sh`: legacy `work1` end-to-end keygen, encrypt, decrypt, sign, and
   check coverage.
 
-`make MODE=debug test` runs the normal C++ tests plus the TC RSA smoke tests.
-`test_all.sh` is still legacy-focused.
+`make MODE=debug test` runs the normal C++ tests, including `test_biguint`,
+`test-rsa-limb-smoke`, and the TC RSA smoke tests. `test_all.sh` is still
+legacy-focused.
 
 ## Caveats
 
@@ -98,8 +135,29 @@ Current test coverage:
   established.
 - TC-backed 256-bit modular exponentiation may be slow before any optimization
   work.
+- `RSA_Limb` raw byte/signature helpers are textbook/raw RSA test helpers only.
+  They do not provide padding or hashing and should not be treated as production
+  cryptography.
 - Performance notes below are historical coursework notes for the original
   implementation and should not be read as claims about `work1_tc`.
+
+## Current Status / Next Work
+
+Current branch status:
+
+- `work1` remains the unchanged legacy C backend and oracle.
+- `work1_tc` remains a separate compatibility/reference backend for the
+  transliteration-first `BitBigIntTC` implementation.
+- `BigUint` and `RSA_Limb` are experimental limb-backend library/test layers.
+  They are not wired into a user-facing CLI or legacy file formats yet.
+
+Likely next work:
+
+- design RSA_Limb serialization and a possible opt-in CLI;
+- performance work such as Knuth division, Montgomery reduction, or Barrett
+  reduction;
+- legacy-compatible RSA_Limb mode if cross-backend file compatibility becomes a
+  requirement.
 
 ## Historical Notes
 
@@ -137,5 +195,4 @@ Current test coverage:
 Финальное время выполнения алгоритма суммарно уменьшилось в 4 раза.
 
 ![image](https://user-images.githubusercontent.com/60771708/213117514-932f3197-87ec-4e5e-ad84-4ce4ce9f487c.png)
-
 
