@@ -18,6 +18,8 @@ void print_help() {
             << "Usage:\n"
             << "  work1_limb encrypt --infile <input.bin> --pubkey <public.key> --outfile <cipher.txt>\n"
             << "  work1_limb decrypt --infile <cipher.txt> --secret <secret.key> --outfile <output.bin>\n"
+            << "  work1_limb sign    --infile <input.bin> --secret <secret.key> --sigfile <signature.txt>\n"
+            << "  work1_limb check   --infile <input.bin> --pubkey <public.key> --sigfile <signature.txt>\n"
             << "  work1_limb -h|--help\n";
 }
 
@@ -117,6 +119,50 @@ int run(int argc, char* argv[]) {
         const std::vector<uint8_t> output = rsa_limb::rsa_decrypt_blocks(
                 blocks.blocks, sec, blocks.original_size);
         write_file_bytes(argv[7], output);
+        return SUCCESS;
+    }
+
+    if (mode == "sign") {
+        require_args(argc, argv, "sign", "--infile", "--secret", "--sigfile");
+        const std::vector<uint8_t> input = read_file_bytes(argv[3]);
+        const rsa_limb::PrivateKeyLimb sec =
+                rsa_limb::read_private_key_native(read_file_text(argv[5]));
+        const size_t block_size = rsa_limb::max_plaintext_block_bytes(sec);
+        const std::vector<bigint::BigUint> blocks =
+                rsa_limb::rsa_sign_bytes(input, sec);
+        rsa_limb::NativeBlocks native_blocks{
+            "signature",
+            input.size(),
+            block_size,
+            blocks,
+        };
+        write_file_text(argv[7],
+                rsa_limb::write_blocks_native(native_blocks));
+        return SUCCESS;
+    }
+
+    if (mode == "check") {
+        require_args(argc, argv, "check", "--infile", "--pubkey", "--sigfile");
+        const std::vector<uint8_t> input = read_file_bytes(argv[3]);
+        const rsa_limb::PublicKeyLimb pub =
+                rsa_limb::read_public_key_native(read_file_text(argv[5]));
+        const rsa_limb::NativeBlocks blocks =
+                rsa_limb::read_blocks_native(read_file_text(argv[7]));
+        if (blocks.kind != "signature")
+            throw std::runtime_error("input blocks are not signature blocks");
+
+        const size_t expected_block_size =
+                rsa_limb::max_plaintext_block_bytes(pub);
+        const bool valid_metadata =
+                blocks.original_size == input.size()
+                && blocks.block_size == expected_block_size;
+        const bool valid = valid_metadata
+                && rsa_limb::rsa_check_signature_bytes(
+                        input, blocks.blocks, pub);
+        if (valid)
+            std::cout << "File signature is correct!" << std::endl;
+        else
+            std::cout << "File signature is NOT correct!" << std::endl;
         return SUCCESS;
     }
 
