@@ -8,22 +8,25 @@ layers:
 - `work1_tc`: a separate opt-in C++ backend using the transliteration-first
   `BitBigIntTC` BigInt port.
 - `BigUint` / `RSA_Limb`: a new experimental unsigned limb backend and raw RSA
-  test layer. This layer has no CLI or legacy file-format integration yet.
+  layer exposed through the separate opt-in `work1_limb` CLI.
 
 The `work1` and `work1_tc` binaries support the same RSA command shapes and use
 compatible key, ciphertext, and signature file formats. The legacy C backend
 remains the oracle for BigInt parity tests and RSA cross-backend smoke tests.
+`work1_limb` uses its own native formats and is not file-compatible with
+`work1` or `work1_tc`.
 
 ## Build
 
 ```sh
 make MODE=debug all
 make MODE=debug work1_tc
+make MODE=debug work1_limb
 make MODE=debug test
 ```
 
 `make MODE=debug all` builds the legacy `work1` binary and benchmark binary.
-`work1_tc` is intentionally opt-in and is not part of `all`.
+`work1_tc` and `work1_limb` are intentionally opt-in and are not part of `all`.
 
 ## Legacy CLI: work1
 
@@ -51,6 +54,33 @@ Supported key sizes are `256`, `512`, `1024`, and `2048`.
 cross-checking the C++ `BitBigIntTC` port against the legacy file formats and
 legacy RSA behavior. It is not a replacement for `work1` yet.
 
+## BigUint CLI: work1_limb
+
+```sh
+./work1_limb -h
+./work1_limb --help
+./work1_limb encrypt --infile <input.bin> --pubkey <public.key> --outfile <cipher.txt>
+./work1_limb decrypt --infile <cipher.txt> --secret <secret.key> --outfile <output.bin>
+./work1_limb sign    --infile <input.bin> --secret <secret.key> --sigfile <signature.txt>
+./work1_limb check   --infile <input.bin> --pubkey <public.key> --sigfile <signature.txt>
+```
+
+For `check`, a valid signature prints `File signature is correct!` and exits
+with status 0. A semantic mismatch prints `File signature is NOT correct!` and
+also exits with status 0. Parser, I/O, key-type, and execution errors return a
+nonzero status.
+
+`work1_limb` uses native RSA_Limb files:
+
+- Keys start with `RSA_LIMB_KEY_V1` and contain lowercase big-endian hex values.
+- Cipher and signature files start with `RSA_LIMB_BLOCKS_V1`.
+- Block metadata includes `original_size`, `block_size`, `block_count`, and
+  `encoding=hex-be`.
+- Each encrypted or signature value is stored as `*c*<hex>#`.
+
+These native files are deliberately distinct from the legacy `_n_`, `_e_`,
+`_d_`, and `_c_` formats used by `work1` and `work1_tc`.
+
 ## BigUint / RSA_Limb
 
 `BigUint` is the next experimental arithmetic backend. It is separate from the
@@ -75,10 +105,11 @@ Current `BigUint` representation and scope:
 - raw byte encrypt/decrypt helpers;
 - raw sign/check helpers.
 
-`RSA_Limb` does not currently provide a CLI, legacy key/cipher/signature file
-format integration, prime-file loading, padding, hashing, PKCS#1, OAEP, or PSS.
-The byte encryption and signing helpers are textbook/raw RSA test helpers only;
-they are not production cryptographic schemes.
+`RSA_Limb` now has the opt-in native-format `work1_limb` CLI, but it does not
+provide legacy key/cipher/signature compatibility, prime-file loading, genkey,
+padding, hashing, PKCS#1, OAEP, or PSS. Its encryption and signing operations
+are textbook/raw RSA test helpers only; they are not production cryptographic
+schemes.
 
 ## Tests
 
@@ -113,6 +144,9 @@ Current test coverage:
 - `test-work1-tc-smoke`: tests the `work1_tc` CLI against legacy `work1` on
   small cross-backend cases, including CLI negative cases and deterministic
   RSA_TC parser edge cases.
+- `test-work1-limb-smoke`: tests native `work1_limb` encrypt/decrypt/sign/check
+  flows, binary payloads and zero bytes, strict native-format parser failures,
+  and semantic signature failures.
 - `test-divmod-stress`: opt-in diagnostic stress coverage for `BitBigIntTC`
   division/modulo.
 - `test-sanitize`: opt-in AddressSanitizer/UndefinedBehaviorSanitizer subset
@@ -122,8 +156,8 @@ Current test coverage:
   check coverage.
 
 `make MODE=debug test` runs the normal C++ tests, including `test_biguint`,
-`test-rsa-limb-smoke`, and the TC RSA smoke tests. `test_all.sh` is still
-legacy-focused.
+`test-rsa-limb-smoke`, `test-rsa-limb-format`, `test-work1-limb-smoke`, and the
+TC RSA smoke tests. `test_all.sh` is still legacy-focused.
 
 ## Caveats
 
@@ -136,8 +170,8 @@ legacy-focused.
 - TC-backed 256-bit modular exponentiation may be slow before any optimization
   work.
 - `RSA_Limb` raw byte/signature helpers are textbook/raw RSA test helpers only.
-  They do not provide padding or hashing and should not be treated as production
-  cryptography.
+  `work1_limb` does not provide padding, hashing, PKCS#1, OAEP, or PSS and
+  should not be treated as production cryptography.
 - Performance notes below are historical coursework notes for the original
   implementation and should not be read as claims about `work1_tc`.
 
@@ -148,16 +182,18 @@ Current branch status:
 - `work1` remains the unchanged legacy C backend and oracle.
 - `work1_tc` remains a separate compatibility/reference backend for the
   transliteration-first `BitBigIntTC` implementation.
-- `BigUint` and `RSA_Limb` are experimental limb-backend library/test layers.
-  They are not wired into a user-facing CLI or legacy file formats yet.
+- The native `work1_limb` encrypt/decrypt/sign/check CLI milestone is complete.
+  It remains experimental, raw/textbook RSA and uses formats that are not
+  compatible with `work1` or `work1_tc`.
 
 Likely next work:
 
-- design RSA_Limb serialization and a possible opt-in CLI;
+- add native `work1_limb` genkey support;
+- add an explicit legacy-compatible mode if required;
 - performance work such as Knuth division, Montgomery reduction, or Barrett
   reduction;
-- legacy-compatible RSA_Limb mode if cross-backend file compatibility becomes a
-  requirement.
+- research padding, hashing, and signature schemes before any production-style
+  cryptographic interface; none are implemented yet.
 
 ## Historical Notes
 
@@ -195,4 +231,3 @@ Likely next work:
 Финальное время выполнения алгоритма суммарно уменьшилось в 4 раза.
 
 ![image](https://user-images.githubusercontent.com/60771708/213117514-932f3197-87ec-4e5e-ad84-4ce4ce9f487c.png)
-

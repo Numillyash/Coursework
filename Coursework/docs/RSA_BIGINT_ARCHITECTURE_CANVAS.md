@@ -2,7 +2,7 @@
 
 **Проект:** собственная производительная BigInt/RSA-библиотека  
 **Цель:** сделать библиотеку своими руками, с полным пониманием внутренней арифметики, пригодную для дальнейшей оптимизации и портирования, в том числе на микроконтроллеры.  
-**Текущий контекст:** старый учебный bit-level bigint остаётся oracle/reference; `BitBigIntTC` завершил compatibility/reference фазу; ветка `LimbBigUint-core` уже содержит первый рабочий `BigUint` limb-backend и минимальный `RSA_Limb` raw RSA слой для тестов.
+**Текущий контекст:** старый учебный bit-level bigint остаётся oracle/reference; `BitBigIntTC` завершил compatibility/reference фазу; `BigUint` и `RSA_Limb` имеют отдельный opt-in `work1_limb` CLI для native raw RSA encrypt/decrypt/sign/check.
 
 ---
 
@@ -25,7 +25,7 @@
 
 ---
 
-## 0.1. Текущий статус ветки LimbBigUint-core
+## 0.1. Текущий статус limb RSA ветки
 
 Сейчас в проекте существуют три слоя backend'ов:
 
@@ -36,9 +36,9 @@
    Использует transliteration-first C++ порт `BitBigIntTC` и совместимые legacy
    форматы ключей, шифртекста и подписи.
 3. **Experimental limb backend `BigUint` / `RSA_Limb`.**
-   Это новый unsigned limb-backend и raw RSA test layer. У него пока нет CLI,
-   legacy file-format интеграции, чтения prime-файлов или padding/signature
-   scheme уровня PKCS/PSS.
+   Это новый unsigned limb-backend и raw RSA layer с отдельным opt-in CLI
+   `work1_limb`. Он использует собственные native-файлы и не совместим с
+   legacy-форматами `work1` / `work1_tc`.
 
 Текущий `BigUint`:
 
@@ -57,25 +57,48 @@
 - выполняет public/private operation через `BigUint::mod_pow`;
 - содержит raw byte encrypt/decrypt helpers;
 - содержит raw sign/check helpers;
+- имеет native-format CLI `work1_limb` для encrypt/decrypt/sign/check;
 - предназначен для тестов raw/textbook RSA, а не для production cryptography;
-- не реализует padding, hashing, PKCS#1, OAEP или PSS.
+- не реализует genkey, prime-file reading, padding, hashing, PKCS#1, OAEP или
+  PSS.
+
+Native-форматы `work1_limb`:
+
+- ключи начинаются с `RSA_LIMB_KEY_V1`;
+- cipher/signature blocks начинаются с `RSA_LIMB_BLOCKS_V1`;
+- block metadata содержит `original_size`, `block_size`, `block_count` и
+  `encoding=hex-be`;
+- каждое значение хранится строкой `*c*<hex>#`;
+- эти файлы намеренно не являются legacy-compatible.
+
+CLI `check`:
+
+- valid signature печатает `File signature is correct!` и возвращает 0;
+- semantic mismatch печатает `File signature is NOT correct!` и возвращает 0;
+- parser, I/O, key-type и execution errors возвращают nonzero.
 
 Тестовый статус:
 
-- `make MODE=debug test` включает `test_biguint` и `test-rsa-limb-smoke`;
+- `make MODE=debug test` включает `test_biguint`, `test-rsa-limb-smoke`,
+  `test-rsa-limb-format` и `test-work1-limb-smoke`;
 - `test_biguint` проверяет `BigUint` на deterministic fixtures и выбранных
   positive-value oracle-сравнениях с `BitBigIntTC`;
 - `test-rsa-limb-smoke` проверяет keypair construction, raw RSA operations,
   raw byte encrypt/decrypt roundtrips и raw sign/check helpers;
+- `test-work1-limb-smoke` проверяет native encrypt/decrypt/sign/check CLI,
+  binary payloads и zero bytes, strict parser errors и semantic signature
+  failures;
 - дополнительные проверки остаются отдельными: `test-tc-heavy`,
   `test-sanitize`, `test_all.sh`.
 
-Ближайшая работа:
+Текущий milestone native limb CLI завершён. Ближайшие возможные направления:
 
-1. Спроектировать RSA_Limb serialization и возможный отдельный CLI.
-2. Добавить performance-слой: Knuth division, Montgomery reduction, Barrett
-   reduction.
-3. При необходимости сделать legacy-compatible режим для форматов старого RSA.
+1. Добавить native `work1_limb` genkey.
+2. При необходимости сделать explicit legacy-compatible режим.
+3. В отдельной performance-ветке добавить Knuth division, Montgomery reduction
+   и Barrett reduction.
+4. Исследовать padding/hash/signature schemes; PKCS#1, OAEP и PSS пока не
+   реализованы.
 
 ---
 
@@ -809,6 +832,11 @@ class StaticBigUint {
 - [x] basic raw byte block encoding.
 - [x] raw byte encrypt/decrypt helpers.
 - [x] raw sign/check helpers.
+- [x] native key/block serialization.
+- [x] native `work1_limb` encrypt/decrypt CLI.
+- [x] native `work1_limb` sign/check CLI.
+- [ ] native `work1_limb` genkey.
+- [ ] optional legacy-compatible mode.
 - [ ] later: OAEP/PSS-like modes.
 
 ### Stage 5 — Optimization
